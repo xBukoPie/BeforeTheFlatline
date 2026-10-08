@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://pe0tdibgwd1l"]
+
+[ext_resource type="Script" uid="uid://bxlkwqtfdvpi5" path="res://Scripts/PlayerController.cs" id="1_v0iea"]
+[ext_resource type="Texture2D" uid="uid://dwkxp5qtxlg07" path="res://icon.svg" id="2_cvnsp"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_v2h47"]
+
+[node name="Player" type="CharacterBody2D" unique_id=1612546559]
+script = ExtResource("1_v0iea")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1234070098]
+scale = Vector2(0.16000044, 0.12000027)
+texture = ExtResource("2_cvnsp")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=662813521]
+shape = SubResource("CapsuleShape2D_v2h47")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=78998919]
