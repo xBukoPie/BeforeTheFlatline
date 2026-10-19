@@ -5,7 +5,7 @@ public partial class MainMenu : Control
     // Make sure your TestLevel path exactly matches where you saved it earlier
     public void OnPlayButtonPressed()
     {
-        GetTree().ChangeSceneToFile("res://Scenes/Main.tscn");
+        GetTree().ChangeSceneToFile("res://Scenes/game.tscn");
     }
 
     public void OnSettingsButtonPressed()

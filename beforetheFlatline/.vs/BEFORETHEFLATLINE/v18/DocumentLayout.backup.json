@@ -3,12 +3,12 @@
   "WorkspaceRootPath": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|c:\\users\\defin\\beforetheflatline\\beforetheflatline\\scripts\\mainmenu.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|solutionrelative:scripts\\mainmenu.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|c:\\users\\defin\\beforetheflatline\\beforetheflatline\\scripts\\playercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|solutionrelative:scripts\\playercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|c:\\users\\defin\\beforetheflatline\\beforetheflatline\\ui\\mainmenu.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|solutionrelative:ui\\mainmenu.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,7 +18,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Bookmark",
@@ -30,26 +30,26 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "MainMenu.cs",
-              "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\MainMenu.cs",
-              "RelativeDocumentMoniker": "Scripts\\MainMenu.cs",
-              "ToolTip": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\MainMenu.cs",
-              "RelativeToolTip": "Scripts\\MainMenu.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAPAAAAAAAAAA==",
+              "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\UI\\MainMenu.cs",
+              "RelativeDocumentMoniker": "UI\\MainMenu.cs",
+              "ToolTip": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\UI\\MainMenu.cs",
+              "RelativeToolTip": "UI\\MainMenu.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAA2AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-08T15:47:26.548Z",
+              "WhenOpened": "2026-10-09T03:53:24.518Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "PlayerController.cs",
               "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\PlayerController.cs",
               "RelativeDocumentMoniker": "Scripts\\PlayerController.cs",
               "ToolTip": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\PlayerController.cs",
               "RelativeToolTip": "Scripts\\PlayerController.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAACQAAAAAAAAAAAAQwEAAAAAvAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-10-08T06:41:48.042Z",
               "EditorCaption": ""
