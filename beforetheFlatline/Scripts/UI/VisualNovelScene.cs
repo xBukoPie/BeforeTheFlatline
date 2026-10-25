@@ -33,6 +33,12 @@ public partial class VisualNovelScene : Control
     [Export] public Texture2D LeftPortrait { get; set; }
     [Export] public Texture2D RightPortrait { get; set; }
 
+    [ExportGroup("Display")]
+    /// <summary>Turn off when this scene is overlaid on another base scene (e.g. the Classroom).</summary>
+    [Export] public bool ShowBackground { get; set; } = true;
+    /// <summary>Show the grey placeholder box for a side that has no portrait texture.</summary>
+    [Export] public bool ShowPlaceholders { get; set; } = true;
+
     [ExportGroup("Demo")]
     [Export] public bool PlayDemoOnReady { get; set; } = true;
     /// <summary>After the last line, pressing Space/click replays the demo.</summary>
@@ -98,6 +104,8 @@ public partial class VisualNovelScene : Control
         _logPanel = GetNode<PanelContainer>("%LogPanel");
         _logText = GetNode<RichTextLabel>("%LogText");
         _closeLogButton = GetNode<Button>("%CloseLogButton");
+
+        GetNode<Control>("%Background").Visible = ShowBackground;
 
         _dialoguePanel.GuiInput += OnDialoguePanelGuiInput;
         _dialoguePanel.Resized += OnDialoguePanelResized;
@@ -179,7 +187,7 @@ public partial class VisualNovelScene : Control
         var rect = side == DialogueSide.Left ? _leftPortraitRect : _rightPortraitRect;
         var placeholder = side == DialogueSide.Left ? _leftPlaceholder : _rightPlaceholder;
         rect.Texture = texture;
-        placeholder.Visible = texture == null;
+        placeholder.Visible = texture == null && ShowPlaceholders;
     }
 
     // ───────────────────────── Dialogue flow ─────────────────────────
