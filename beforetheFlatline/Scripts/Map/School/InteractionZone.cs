@@ -57,12 +57,7 @@ public partial class InteractionZone : Area2D
         if (fade != null)
             fade.Modulate = new Color(0,0,0,0);
 
-        // After a short delay, attach the greeting script to the newly added UI
-        var timer = tree.CreateTimer(0.1f);
-        timer.Connect("timeout", Callable.From(() =>
-        {
-            var greeting = new SchoolGreeting();
-            uiInstance.AddChild(greeting);
-        }));
+        // No greeting is attached here any more: the overlay scene (e.g. Classroom.tscn)
+        // starts its own dialogue event in its _Ready.
     }
 }

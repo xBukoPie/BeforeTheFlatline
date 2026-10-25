@@ -118,6 +118,17 @@ public partial class Door : Area2D
 
         // Otherwise, treat it as a UI overlay (Control) and add it to the manager's UI layer.
         var uiRoot = manager.GetNodeOrNull<Node>("UI");
+
+        // Don't stack a second copy of the same overlay (e.g. E pressed again while it is open).
+        foreach (var child in (uiRoot ?? manager).GetChildren())
+        {
+            if (child.SceneFilePath == instance.SceneFilePath)
+            {
+                instance.QueueFree();
+                return;
+            }
+        }
+
         if (uiRoot != null)
             uiRoot.AddChild(instance);
         else
@@ -128,12 +139,7 @@ public partial class Door : Area2D
         if (fade != null)
             fade.Modulate = new Color(0, 0, 0, 0);
 
-        // After a short delay, attach the greeting script to the UI.
-        var timer = GetTree().CreateTimer(0.1f);
-        timer.Connect("timeout", Callable.From(() =>
-        {
-            var greeting = new SchoolGreeting();
-            instance.AddChild(greeting);
-        }));
+        // No greeting is attached here any more: the overlay scene (e.g. Classroom.tscn)
+        // starts its own dialogue event in its _Ready.
     }
 }
