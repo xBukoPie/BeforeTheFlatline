@@ -1,0 +1,420 @@
+[gd_scene format=3 uid="uid://cm1hdkm5fbv14"]
+
+[ext_resource type="Texture2D" uid="uid://de3e7ohtfdqqw" path="res://Assets/Map/School/School.jpg" id="1_map"]
+[ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_xqy2q"]
+[ext_resource type="Script" uid="uid://e2i3et7i6d0s" path="res://Scripts/GameController/DayNightCycle.cs" id="3_dn"]
+[ext_resource type="Script" uid="uid://b3n44xxs1mak7" path="res://Scripts/Map/School/StreetLamp.cs" id="4_lamp"]
+[ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="5_xqy2q"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_3"]
+size = Vector2(404, 184)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_4"]
+size = Vector2(126, 213)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
+size = Vector2(55, 55)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_6"]
+size = Vector2(27, 60)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_7"]
+size = Vector2(10, 435)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_8"]
+size = Vector2(10, 435)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_10"]
+size = Vector2(680, 39)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_11"]
+size = Vector2(140, 85)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_12"]
+size = Vector2(10, 60)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_13"]
+size = Vector2(31, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_14"]
+size = Vector2(31, 38)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_15"]
+size = Vector2(12, 26)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_34"]
+size = Vector2(1064, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_35"]
+size = Vector2(1064, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_36"]
+size = Vector2(20, 572)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_37"]
+size = Vector2(20, 572)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_38"]
+radius = 7.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_39"]
+radius = 7.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_40"]
+radius = 7.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_41"]
+radius = 7.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_42"]
+radius = 7.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_43"]
+radius = 7.0
+
+[sub_resource type="Gradient" id="Gradient_1"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_2"]
+gradient = SubResource("Gradient_1")
+width = 256
+height = 256
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[node name="SchoolYard" type="Node2D" unique_id=969950179]
+y_sort_enabled = true
+script = ExtResource("1_xqy2q")
+Outdoor = true
+
+[node name="Ground" type="Sprite2D" parent="." unique_id=638028307]
+z_index = -10
+texture_filter = 1
+texture = ExtResource("1_map")
+offset = Vector2(26, 0)
+region_enabled = true
+region_rect = Rect2(0, 0, 1024, 572)
+
+[node name="DayNightCycle" type="CanvasModulate" parent="." unique_id=1135704423]
+position = Vector2(-485, -282)
+script = ExtResource("3_dn")
+
+[node name="Collisions" type="StaticBody2D" parent="." unique_id=2071613401 groups=["solid"]]
+position = Vector2(-485, -282)
+collision_mask = 0
+
+[node name="SchoolMainBuilding" type="CollisionShape2D" parent="Collisions" unique_id=1418338109]
+position = Vector2(523, 127)
+shape = SubResource("RectangleShape2D_3")
+
+[node name="SchoolLeftWing" type="CollisionShape2D" parent="Collisions" unique_id=453604459]
+position = Vector2(258, 136.5)
+shape = SubResource("RectangleShape2D_4")
+
+[node name="SchoolLeftWing2" type="CollisionShape2D" parent="Collisions" unique_id=1450513756]
+position = Vector2(222.5, 245.5)
+shape = SubResource("RectangleShape2D_v2h47")
+
+[node name="SchoolLeftWing3" type="CollisionShape2D" parent="Collisions" unique_id=1162376702]
+position = Vector2(228, 385)
+shape = SubResource("RectangleShape2D_v2h47")
+
+[node name="Staircase" type="CollisionShape2D" parent="Collisions" unique_id=1892280710]
+position = Vector2(738.5, 175)
+shape = SubResource("RectangleShape2D_6")
+
+[node name="FenceLeft" type="CollisionShape2D" parent="Collisions" unique_id=2066629426]
+position = Vector2(185, 277.5)
+shape = SubResource("RectangleShape2D_7")
+
+[node name="FenceRight" type="CollisionShape2D" parent="Collisions" unique_id=2081209015]
+position = Vector2(866, 277.5)
+shape = SubResource("RectangleShape2D_8")
+
+[node name="FenceBottom" type="CollisionShape2D" parent="Collisions" unique_id=967096152]
+position = Vector2(530, 475.5)
+shape = SubResource("RectangleShape2D_10")
+
+[node name="FenceTopRight" type="CollisionShape2D" parent="Collisions" unique_id=488876031]
+position = Vector2(795, 102.5)
+shape = SubResource("RectangleShape2D_11")
+
+[node name="FenceTopLeft" type="CollisionShape2D" parent="Collisions" unique_id=1339197338]
+position = Vector2(190, 30)
+shape = SubResource("RectangleShape2D_12")
+
+[node name="HoopLeft" type="CollisionShape2D" parent="Collisions" unique_id=1506556771]
+position = Vector2(564.5, 277)
+shape = SubResource("RectangleShape2D_13")
+
+[node name="HoopRight" type="CollisionShape2D" parent="Collisions" unique_id=1770130515]
+position = Vector2(776.5, 275)
+shape = SubResource("RectangleShape2D_14")
+
+[node name="FlagPole" type="CollisionShape2D" parent="Collisions" unique_id=1630353424]
+position = Vector2(440, 250)
+shape = SubResource("RectangleShape2D_15")
+
+[node name="EdgeTop" type="CollisionShape2D" parent="Collisions" unique_id=691253735]
+position = Vector2(512, -10)
+shape = SubResource("RectangleShape2D_34")
+
+[node name="EdgeBottom" type="CollisionShape2D" parent="Collisions" unique_id=692068287]
+position = Vector2(512, 582)
+shape = SubResource("RectangleShape2D_35")
+
+[node name="EdgeLeft" type="CollisionShape2D" parent="Collisions" unique_id=1848872312]
+position = Vector2(-10, 286)
+shape = SubResource("RectangleShape2D_36")
+
+[node name="EdgeRight" type="CollisionShape2D" parent="Collisions" unique_id=2059044763]
+position = Vector2(1034, 286)
+shape = SubResource("RectangleShape2D_37")
+
+[node name="Tree1Trunk" type="CollisionShape2D" parent="Collisions" unique_id=1451087789]
+position = Vector2(222, 280)
+shape = SubResource("CircleShape2D_38")
+
+[node name="Tree2Trunk" type="CollisionShape2D" parent="Collisions" unique_id=1572430250]
+position = Vector2(228, 420)
+shape = SubResource("CircleShape2D_39")
+
+[node name="Tree3Trunk" type="CollisionShape2D" parent="Collisions" unique_id=1451237769]
+position = Vector2(807, 420)
+shape = SubResource("CircleShape2D_40")
+
+[node name="Tree4Trunk" type="CollisionShape2D" parent="Collisions" unique_id=876841545]
+position = Vector2(788, 108)
+shape = SubResource("CircleShape2D_41")
+
+[node name="Tree5Trunk" type="CollisionShape2D" parent="Collisions" unique_id=898420895]
+position = Vector2(846, 127)
+shape = SubResource("CircleShape2D_42")
+
+[node name="Tree6Trunk" type="CollisionShape2D" parent="Collisions" unique_id=288320638]
+position = Vector2(528, 18)
+shape = SubResource("CircleShape2D_43")
+
+[node name="Foreground" type="Node2D" parent="." unique_id=1060215889]
+z_index = 20
+position = Vector2(-485, -282)
+
+[node name="Tree1Canopy" type="Sprite2D" parent="Foreground" unique_id=1570366760 groups=["canopy"]]
+texture_filter = 1
+position = Vector2(194, 218)
+texture = ExtResource("1_map")
+centered = false
+region_enabled = true
+region_rect = Rect2(195, 222, 56, 52)
+
+[node name="Tree2Canopy" type="Sprite2D" parent="Foreground" unique_id=1925427106 groups=["canopy"]]
+texture_filter = 1
+position = Vector2(203, 358)
+texture = ExtResource("1_map")
+centered = false
+region_enabled = true
+region_rect = Rect2(204, 362, 50, 54)
+
+[node name="Tree3Canopy" type="Sprite2D" parent="Foreground" unique_id=1332801989 groups=["canopy"]]
+texture_filter = 1
+position = Vector2(781, 362)
+texture = ExtResource("1_map")
+centered = false
+region_enabled = true
+region_rect = Rect2(782, 366, 52, 50)
+
+[node name="Tree4Canopy" type="Sprite2D" parent="Foreground" unique_id=2017018819 groups=["canopy"]]
+texture_filter = 1
+position = Vector2(761, 48)
+texture = ExtResource("1_map")
+centered = false
+region_enabled = true
+region_rect = Rect2(762, 52, 52, 56)
+
+[node name="Tree5Canopy" type="Sprite2D" parent="Foreground" unique_id=551488059 groups=["canopy"]]
+texture_filter = 1
+position = Vector2(816, 66)
+texture = ExtResource("1_map")
+centered = false
+region_enabled = true
+region_rect = Rect2(817, 70, 54, 58)
+
+[node name="Tree6Canopy" type="Sprite2D" parent="Foreground" unique_id=1235388835 groups=["canopy"]]
+texture_filter = 1
+position = Vector2(503, 0)
+texture = ExtResource("1_map")
+centered = false
+region_enabled = true
+region_rect = Rect2(503, 0, 54, 28)
+
+[node name="Lamps" type="Node2D" parent="." unique_id=41619309]
+position = Vector2(-485, -282)
+
+[node name="Lamp1" type="PointLight2D" parent="Lamps" unique_id=855847009 groups=["night_lights"]]
+position = Vector2(105, 440)
+color = Color(1, 0.84, 0.52, 1)
+energy = 1.2
+shadow_enabled = true
+shadow_filter = 1
+texture = SubResource("GradientTexture2D_2")
+texture_scale = 0.9
+script = ExtResource("4_lamp")
+
+[node name="Lamp2" type="PointLight2D" parent="Lamps" unique_id=1296755615 groups=["night_lights"]]
+position = Vector2(165, 440)
+color = Color(1, 0.84, 0.52, 1)
+energy = 1.2
+shadow_enabled = true
+shadow_filter = 1
+texture = SubResource("GradientTexture2D_2")
+texture_scale = 0.9
+script = ExtResource("4_lamp")
+
+[node name="Lamp3" type="PointLight2D" parent="Lamps" unique_id=244377841 groups=["night_lights"]]
+position = Vector2(883, 440)
+color = Color(1, 0.84, 0.52, 1)
+energy = 1.2
+shadow_enabled = true
+shadow_filter = 1
+texture = SubResource("GradientTexture2D_2")
+texture_scale = 0.9
+script = ExtResource("4_lamp")
+
+[node name="Lamp4" type="PointLight2D" parent="Lamps" unique_id=1599663246 groups=["night_lights"]]
+position = Vector2(938, 440)
+color = Color(1, 0.84, 0.52, 1)
+energy = 1.2
+shadow_enabled = true
+shadow_filter = 1
+texture = SubResource("GradientTexture2D_2")
+texture_scale = 0.9
+script = ExtResource("4_lamp")
+
+[node name="Lamp5" type="PointLight2D" parent="Lamps" unique_id=916252572 groups=["night_lights"]]
+position = Vector2(462, 540)
+color = Color(1, 0.84, 0.52, 1)
+energy = 1.2
+shadow_enabled = true
+shadow_filter = 1
+texture = SubResource("GradientTexture2D_2")
+texture_scale = 0.9
+script = ExtResource("4_lamp")
+
+[node name="Lamp6" type="PointLight2D" parent="Lamps" unique_id=751607235 groups=["night_lights"]]
+position = Vector2(578, 540)
+color = Color(1, 0.84, 0.52, 1)
+energy = 1.2
+shadow_enabled = true
+shadow_filter = 1
+texture = SubResource("GradientTexture2D_2")
+texture_scale = 0.9
+script = ExtResource("4_lamp")
+
+[node name="CourtLight" type="PointLight2D" parent="Lamps" unique_id=1105946107 groups=["night_lights"]]
+position = Vector2(672, 315)
+color = Color(0.85, 0.92, 1, 1)
+texture = SubResource("GradientTexture2D_2")
+texture_scale = 1.1
+script = ExtResource("4_lamp")
+Flicker = false
+
+[node name="Windows" type="Node2D" parent="." unique_id=964143728]
+position = Vector2(-485, -282)
+
+[node name="Window0" type="PointLight2D" parent="Windows" unique_id=2121666161 groups=["night_lights"]]
+position = Vector2(385, 128)
+color = Color(1, 0.92, 0.6, 1)
+energy = 0.7
+texture = SubResource("GradientTexture2D_2")
+texture_scale = 0.22
+script = ExtResource("4_lamp")
+Flicker = false
+
+[node name="Window1" type="PointLight2D" parent="Windows" unique_id=1979301608 groups=["night_lights"]]
+position = Vector2(440, 128)
+color = Color(1, 0.92, 0.6, 1)
+energy = 0.7
+texture = SubResource("GradientTexture2D_2")
+texture_scale = 0.22
+script = ExtResource("4_lamp")
+Flicker = false
+
+[node name="Window2" type="PointLight2D" parent="Windows" unique_id=947345468 groups=["night_lights"]]
+position = Vector2(550, 128)
+color = Color(1, 0.92, 0.6, 1)
+energy = 0.7
+texture = SubResource("GradientTexture2D_2")
+texture_scale = 0.22
+script = ExtResource("4_lamp")
+Flicker = false
+
+[node name="Window3" type="PointLight2D" parent="Windows" unique_id=985288692 groups=["night_lights"]]
+position = Vector2(610, 128)
+color = Color(1, 0.92, 0.6, 1)
+energy = 0.7
+texture = SubResource("GradientTexture2D_2")
+texture_scale = 0.22
+script = ExtResource("4_lamp")
+Flicker = false
+
+[node name="Window4" type="PointLight2D" parent="Windows" unique_id=145645484 groups=["night_lights"]]
+position = Vector2(385, 193)
+color = Color(1, 0.92, 0.6, 1)
+energy = 0.7
+texture = SubResource("GradientTexture2D_2")
+texture_scale = 0.22
+script = ExtResource("4_lamp")
+Flicker = false
+
+[node name="Window5" type="PointLight2D" parent="Windows" unique_id=163197374 groups=["night_lights"]]
+position = Vector2(440, 193)
+color = Color(1, 0.92, 0.6, 1)
+energy = 0.7
+texture = SubResource("GradientTexture2D_2")
+texture_scale = 0.22
+script = ExtResource("4_lamp")
+Flicker = false
+
+[node name="Window6" type="PointLight2D" parent="Windows" unique_id=462385651 groups=["night_lights"]]
+position = Vector2(550, 193)
+color = Color(1, 0.92, 0.6, 1)
+energy = 0.7
+texture = SubResource("GradientTexture2D_2")
+texture_scale = 0.22
+script = ExtResource("4_lamp")
+Flicker = false
+
+[node name="Window7" type="PointLight2D" parent="Windows" unique_id=1792136393 groups=["night_lights"]]
+position = Vector2(610, 193)
+color = Color(1, 0.92, 0.6, 1)
+energy = 0.7
+texture = SubResource("GradientTexture2D_2")
+texture_scale = 0.22
+script = ExtResource("4_lamp")
+Flicker = false
+
+[node name="Doors" type="Node2D" parent="." unique_id=30733735]
+
+[node name="ToHome" parent="Doors" unique_id=1210053727 instance=ExtResource("5_xqy2q")]
+position = Vector2(35, 165)
+TargetRoom = "uid://sc2d4amskj1m"
+TargetSpawn = "FromSchool"
+Prompt = "Home"
+Size = Vector2(30, 62)
+
+[node name="ToClassroom" parent="Doors" unique_id=1703222727 instance=ExtResource("5_xqy2q")]
+position = Vector2(-133, -62)
+TargetRoom = "uid://b2wmpq2d1fy4t"
+TargetSpawn = "FromSchool"
+Prompt = "Classroom"
+Size = Vector2(30, 62)
+
+[node name="Spawns" type="Node2D" parent="." unique_id=1813384167]
+position = Vector2(0, 1)
+
+[node name="FromClassroom" type="Marker2D" parent="Spawns" unique_id=2144565765]
+position = Vector2(70, 254)
+
+[node name="FromHome" type="Marker2D" parent="Spawns" unique_id=233850800]
+position = Vector2(35, 127)

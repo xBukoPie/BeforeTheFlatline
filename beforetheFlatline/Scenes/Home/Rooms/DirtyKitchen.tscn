@@ -1,0 +1,129 @@
+[gd_scene format=3 uid="uid://bx0xki6ftwah0"]
+
+[ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_room"]
+[ext_resource type="Texture2D" uid="uid://cpp73o4vxwx2i" path="res://Assets/Map/Home/House.jpg" id="2_tex"]
+[ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="3_door"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Rooms/Lamp.tscn" id="4_lamp"]
+
+[sub_resource type="OccluderPolygon2D" id="Occ_90x40"]
+polygon = PackedVector2Array(-45, -20, 45, -20, 45, 20, -45, 20)
+
+[sub_resource type="RectangleShape2D" id="R_170x20"]
+size = Vector2(170, 20)
+
+[sub_resource type="RectangleShape2D" id="R_20x242"]
+size = Vector2(20, 242)
+
+[sub_resource type="RectangleShape2D" id="R_44x20"]
+size = Vector2(101, 20)
+
+[sub_resource type="RectangleShape2D" id="R_50x20"]
+size = Vector2(50, 20)
+
+[sub_resource type="RectangleShape2D" id="R_90x40"]
+size = Vector2(90, 40)
+
+[sub_resource type="RectangleShape2D" id="R_36x55"]
+size = Vector2(33, 51.5)
+
+[sub_resource type="RectangleShape2D" id="R_22x50"]
+size = Vector2(22, 44)
+
+[sub_resource type="RectangleShape2D" id="R_20x22"]
+size = Vector2(20, 35)
+
+[sub_resource type="RectangleShape2D" id="R_25x22"]
+size = Vector2(27.5, 22)
+
+[sub_resource type="RectangleShape2D" id="R_30x22"]
+size = Vector2(53, 22)
+
+[node name="DirtyKitchen" type="Node2D" unique_id=1242381895]
+script = ExtResource("1_room")
+RoomName = "Dirty Kitchen"
+Outdoor = true
+CameraZoom = 3.0
+
+[node name="Ground" type="Sprite2D" parent="." unique_id=1924770507]
+z_index = -10
+texture = ExtResource("2_tex")
+region_enabled = true
+region_rect = Rect2(858, 46, 130, 202)
+
+[node name="Lights" type="Node2D" parent="." unique_id=775210611]
+
+[node name="StoveLight" parent="Lights" unique_id=594489306 instance=ExtResource("4_lamp")]
+position = Vector2(-3, -7)
+color = Color(1, 0.8, 0.5, 1)
+energy = 0.8
+texture_scale = 0.9
+
+[node name="Occluders" type="Node2D" parent="." unique_id=1261045208]
+
+[node name="CookTop" type="LightOccluder2D" parent="Occluders" unique_id=720057754]
+position = Vector2(-18, -65)
+occluder = SubResource("Occ_90x40")
+
+[node name="Walls" type="StaticBody2D" parent="." unique_id=1737201052]
+collision_mask = 0
+
+[node name="TopWall" type="CollisionShape2D" parent="Walls" unique_id=1732902875]
+position = Vector2(0, -111)
+shape = SubResource("R_170x20")
+
+[node name="LeftWall" type="CollisionShape2D" parent="Walls" unique_id=251001758]
+position = Vector2(-75, 0)
+shape = SubResource("R_20x242")
+
+[node name="RightWall" type="CollisionShape2D" parent="Walls" unique_id=1676893892]
+position = Vector2(75, 0)
+shape = SubResource("R_20x242")
+
+[node name="BottomLeft" type="CollisionShape2D" parent="Walls" unique_id=953833964]
+position = Vector2(-15.5, 111)
+shape = SubResource("R_44x20")
+
+[node name="BottomRight" type="CollisionShape2D" parent="Walls" unique_id=1482387324]
+position = Vector2(60, 111)
+shape = SubResource("R_50x20")
+
+[node name="Furniture" type="StaticBody2D" parent="." unique_id=1140907703]
+collision_mask = 0
+
+[node name="CookTop" type="CollisionShape2D" parent="Furniture" unique_id=1286153201]
+position = Vector2(-18, -65)
+shape = SubResource("R_90x40")
+
+[node name="Sink" type="CollisionShape2D" parent="Furniture" unique_id=496168105]
+position = Vector2(45.5, -20.75)
+shape = SubResource("R_36x55")
+
+[node name="StoveLeft" type="CollisionShape2D" parent="Furniture" unique_id=1839558295]
+position = Vector2(-54, -10)
+shape = SubResource("R_22x50")
+
+[node name="Chair" type="CollisionShape2D" parent="Furniture" unique_id=2143600643]
+position = Vector2(44, 37.5)
+shape = SubResource("R_20x22")
+
+[node name="StoneLeft" type="CollisionShape2D" parent="Furniture" unique_id=363016314]
+position = Vector2(-54.75, 92)
+shape = SubResource("R_25x22")
+
+[node name="StoneRight" type="CollisionShape2D" parent="Furniture" unique_id=1941115077]
+position = Vector2(40.5, 92)
+shape = SubResource("R_30x22")
+
+[node name="Doors" type="Node2D" parent="." unique_id=956116323]
+
+[node name="ToLot" parent="Doors" unique_id=13397181 instance=ExtResource("3_door")]
+position = Vector2(-3, 97)
+TargetRoom = "uid://sc2d4amskj1m"
+TargetSpawn = "FromDirtyKitchen"
+Prompt = "Bakuran"
+Size = Vector2(70, 12)
+
+[node name="Spawns" type="Node2D" parent="." unique_id=391361752]
+
+[node name="FromLot" type="Marker2D" parent="Spawns" unique_id=490013431]
+position = Vector2(-3, 75)

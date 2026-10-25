@@ -1,0 +1,79 @@
+[gd_scene format=3 uid="uid://v3tb8ouk3bes"]
+
+[ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_room"]
+[ext_resource type="Texture2D" uid="uid://cpp73o4vxwx2i" path="res://Assets/Map/Home/House.jpg" id="2_tex"]
+[ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="3_door"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Rooms/Lamp.tscn" id="4_lamp"]
+
+[sub_resource type="RectangleShape2D" id="R_122x20"]
+size = Vector2(153, 20)
+
+[sub_resource type="RectangleShape2D" id="R_20x60"]
+size = Vector2(20, 148)
+
+[sub_resource type="RectangleShape2D" id="R_20x138"]
+size = Vector2(20, 138)
+
+[sub_resource type="RectangleShape2D" id="R_172x20"]
+size = Vector2(172, 20)
+
+[sub_resource type="RectangleShape2D" id="R_104x30"]
+size = Vector2(104, 30)
+
+[node name="Pasilyo" type="Node2D" unique_id=2073340510]
+script = ExtResource("1_room")
+RoomName = "Pasilyo"
+CameraZoom = 4.5
+
+[node name="Ground" type="Sprite2D" parent="." unique_id=854237739]
+z_index = -10
+texture = ExtResource("2_tex")
+region_enabled = true
+region_rect = Rect2(688, 372, 132, 98)
+
+[node name="Lights" type="Node2D" parent="." unique_id=651847664]
+
+[node name="HallLight" parent="Lights" unique_id=1261583789 instance=ExtResource("4_lamp")]
+color = Color(0.9, 0.95, 1, 1)
+energy = 0.7
+texture_scale = 0.7
+
+[node name="Walls" type="StaticBody2D" parent="." unique_id=570322869]
+collision_mask = 0
+
+[node name="TopWall" type="CollisionShape2D" parent="Walls" unique_id=1055866071]
+position = Vector2(9.5, -59)
+shape = SubResource("R_122x20")
+
+[node name="LeftWall" type="CollisionShape2D" parent="Walls" unique_id=2046968404]
+position = Vector2(-76, 5)
+shape = SubResource("R_20x60")
+
+[node name="RightWall" type="CollisionShape2D" parent="Walls" unique_id=1457270726]
+position = Vector2(76, 0)
+shape = SubResource("R_20x138")
+
+[node name="BottomWall" type="CollisionShape2D" parent="Walls" unique_id=1629289838]
+position = Vector2(0, 59)
+shape = SubResource("R_172x20")
+
+[node name="Furniture" type="StaticBody2D" parent="." unique_id=1981604658]
+collision_mask = 0
+
+[node name="TaboShelf" type="CollisionShape2D" parent="Furniture" unique_id=212023982]
+position = Vector2(16, -34)
+shape = SubResource("R_104x30")
+
+[node name="Doors" type="Node2D" parent="." unique_id=1210903224]
+
+[node name="ToSala" parent="Doors" unique_id=802699881 instance=ExtResource("3_door")]
+position = Vector2(-52, -35)
+TargetRoom = "uid://dvvdqlpje83r0"
+TargetSpawn = "FromPasilyo"
+Prompt = "Sala"
+Size = Vector2(28, 12)
+
+[node name="Spawns" type="Node2D" parent="." unique_id=1231789400]
+
+[node name="FromSala" type="Marker2D" parent="Spawns" unique_id=1621356074]
+position = Vector2(-40, -9)

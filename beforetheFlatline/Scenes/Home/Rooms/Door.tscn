@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://dumdttb34qhr7"]
+
+[ext_resource type="Script" uid="uid://b8nkio0fvn7js" path="res://Scripts/Map/Home/Door.cs" id="1_door"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_d0hvu"]
+
+[node name="Door" type="Area2D" unique_id=1210053727]
+collision_layer = 0
+collision_mask = 2
+input_pickable = false
+monitorable = false
+script = ExtResource("1_door")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1521523786]
+shape = SubResource("CapsuleShape2D_d0hvu")

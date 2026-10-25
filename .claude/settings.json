@@ -1,0 +1,7 @@
+{
+  "enabledPlugins": {
+    "code-simplifier@anthropic-plugin-directory": true,
+    "playground@anthropic-plugin-directory": true,
+    "asset-generator@anthropic-plugin-directory": true
+  }
+}

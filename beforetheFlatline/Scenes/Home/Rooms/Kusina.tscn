@@ -1,0 +1,146 @@
+[gd_scene format=3 uid="uid://cj7clvm56javo"]
+
+[ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_room"]
+[ext_resource type="Texture2D" uid="uid://cpp73o4vxwx2i" path="res://Assets/Map/Home/House.jpg" id="2_tex"]
+[ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="3_door"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Rooms/Lamp.tscn" id="4_lamp"]
+
+[sub_resource type="OccluderPolygon2D" id="Occ_30x82"]
+polygon = PackedVector2Array(-15, -41, 15, -41, 15, 41, -15, 41)
+
+[sub_resource type="OccluderPolygon2D" id="Occ_18x30"]
+polygon = PackedVector2Array(-9, -15, 9, -15, 9, 15, -9, 15)
+
+[sub_resource type="RectangleShape2D" id="R_248x20"]
+size = Vector2(248, 20)
+
+[sub_resource type="RectangleShape2D" id="R_20x240"]
+size = Vector2(20, 240)
+
+[sub_resource type="RectangleShape2D" id="R_158x20"]
+size = Vector2(228, 24)
+
+[sub_resource type="RectangleShape2D" id="R_208x56"]
+size = Vector2(208, 56)
+
+[sub_resource type="RectangleShape2D" id="R_66x42"]
+size = Vector2(66, 23)
+
+[sub_resource type="RectangleShape2D" id="R_110x50"]
+size = Vector2(110, 28)
+
+[sub_resource type="RectangleShape2D" id="R_30x82"]
+size = Vector2(30, 82)
+
+[sub_resource type="RectangleShape2D" id="R_18x30"]
+size = Vector2(21, 42)
+
+[sub_resource type="RectangleShape2D" id="R_55x90"]
+size = Vector2(51, 18)
+
+[sub_resource type="RectangleShape2D" id="R_27x24"]
+size = Vector2(32, 24)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
+size = Vector2(69, 8)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_48lxs"]
+size = Vector2(88, 29)
+
+[node name="Kusina" type="Node2D" unique_id=704229430]
+script = ExtResource("1_room")
+RoomName = "Kusina at Komedor"
+CameraZoom = 3.0
+
+[node name="Ground" type="Sprite2D" parent="." unique_id=562926709]
+z_index = -10
+texture = ExtResource("2_tex")
+region_enabled = true
+region_rect = Rect2(410, 50, 208, 200)
+
+[node name="Lights" type="Node2D" parent="." unique_id=136693853]
+
+[node name="KitchenLight" parent="Lights" unique_id=2012117954 instance=ExtResource("4_lamp")]
+texture_scale = 1.2
+
+[node name="Occluders" type="Node2D" parent="." unique_id=1338300155]
+
+[node name="CounterRight" type="LightOccluder2D" parent="Occluders" unique_id=2023453218]
+position = Vector2(86, 0)
+occluder = SubResource("Occ_30x82")
+
+[node name="Fridge" type="LightOccluder2D" parent="Occluders" unique_id=2080686628]
+position = Vector2(87, 65)
+occluder = SubResource("Occ_18x30")
+
+[node name="Walls" type="StaticBody2D" parent="." unique_id=1164656282]
+collision_mask = 0
+
+[node name="TopWall" type="CollisionShape2D" parent="Walls" unique_id=1847057290]
+position = Vector2(0, -110)
+shape = SubResource("R_248x20")
+
+[node name="LeftWall" type="CollisionShape2D" parent="Walls" unique_id=60571234]
+position = Vector2(-114, 0)
+shape = SubResource("R_20x240")
+
+[node name="RightWall" type="CollisionShape2D" parent="Walls" unique_id=2083166136]
+position = Vector2(114, 0)
+shape = SubResource("R_20x240")
+
+[node name="BottomLeft" type="CollisionShape2D" parent="Walls" unique_id=279901407]
+position = Vector2(-10, 108)
+shape = SubResource("R_158x20")
+
+[node name="BackWall" type="CollisionShape2D" parent="Walls" unique_id=1988263351]
+position = Vector2(0, -72)
+shape = SubResource("R_208x56")
+
+[node name="Furniture" type="StaticBody2D" parent="." unique_id=808550166]
+collision_mask = 0
+
+[node name="DishRackCounter" type="CollisionShape2D" parent="Furniture" unique_id=2103989395]
+position = Vector2(-71, -31.5)
+shape = SubResource("R_66x42")
+
+[node name="StoveSink" type="CollisionShape2D" parent="Furniture" unique_id=692890510]
+position = Vector2(16, -34)
+shape = SubResource("R_110x50")
+
+[node name="CounterRight" type="CollisionShape2D" parent="Furniture" unique_id=1100894954]
+position = Vector2(86, 0)
+shape = SubResource("R_30x82")
+
+[node name="Fridge" type="CollisionShape2D" parent="Furniture" unique_id=785129364]
+position = Vector2(88.5, 76)
+shape = SubResource("R_18x30")
+
+[node name="DiningTable" type="CollisionShape2D" parent="Furniture" unique_id=463214196]
+position = Vector2(-2.5, 10)
+shape = SubResource("R_55x90")
+
+[node name="Cabinet" type="CollisionShape2D" parent="Furniture" unique_id=620292644]
+position = Vector2(-88, 84)
+shape = SubResource("R_27x24")
+
+[node name="Table" type="CollisionShape2D" parent="Furniture" unique_id=1649477146]
+position = Vector2(-2.5, 23)
+shape = SubResource("RectangleShape2D_v2h47")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Furniture" unique_id=93886387]
+position = Vector2(-3, 41.5)
+shape = SubResource("RectangleShape2D_48lxs")
+
+[node name="Doors" type="Node2D" parent="." unique_id=371847003]
+
+[node name="ToSala" parent="Doors" unique_id=2067475658 instance=ExtResource("3_door")]
+position = Vector2(52, 94)
+TargetRoom = "res://Scenes/Home/Rooms/Sala.tscn"
+TargetSpawn = "FromKusina"
+Prompt = "Sala"
+Size = Vector2(36, 12)
+
+[node name="Spawns" type="Node2D" parent="." unique_id=1712344974]
+
+[node name="FromSala" type="Marker2D" parent="Spawns" unique_id=1835312923]
+position = Vector2(52, 70)

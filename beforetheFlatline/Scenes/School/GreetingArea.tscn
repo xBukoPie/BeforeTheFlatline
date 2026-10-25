@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://dn02dpayemils"]
+
+[ext_resource type="Script" uid="uid://b4bqs7gylf16w" path="res://Scripts/School/SchoolGreeting.cs" id="1_1thqs"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_amwkp"]
+size = Vector2(22, 52)
+
+[node name="GreetingArea" type="Node2D" unique_id=1236378542]
+script = ExtResource("1_1thqs")
+
+[node name="GreetingArea" type="Area2D" parent="." unique_id=303176068]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GreetingArea" unique_id=1554910772]
+shape = SubResource("RectangleShape2D_amwkp")
