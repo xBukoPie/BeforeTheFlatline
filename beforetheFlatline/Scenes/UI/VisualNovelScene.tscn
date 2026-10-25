@@ -1,0 +1,460 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/UI/VisualNovelScene.cs" id="1_vnscript"]
+[ext_resource type="Texture2D" uid="uid://bq3263mwocfps" path="res://Assets/Scenes/CLassroom.jpg" id="2_bg"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 32.0
+content_margin_top = 22.0
+content_margin_right = 32.0
+content_margin_bottom = 22.0
+bg_color = Color(0.7686, 0.5882, 0.3725, 0.97)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(0.8588, 0.6627, 0.4196, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0, 0, 0, 0.4)
+shadow_size = 8
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nametag"]
+content_margin_left = 20.0
+content_margin_top = 8.0
+content_margin_right = 20.0
+content_margin_bottom = 8.0
+bg_color = Color(0.7686, 0.5882, 0.3725, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.8588, 0.6627, 0.4196, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
+content_margin_left = 10.0
+content_margin_right = 10.0
+bg_color = Color(0.7686, 0.5882, 0.3725, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.8588, 0.6627, 0.4196, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0, 0, 0, 0.3)
+shadow_size = 4
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+content_margin_left = 10.0
+content_margin_right = 10.0
+bg_color = Color(0.8196, 0.6431, 0.4392, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.9529, 0.7882, 0.5373, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0, 0, 0, 0.3)
+shadow_size = 4
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_pressed"]
+content_margin_left = 10.0
+content_margin_right = 10.0
+bg_color = Color(0.6314, 0.4588, 0.2745, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.7608, 0.5686, 0.3294, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_focus"]
+draw_center = false
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.9608, 0.8157, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_placeholder"]
+bg_color = Color(0.08, 0.08, 0.1, 0.4)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 1, 1, 0.5)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="Theme" id="Theme_vn"]
+default_font_size = 22
+Button/colors/font_color = Color(0.17, 0.11, 0.06, 1)
+Button/colors/font_focus_color = Color(0.17, 0.11, 0.06, 1)
+Button/colors/font_hover_color = Color(0.1, 0.06, 0.02, 1)
+Button/colors/font_hover_pressed_color = Color(0.1, 0.06, 0.02, 1)
+Button/colors/font_pressed_color = Color(0.1, 0.06, 0.02, 1)
+Button/font_sizes/font_size = 20
+Button/styles/focus = SubResource("StyleBoxFlat_btn_focus")
+Button/styles/hover = SubResource("StyleBoxFlat_btn_hover")
+Button/styles/hover_pressed = SubResource("StyleBoxFlat_btn_pressed")
+Button/styles/normal = SubResource("StyleBoxFlat_btn")
+Button/styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+Label/colors/font_color = Color(0.17, 0.11, 0.06, 1)
+RichTextLabel/colors/default_color = Color(0.17, 0.11, 0.06, 1)
+RichTextLabel/font_sizes/bold_font_size = 24
+RichTextLabel/font_sizes/normal_font_size = 27
+
+[node name="VisualNovelScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_vn")
+script = ExtResource("1_vnscript")
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Dim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.35)
+
+[node name="Characters" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="LeftCharacter" type="Control" parent="Characters"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 110.0
+offset_top = -550.0
+offset_right = 450.0
+offset_bottom = -210.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="LeftPlaceholder" type="Panel" parent="Characters/LeftCharacter"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder")
+
+[node name="Label" type="Label" parent="Characters/LeftCharacter/LeftPlaceholder"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+text = "LEFT
+CHARACTER
+PLACEHOLDER"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LeftPortraitRect" type="TextureRect" parent="Characters/LeftCharacter"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RightCharacter" type="Control" parent="Characters"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -450.0
+offset_top = -550.0
+offset_right = -110.0
+offset_bottom = -210.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="RightPlaceholder" type="Panel" parent="Characters/RightCharacter"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder")
+
+[node name="Label" type="Label" parent="Characters/RightCharacter/RightPlaceholder"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+text = "RIGHT
+CHARACTER
+PLACEHOLDER"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RightPortraitRect" type="TextureRect" parent="Characters/RightCharacter"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ChoiceContainer" type="VBoxContainer" parent="UI"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -292.0
+offset_top = 50.0
+offset_right = 88.0
+offset_bottom = 270.0
+grow_horizontal = 2
+theme_override_constants/separation = 12
+
+[node name="Choice1" type="Button" parent="UI/ChoiceContainer"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Sure thing"
+
+[node name="Choice2" type="Button" parent="UI/ChoiceContainer"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "If I have to"
+
+[node name="NameTag" type="PanelContainer" parent="UI"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 0
+offset_left = 760.0
+offset_top = 420.0
+offset_right = 950.0
+offset_bottom = 470.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_nametag")
+
+[node name="NameLabel" type="Label" parent="UI/NameTag"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Erin"
+horizontal_alignment = 1
+
+[node name="DialoguePanel" type="PanelContainer" parent="UI"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_top = -257.0
+offset_right = -148.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="Content" type="Control" parent="UI/DialoguePanel"]
+layout_mode = 2
+
+[node name="DialogueText" type="RichTextLabel" parent="UI/DialoguePanel/Content"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+bbcode_enabled = true
+text = "Hey, could you maybe keep my ring in your wallet for now? I don't want it to fall off just because my sister has decided that this is the day I go crazy."
+scroll_active = false
+
+[node name="ContinueHint" type="Label" parent="UI/DialoguePanel/Content"]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.4)
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -26.0
+offset_right = 200.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 18
+text = "Press [Space] to interact"
+horizontal_alignment = 1
+
+[node name="SideButtons" type="VBoxContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -132.0
+offset_top = -257.0
+offset_right = -28.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 8
+
+[node name="AutoButton" type="Button" parent="UI/SideButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+focus_mode = 0
+toggle_mode = true
+text = "Auto"
+
+[node name="SkipButton" type="Button" parent="UI/SideButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+focus_mode = 0
+toggle_mode = true
+text = "Skip"
+
+[node name="LogButton" type="Button" parent="UI/SideButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+focus_mode = 0
+text = "Log"
+
+[node name="OptionsButton" type="Button" parent="UI/SideButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+focus_mode = 0
+text = "Menu"
+
+[node name="LogPanel" type="PanelContainer" parent="UI"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -380.0
+offset_top = -250.0
+offset_right = 380.0
+offset_bottom = 210.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="UI/LogPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="LogTitle" type="Label" parent="UI/LogPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Log"
+horizontal_alignment = 1
+
+[node name="LogText" type="RichTextLabel" parent="UI/LogPanel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_following = true
+
+[node name="CloseLogButton" type="Button" parent="UI/LogPanel/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Close"
