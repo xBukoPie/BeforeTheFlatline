@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://b2wmpq2d1fy4t"]
+
+[ext_resource type="Script" uid="uid://b4bqs7gylf16w" path="res://Scripts/School/SchoolGreeting.cs" id="1_schoolgreeting"]
+[ext_resource type="Texture2D" uid="uid://bq3263mwocfps" path="res://Assets/Scenes/CLassroom.jpg" id="1_ygrh4"]
+
+[node name="Classroom" type="Control" unique_id=750069522]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="TextureRect" parent="." unique_id=261812286]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 1472.0
+offset_bottom = 816.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.4651155, 0.46875015)
+texture = ExtResource("1_ygrh4")
+stretch_mode = 3
+
+[node name="SchoolGreeting" type="Node2D" parent="." unique_id=556327264]
+script = ExtResource("1_schoolgreeting")

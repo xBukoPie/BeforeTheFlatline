@@ -1,0 +1,322 @@
+[gd_scene format=3 uid="uid://sc2d4amskj1m"]
+
+[ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_room"]
+[ext_resource type="Texture2D" uid="uid://cpp73o4vxwx2i" path="res://Assets/Map/Home/House.jpg" id="2_tex"]
+[ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="3_door"]
+[ext_resource type="Texture2D" uid="uid://cr6w64gmcim83" path="res://Assets/Map/Home/Dark.jpg" id="3_o5kfv"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Rooms/Lamp.tscn" id="4_lamp"]
+
+[sub_resource type="RectangleShape2D" id="R_474x505"]
+size = Vector2(474, 486)
+
+[sub_resource type="RectangleShape2D" id="R_108x190"]
+size = Vector2(108, 190)
+
+[sub_resource type="RectangleShape2D" id="R_135x210"]
+size = Vector2(135, 193)
+
+[sub_resource type="RectangleShape2D" id="R_65x55"]
+size = Vector2(78, 50)
+
+[sub_resource type="RectangleShape2D" id="R_75x60"]
+size = Vector2(75, 60)
+
+[sub_resource type="RectangleShape2D" id="R_8x12"]
+size = Vector2(115, 54)
+
+[sub_resource type="RectangleShape2D" id="R_26x22"]
+size = Vector2(26, 22)
+
+[sub_resource type="RectangleShape2D" id="R_24x20"]
+size = Vector2(24, 20)
+
+[sub_resource type="RectangleShape2D" id="R_24x22"]
+size = Vector2(24, 22)
+
+[sub_resource type="RectangleShape2D" id="R_50x50"]
+size = Vector2(50, 50)
+
+[sub_resource type="RectangleShape2D" id="R_20x22"]
+size = Vector2(24.5, 22)
+
+[sub_resource type="RectangleShape2D" id="R_1004x22"]
+size = Vector2(1004, 22)
+
+[sub_resource type="RectangleShape2D" id="R_14x572"]
+size = Vector2(14, 572)
+
+[sub_resource type="RectangleShape2D" id="R_130x24"]
+size = Vector2(130, 24)
+
+[sub_resource type="RectangleShape2D" id="R_120x24"]
+size = Vector2(120, 24)
+
+[sub_resource type="RectangleShape2D" id="R_40x640"]
+size = Vector2(40, 640)
+
+[sub_resource type="RectangleShape2D" id="R_1100x40"]
+size = Vector2(1100, 40)
+
+[sub_resource type="OccluderPolygon2D" id="Occ_474x505"]
+polygon = PackedVector2Array(-237, -252.5, 237, -252.5, 237, 252.5, -237, 252.5)
+
+[node name="Lot" type="Node2D" unique_id=673836660]
+script = ExtResource("1_room")
+RoomName = "Lot (Bakuran)"
+Outdoor = true
+CameraZoom = 1.8
+
+[node name="Ground" type="Sprite2D" parent="." unique_id=2107324415]
+z_index = -10
+texture = ExtResource("2_tex")
+region_enabled = true
+region_rect = Rect2(0, 0, 1024, 572)
+
+[node name="Black" type="Sprite2D" parent="." unique_id=178592723]
+z_index = -10
+position = Vector2(102, -28.000004)
+scale = Vector2(-0.44365877, -0.76574427)
+texture = ExtResource("3_o5kfv")
+region_enabled = true
+region_rect = Rect2(0, 0, 1024, 572)
+
+[node name="blck" type="Sprite2D" parent="." unique_id=1622022059]
+z_index = -10
+position = Vector2(-108, 100)
+scale = Vector2(0.25517198, 0.29920924)
+texture = ExtResource("3_o5kfv")
+region_enabled = true
+region_rect = Rect2(0, 0, 1024, 572)
+
+[node name="blck2" type="Sprite2D" parent="." unique_id=1720652655]
+z_index = -10
+position = Vector2(344, -151)
+scale = Vector2(0.25517198, 0.32621467)
+texture = ExtResource("3_o5kfv")
+region_enabled = true
+region_rect = Rect2(0, 0, 1024, 572)
+
+[node name="Lights" type="Node2D" parent="." unique_id=475781828]
+
+[node name="YardLamp" parent="Lights" unique_id=986535633 instance=ExtResource("4_lamp")]
+position = Vector2(-352, 14)
+color = Color(1, 0.9, 0.7, 1)
+energy = 0.6
+texture_scale = 1.8
+
+[node name="SideLamp" parent="Lights" unique_id=981578828 instance=ExtResource("4_lamp")]
+position = Vector2(420, -12)
+color = Color(1, 0.85, 0.6, 1)
+energy = 0.6
+texture_scale = 1.2
+
+[node name="Structures" type="StaticBody2D" parent="." unique_id=646560474]
+collision_mask = 0
+
+[node name="HouseBlock" type="CollisionShape2D" parent="Structures" unique_id=266776451]
+position = Vector2(103, -8)
+shape = SubResource("R_474x505")
+
+[node name="BalconyBlock" type="CollisionShape2D" parent="Structures" unique_id=77002812]
+position = Vector2(-188, 105)
+shape = SubResource("R_108x190")
+
+[node name="DirtyKitchenBlock" type="CollisionShape2D" parent="Structures" unique_id=1439858025]
+position = Vector2(410.5, -151.5)
+shape = SubResource("R_135x210")
+
+[node name="Outdoor" type="StaticBody2D" parent="." unique_id=97928960]
+collision_mask = 0
+
+[node name="TricycleBrown" type="CollisionShape2D" parent="Outdoor" unique_id=1215146550]
+position = Vector2(-240, -90)
+shape = SubResource("R_65x55")
+
+[node name="TricycleBlue" type="CollisionShape2D" parent="Outdoor" unique_id=905881590]
+position = Vector2(-402, 129)
+shape = SubResource("R_75x60")
+
+[node name="ClotheslinePost1" type="CollisionShape2D" parent="Outdoor" unique_id=1841454907]
+position = Vector2(-305, -163)
+shape = SubResource("R_8x12")
+
+[node name="PalmTopLeft" type="CollisionShape2D" parent="Outdoor" unique_id=1589688507]
+position = Vector2(-432, -174)
+shape = SubResource("R_26x22")
+
+[node name="PalmTopMiddle" type="CollisionShape2D" parent="Outdoor" unique_id=1983453031]
+position = Vector2(-220, -194)
+shape = SubResource("R_24x20")
+
+[node name="PalmBottomRight" type="CollisionShape2D" parent="Outdoor" unique_id=1917088150]
+position = Vector2(440, 159)
+shape = SubResource("R_24x22")
+
+[node name="BananaBottomRight" type="CollisionShape2D" parent="Outdoor" unique_id=477954183]
+position = Vector2(443, 219)
+shape = SubResource("R_50x50")
+
+[node name="Pot01" type="CollisionShape2D" parent="Outdoor" unique_id=890635183]
+position = Vector2(-460, -108)
+shape = SubResource("R_20x22")
+
+[node name="Pot02" type="CollisionShape2D" parent="Outdoor" unique_id=541699739]
+position = Vector2(-460, -74)
+shape = SubResource("R_20x22")
+
+[node name="Pot03" type="CollisionShape2D" parent="Outdoor" unique_id=1670328072]
+position = Vector2(-460, -21)
+shape = SubResource("R_20x22")
+
+[node name="Pot04" type="CollisionShape2D" parent="Outdoor" unique_id=187883071]
+position = Vector2(-324, -234)
+shape = SubResource("R_20x22")
+
+[node name="Pot05" type="CollisionShape2D" parent="Outdoor" unique_id=1599550206]
+position = Vector2(-357, -224)
+shape = SubResource("R_20x22")
+
+[node name="Pot06" type="CollisionShape2D" parent="Outdoor" unique_id=541645718]
+position = Vector2(-290, -218)
+shape = SubResource("R_20x22")
+
+[node name="Pot07" type="CollisionShape2D" parent="Outdoor" unique_id=967966067]
+position = Vector2(-392, -166)
+shape = SubResource("R_20x22")
+
+[node name="Pot08" type="CollisionShape2D" parent="Outdoor" unique_id=1956103269]
+position = Vector2(-154, -214)
+shape = SubResource("R_20x22")
+
+[node name="Pot09" type="CollisionShape2D" parent="Outdoor" unique_id=1112108134]
+position = Vector2(-154, -171)
+shape = SubResource("R_20x22")
+
+[node name="Pot10" type="CollisionShape2D" parent="Outdoor" unique_id=705107155]
+position = Vector2(-154, -136)
+shape = SubResource("R_20x22")
+
+[node name="Pot11" type="CollisionShape2D" parent="Outdoor" unique_id=298950104]
+position = Vector2(-187, -168)
+shape = SubResource("R_20x22")
+
+[node name="Pot12" type="CollisionShape2D" parent="Outdoor" unique_id=1259809330]
+position = Vector2(-462, -151)
+shape = SubResource("R_20x22")
+
+[node name="Pot13" type="CollisionShape2D" parent="Outdoor" unique_id=1113212561]
+position = Vector2(442, 16)
+shape = SubResource("R_20x22")
+
+[node name="Pot14" type="CollisionShape2D" parent="Outdoor" unique_id=1469344420]
+position = Vector2(356, 32)
+shape = SubResource("R_20x22")
+
+[node name="Pot15" type="CollisionShape2D" parent="Outdoor" unique_id=1570215935]
+position = Vector2(356, -1)
+shape = SubResource("R_20x22")
+
+[node name="Pot16" type="CollisionShape2D" parent="Outdoor" unique_id=1037202988]
+position = Vector2(-266, 190)
+shape = SubResource("R_20x22")
+
+[node name="Pot17" type="CollisionShape2D" parent="Outdoor" unique_id=314194873]
+position = Vector2(-223, 227)
+shape = SubResource("R_20x22")
+
+[node name="Pot18" type="CollisionShape2D" parent="Outdoor" unique_id=1010648502]
+position = Vector2(-189, 228)
+shape = SubResource("R_20x22")
+
+[node name="Pot19" type="CollisionShape2D" parent="Outdoor" unique_id=279473746]
+position = Vector2(-154, 228)
+shape = SubResource("R_20x22")
+
+[node name="Pot20" type="CollisionShape2D" parent="Outdoor" unique_id=1625705485]
+position = Vector2(-265, 58)
+shape = SubResource("R_20x22")
+
+[node name="Pot21" type="CollisionShape2D" parent="Outdoor" unique_id=423433094]
+position = Vector2(-264, 21)
+shape = SubResource("R_20x22")
+
+[node name="mapBorder" type="StaticBody2D" parent="." unique_id=1140559536]
+collision_mask = 0
+
+[node name="FenceTop" type="CollisionShape2D" parent="mapBorder" unique_id=1286665269]
+position = Vector2(0, -266)
+shape = SubResource("R_1004x22")
+
+[node name="FenceLeft" type="CollisionShape2D" parent="mapBorder" unique_id=1210789289]
+position = Vector2(-495, 0)
+shape = SubResource("R_14x572")
+
+[node name="FenceRight" type="CollisionShape2D" parent="mapBorder" unique_id=562048734]
+position = Vector2(493, 0)
+shape = SubResource("R_14x572")
+
+[node name="FenceBottomLeft" type="CollisionShape2D" parent="mapBorder" unique_id=2107266100]
+position = Vector2(-437, 274)
+shape = SubResource("R_130x24")
+
+[node name="FenceBottomRight" type="CollisionShape2D" parent="mapBorder" unique_id=1148698799]
+position = Vector2(438, 274)
+shape = SubResource("R_120x24")
+
+[node name="LeftBoundary" type="CollisionShape2D" parent="mapBorder" unique_id=189399838]
+position = Vector2(-540, 0)
+shape = SubResource("R_40x640")
+
+[node name="RightBoundary" type="CollisionShape2D" parent="mapBorder" unique_id=1178556294]
+position = Vector2(540, 0)
+shape = SubResource("R_40x640")
+
+[node name="TopBoundary" type="CollisionShape2D" parent="mapBorder" unique_id=1023955400]
+position = Vector2(0, -306)
+shape = SubResource("R_1100x40")
+
+[node name="BottomBoundary" type="CollisionShape2D" parent="mapBorder" unique_id=504201342]
+position = Vector2(0, 306)
+shape = SubResource("R_1100x40")
+
+[node name="Occluders" type="Node2D" parent="." unique_id=1245962316]
+
+[node name="HouseBlock" type="LightOccluder2D" parent="Occluders" unique_id=731293615]
+texture_repeat = 2
+position = Vector2(108, -24)
+scale = Vector2(0.9356819, 0.82945627)
+occluder = SubResource("Occ_474x505")
+
+[node name="Doors" type="Node2D" parent="." unique_id=1363926895]
+
+[node name="ToBalkonaheStairs" parent="Doors" unique_id=1353559193 instance=ExtResource("3_door")]
+position = Vector2(-260, 124)
+TargetRoom = "uid://dw0mhmyhw35j4"
+TargetSpawn = "FromLot"
+Prompt = "Balkonahe"
+Size = Vector2(30, 62)
+
+[node name="ToSchool" parent="Doors" unique_id=1210053727 instance=ExtResource("3_door")]
+position = Vector2(-488, 118)
+TargetRoom = "uid://cm1hdkm5fbv14"
+TargetSpawn = "FromHome"
+Prompt = "School"
+Size = Vector2(30, 62)
+
+[node name="ToDirtyKitchen" parent="Doors" unique_id=2059623979 instance=ExtResource("3_door")]
+position = Vector2(398, -37)
+TargetRoom = "uid://bx0xki6ftwah0"
+TargetSpawn = "FromLot"
+Prompt = "Dirty Kitchen"
+Size = Vector2(70, 12)
+
+[node name="Spawns" type="Node2D" parent="." unique_id=1908490760]
+
+[node name="FromBalkonahe" type="Marker2D" parent="Spawns" unique_id=2020165901]
+position = Vector2(-285, 124)
+
+[node name="FromSchool" type="Marker2D" parent="Spawns" unique_id=819253291]
+position = Vector2(-460, 120)
+
+[node name="FromDirtyKitchen" type="Marker2D" parent="Spawns" unique_id=1457216323]
+position = Vector2(408, -10)

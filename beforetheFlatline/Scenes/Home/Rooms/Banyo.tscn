@@ -1,0 +1,111 @@
+[gd_scene format=3 uid="uid://c00eqbn1gw22p"]
+
+[ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_room"]
+[ext_resource type="Texture2D" uid="uid://cpp73o4vxwx2i" path="res://Assets/Map/Home/House.jpg" id="2_tex"]
+[ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="3_door"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Rooms/Lamp.tscn" id="4_lamp"]
+
+[sub_resource type="OccluderPolygon2D" id="Occ_33x43"]
+polygon = PackedVector2Array(-16.5, -21.5, 16.5, -21.5, 16.5, 21.5, -16.5, 21.5)
+
+[sub_resource type="RectangleShape2D" id="R_172x20"]
+size = Vector2(172, 20)
+
+[sub_resource type="RectangleShape2D" id="R_20x144"]
+size = Vector2(20, 144)
+
+[sub_resource type="RectangleShape2D" id="R_124x20"]
+size = Vector2(124, 20)
+
+[sub_resource type="RectangleShape2D" id="R_8x72"]
+size = Vector2(8, 72)
+
+[sub_resource type="RectangleShape2D" id="R_24x42"]
+size = Vector2(28, 20)
+
+[sub_resource type="RectangleShape2D" id="R_33x43"]
+size = Vector2(33, 43)
+
+[sub_resource type="RectangleShape2D" id="R_20x22"]
+size = Vector2(20, 22)
+
+[node name="Banyo" type="Node2D" unique_id=1599194085]
+script = ExtResource("1_room")
+RoomName = "Banyo (CR)"
+CameraZoom = 4.5
+
+[node name="Ground" type="Sprite2D" parent="." unique_id=756475942]
+z_index = -10
+texture = ExtResource("2_tex")
+region_enabled = true
+region_rect = Rect2(690, 262, 132, 104)
+
+[node name="Lights" type="Node2D" parent="." unique_id=2106413911]
+
+[node name="BathroomLight" parent="Lights" unique_id=222352958 instance=ExtResource("4_lamp")]
+position = Vector2(10, 0)
+color = Color(0.85, 0.95, 1, 1)
+energy = 0.8
+texture_scale = 0.8
+
+[node name="Occluders" type="Node2D" parent="." unique_id=1251217297]
+
+[node name="WaterDrum" type="LightOccluder2D" parent="Occluders" unique_id=726737361]
+position = Vector2(45, -10)
+occluder = SubResource("Occ_33x43")
+
+[node name="Walls" type="StaticBody2D" parent="." unique_id=1854550505]
+collision_mask = 0
+
+[node name="TopWall" type="CollisionShape2D" parent="Walls" unique_id=1409883005]
+position = Vector2(0, -41)
+shape = SubResource("R_172x20")
+
+[node name="LeftWall" type="CollisionShape2D" parent="Walls" unique_id=790923487]
+position = Vector2(-48, 1)
+shape = SubResource("R_20x144")
+
+[node name="RightWall" type="CollisionShape2D" parent="Walls" unique_id=789466223]
+position = Vector2(76, 0)
+shape = SubResource("R_20x144")
+
+[node name="BottomWall" type="CollisionShape2D" parent="Walls" unique_id=190769798]
+position = Vector2(24, 62)
+shape = SubResource("R_124x20")
+
+[node name="Furniture" type="StaticBody2D" parent="." unique_id=1496621956]
+collision_mask = 0
+
+[node name="BanyoWestWall" type="CollisionShape2D" parent="Furniture" unique_id=1951131840]
+position = Vector2(-36, -16)
+shape = SubResource("R_8x72")
+
+[node name="Toilet" type="CollisionShape2D" parent="Furniture" unique_id=535198518]
+position = Vector2(10, -21)
+shape = SubResource("R_24x42")
+
+[node name="Tabo" type="CollisionShape2D" parent="Furniture" unique_id=634188562]
+position = Vector2(44, 37)
+shape = SubResource("R_24x42")
+
+[node name="WaterDrum" type="CollisionShape2D" parent="Furniture" unique_id=245350408]
+position = Vector2(45, -10)
+shape = SubResource("R_33x43")
+
+[node name="WoodenBucket" type="CollisionShape2D" parent="Furniture" unique_id=1062387514]
+position = Vector2(-53, 2)
+shape = SubResource("R_20x22")
+
+[node name="Doors" type="Node2D" parent="." unique_id=1006387518]
+
+[node name="ToSala" parent="Doors" unique_id=801669445 instance=ExtResource("3_door")]
+position = Vector2(-23, 36)
+TargetRoom = "uid://dvvdqlpje83r0"
+TargetSpawn = "FromBanyo"
+Prompt = "Sala"
+Size = Vector2(28, 12)
+
+[node name="Spawns" type="Node2D" parent="." unique_id=109698405]
+
+[node name="FromSala" type="Marker2D" parent="Spawns" unique_id=1102008056]
+position = Vector2(-23, 36)

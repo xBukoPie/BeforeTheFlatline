@@ -1,0 +1,79 @@
+[gd_scene format=3 uid="uid://bgwjsbe57as2f"]
+
+[ext_resource type="PackedScene" uid="uid://pe0tdibgwd1l" path="res://Scenes/Models/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://nvjm3wprgbbm" path="res://Scripts/GameController/RoomManager.cs" id="2_manager"]
+[ext_resource type="Script" uid="uid://cwar2ouikcogv" path="res://Scripts/GameController/GameController.cs" id="8_gc"]
+
+[node name="World" type="Node2D" unique_id=101925864 groups=["room_manager"]]
+script = ExtResource("2_manager")
+
+[node name="World#GameController" type="CanvasModulate" parent="." unique_id=500000001]
+script = ExtResource("8_gc")
+
+[node name="Background" type="CanvasLayer" parent="." unique_id=2122456619]
+layer = -100
+
+[node name="Black" type="ColorRect" parent="Background" unique_id=504845493]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="RoomHolder" type="Node2D" parent="." unique_id=1396424029]
+
+[node name="AmbientLight" type="CanvasModulate" parent="." unique_id=147295779]
+visible = false
+color = Color(0.36, 0.4, 0.62, 1)
+
+[node name="Sunlight" type="DirectionalLight2D" parent="." unique_id=1834039175]
+rotation = 0.6
+color = Color(1, 0.95, 0.8, 1)
+energy = 0.0
+shadow_enabled = true
+shadow_filter = 1
+height = 0.3
+max_distance = 2000.0
+
+[node name="Player" parent="." unique_id=1247260473 instance=ExtResource("1_player")]
+collision_layer = 2
+collision_mask = 1
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=2083871339]
+layer = 10
+
+[node name="Fade" type="ColorRect" parent="UI" unique_id=2007726982]
+modulate = Color(1, 1, 1, 0)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1269039120]
+layer = 10
+
+[node name="Prompt" type="Label" parent="HUD" unique_id=1607028547]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -60.0
+offset_right = 200.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+horizontal_alignment = 1
+
+[node name="Clock" type="Label" parent="HUD" unique_id=1876894038]
+offset_left = 12.0
+offset_top = 8.0
+offset_right = 200.0
+offset_bottom = 34.0
+text = "08:00"
