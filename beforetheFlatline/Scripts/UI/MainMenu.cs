@@ -13,10 +13,6 @@ public partial class MainMenu : Control
         // Keep the in-game clock paused while the player is on the main menu.
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
-        // Ensure buttons are connected (they are via scene file, but safety check)
-        var playBtn = GetNode<Button>("playButton");
-        var settingsBtn = GetNode<Button>("settingsButton");
-        var supportBtn = GetNode<Button>("supportButton");
         var algorithmLabBtn = GetNodeOrNull<Button>("algorithmLabButton");
         _fade = GetNode<ColorRect>("UI/Fade");
 
