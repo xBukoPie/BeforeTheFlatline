@@ -143,11 +143,22 @@ public static class GeneratedChallengeFactory
         }
 
         int attempts = rng.Next(3, 6);
+        if (level == 4)
+        {
+            return Code(
+                "Validate an input with limited retries",
+                $"Write pseudocode that repeatedly asks for a mark until it is between 0 and 100 or {attempts} attempts have been used. Display VALID when the mark is in range; otherwise display STOP.",
+                "Validation loops and conditions",
+                new[] { "START", "attempts = 0", "INPUT mark", $"WHILE (mark < 0 OR mark > 100) AND attempts < {attempts}", "attempts = attempts + 1", "INPUT mark", "END WHILE", "IF mark >= 0 AND mark <= 100 THEN", "OUTPUT VALID", "ELSE", "OUTPUT STOP", "END IF", "END" });
+        }
+
+        int attendance = rng.Next(70, 91);
+        int passingMark = rng.Next(50, 66);
         return Code(
-            "Validate an input with limited retries",
-            $"Write pseudocode that repeatedly asks for a mark until it is between 0 and 100 or {attempts} attempts have been used. Display VALID when the mark is in range; otherwise display STOP.",
-            "Validation loops and conditions",
-            new[] { "START", "attempts = 0", "INPUT mark", $"WHILE (mark < 0 OR mark > 100) AND attempts < {attempts}", "attempts = attempts + 1", "INPUT mark", "END WHILE", "IF mark >= 0 AND mark <= 100 THEN", "OUTPUT VALID", "ELSE", "OUTPUT STOP", "END IF", "END" });
+            "Validate, then check eligibility",
+            $"Write pseudocode that allows up to {attempts} mark-entry attempts, rejecting values outside 0–100. If a valid mark is entered, read attendance and display ELIGIBLE only when mark is at least {passingMark} AND attendance is at least {attendance}%. If attempts run out, display STOP.",
+            "Bounded loop, validation, and nested conditions",
+            new[] { "START", "attempts = 0", "INPUT mark", $"WHILE (mark < 0 OR mark > 100) AND attempts < {attempts}", "attempts = attempts + 1", "INPUT mark", "END WHILE", "IF mark >= 0 AND mark <= 100 THEN", "INPUT attendance", $"IF mark >= {passingMark} AND attendance >= {attendance} THEN", "OUTPUT ELIGIBLE", "ELSE", "OUTPUT NOT ELIGIBLE", "END IF", "ELSE", "OUTPUT STOP", "END IF", "END" });
     }
 
     private static GeneratedChallenge GenerateFinal(int level, Random rng)
