@@ -236,7 +236,7 @@ public partial class StatusEffectsOverlay : CanvasLayer
         float lowSanity = Mathf.Clamp((70f - _sanity) / 70f, 0f, 1f);
         float debuff = Mathf.Clamp(_dominantLevel / 100f, 0f, 1f);
         float pulse = (Mathf.Sin(_elapsed * 2.3f) + 1f) * 0.5f;
-        float baseAlpha = lowSanity * 0.13f + debuff * 0.075f;
+        float baseAlpha = lowSanity * 0.13f + (_dominantLevel > 0 ? 0.025f + debuff * 0.10f : 0f);
 
         Color tint = DebuffColor(_dominantDebuff);
         if (_flashTime > 0f)
