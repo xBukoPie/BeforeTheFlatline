@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SchoolYardGame;
 
 /// <summary>
 /// Reusable challenge UI. Each .tscn sets ChallengeId to choose its exercise.
@@ -12,7 +13,9 @@ public partial class ChallengeScene : Control
     [Export] public string ChallengeId { get; set; } = "sequence";
 
     private readonly List<string> _items = new();
+    private readonly List<string> _initialItems = new();
     private readonly List<string> _flowchart = new();
+    private string[] _flowchartPalette = FlowchartBlocks;
     private VBoxContainer _itemList;
     private VBoxContainer _main;
     private Label _feedback;
@@ -121,52 +124,155 @@ public partial class ChallengeScene : Control
     {
         var title = _main.GetNode<Label>("ChallengeTitle");
         var prompt = _main.GetNode<Label>("ChallengePrompt");
+        int currentDay = DayClock.Instance?.DayNumber ?? 1;
+        int difficulty = Mathf.Clamp(currentDay, 1, 5);
         bool alreadyDone = ChallengeProgress.IsCompleted(ChallengeId);
 
         switch (ChallengeId.ToLowerInvariant())
         {
             case "sequence":
-                title.Text = "01 — Put the morning routine in order";
+            {
+                var challenge = BuildSequenceChallenge(difficulty);
+                title.Text = "01 — Put the routine in order";
                 prompt.Text = "Rearrange the pseudocode statements so the routine executes from beginning to end. Use the arrow buttons to move each line.";
-                _items.AddRange(SequenceItems);
-                _expected = string.Join("|", SequenceAnswer);
+                SetPseudocodeChallenge(challenge.Initial, challenge.Answer);
                 _nextScene = "res://Scenes/Challenges/ConditionChallenge.tscn";
-                RenderReorderableItems();
-                _progress.Text = "Concept: sequence" + (alreadyDone ? "   ✓ completed" : "");
+                _progress.Text = $"Day {currentDay} • Difficulty {difficulty}/5 • Sequence" + (alreadyDone ? "   ✓ completed today" : "");
                 break;
+            }
             case "condition":
-                title.Text = "02 — Repair the door logic";
-                prompt.Text = "Arrange the IF / ELSE pseudocode. If a key is found, open the door; otherwise, find the key.";
-                _items.AddRange(ConditionItems);
-                _expected = string.Join("|", ConditionAnswer);
+            {
+                var challenge = BuildConditionChallenge(difficulty);
+                title.Text = "02 — Repair the program logic";
+                prompt.Text = difficulty == 1
+                    ? "Arrange the IF / ELSE pseudocode. If a key is found, open the door; otherwise, find the key."
+                    : "Arrange the statements into a valid algorithm. Pay attention to loop boundaries, counters, and nested conditions.";
+                SetPseudocodeChallenge(challenge.Initial, challenge.Answer);
                 _nextScene = "res://Scenes/Challenges/FlowchartChallenge.tscn";
-                RenderReorderableItems();
-                _progress.Text = "Concept: selection (IF / ELSE)" + (alreadyDone ? "   ✓ completed" : "");
+                _progress.Text = $"Day {currentDay} • Difficulty {difficulty}/5 • Conditions and loops" + (alreadyDone ? "   ✓ completed today" : "");
                 break;
+            }
             case "flowchart":
-                title.Text = "03 — Build the grading flowchart";
-                prompt.Text = "Drag each block from the palette into the canvas in execution order: start, input score, decision, output, end.";
+            {
+                var challenge = BuildFlowchartChallenge(difficulty);
+                title.Text = "03 — Build the flowchart";
+                prompt.Text = "Drag every block from the palette into the canvas in the correct execution order. Later days introduce more branches and validation steps.";
+                _flowchartPalette = challenge.Palette;
+                _expected = string.Join("|", challenge.Answer);
                 RenderFlowchartEditor();
-                _expected = string.Join("|", FlowchartAnswer);
                 _nextScene = "res://Scenes/Challenges/FinalChallenge.tscn";
-                _progress.Text = "Concept: flowchart structure" + (alreadyDone ? "   ✓ completed" : "");
+                _progress.Text = $"Day {currentDay} • Difficulty {difficulty}/5 • Flowchart" + (alreadyDone ? "   ✓ completed today" : "");
                 break;
+            }
             default:
+            {
+                var challenge = BuildFinalChallenge(difficulty);
                 title.Text = "04 — Final algorithm";
-                prompt.Text = "Arrange these statements into a valid algorithm: read a score, test whether it is at least 50, then report Pass or Fail.";
-                _items.AddRange(new[] { "Output Fail", "Read score", "IF score >= 50", "Output Pass", "ELSE", "END IF" });
-                _expected = "Read score|IF score >= 50|Output Pass|ELSE|Output Fail|END IF";
-                _nextScene = "";
-                RenderReorderableItems();
-                _progress.Text = "Final challenge" + (alreadyDone ? "   ✓ completed" : "");
+                prompt.Text = "Arrange the pseudocode so the complete algorithm executes correctly. The task grows more complex as the in-game day advances.";
+                SetPseudocodeChallenge(challenge.Initial, challenge.Answer);
+                _nextScene = "res://Scenes/School/PostChallengeConversation.tscn";
+                _progress.Text = $"Day {currentDay} • Difficulty {difficulty}/5 • Final algorithm" + (alreadyDone ? "   ✓ completed today" : "");
                 break;
+            }
         }
 
         if (alreadyDone)
         {
-            _feedback.Text = "You already solved this one — replay it any time. Solving it again still restores sanity.";
+            _feedback.Text = "You already solved this challenge today. You can replay it, but the sanity reward is only given once per day.";
             _feedback.AddThemeColorOverride("font_color", new Color("86efac"));
         }
+    }
+
+    private void SetPseudocodeChallenge(string[] initial, string[] answer)
+    {
+        _initialItems.Clear();
+        _initialItems.AddRange(initial);
+        _items.Clear();
+        _items.AddRange(_initialItems);
+        _expected = string.Join("|", answer);
+        RenderReorderableItems();
+    }
+
+    private static (string[] Initial, string[] Answer) BuildSequenceChallenge(int level)
+    {
+        return level switch
+        {
+            1 => (SequenceItems, SequenceAnswer),
+            2 => (
+                new[] { "Pack school bag", "Wake up", "Check timetable", "Eat breakfast", "Leave for school", "Get dressed", "Check homework" },
+                new[] { "Wake up", "Get dressed", "Eat breakfast", "Check homework", "Check timetable", "Pack school bag", "Leave for school" }),
+            3 => (
+                new[] { "Check timetable", "Leave for school", "Brush teeth", "Eat breakfast", "Wake up", "Pack school bag", "Check homework", "Get dressed" },
+                new[] { "Wake up", "Get dressed", "Brush teeth", "Eat breakfast", "Check homework", "Check timetable", "Pack school bag", "Leave for school" }),
+            4 => (
+                new[] { "Fill water bottle", "Check timetable", "Wake up", "Leave for school", "Eat breakfast", "Pack school bag", "Brush teeth", "Check homework", "Get dressed" },
+                new[] { "Wake up", "Get dressed", "Brush teeth", "Eat breakfast", "Check homework", "Check timetable", "Fill water bottle", "Pack school bag", "Leave for school" }),
+            _ => (
+                new[] { "Pack school bag", "Check weather", "Fill water bottle", "Eat breakfast", "Leave for school", "Check timetable", "Wake up", "Brush teeth", "Check homework", "Get dressed" },
+                new[] { "Wake up", "Check weather", "Get dressed", "Brush teeth", "Eat breakfast", "Check homework", "Check timetable", "Fill water bottle", "Pack school bag", "Leave for school" })
+        };
+    }
+
+    private static (string[] Initial, string[] Answer) BuildConditionChallenge(int level)
+    {
+        return level switch
+        {
+            1 => (ConditionItems, ConditionAnswer),
+            2 => (
+                new[] { "END IF", "Find the key", "ELSE", "attempts = attempts + 1", "Open the door", "WHILE keyFound == false", "Ask for help", "attempts = 0", "IF keyFound == true", "END WHILE" },
+                new[] { "attempts = 0", "WHILE keyFound == false", "Find the key", "attempts = attempts + 1", "END WHILE", "IF keyFound == true", "Open the door", "ELSE", "Ask for help", "END IF" }),
+            3 => (
+                new[] { "END WHILE", "Search the room", "IF keyFound == true", "MAX_ATTEMPTS = 3", "Ask for help", "attempts = attempts + 1", "END IF", "Open the door", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "attempts = 0", "ELSE" },
+                new[] { "attempts = 0", "MAX_ATTEMPTS = 3", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "Search the room", "attempts = attempts + 1", "END WHILE", "IF keyFound == true", "Open the door", "ELSE", "Ask for help", "END IF" }),
+            4 => (
+                new[] { "Show student ID", "END IF", "attempts = 0", "ELSE", "Open the door", "Search the room", "IF studentID == true", "MAX_ATTEMPTS = 3", "Ask for help", "END WHILE", "IF keyFound == true", "attempts = attempts + 1", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "END IF", "ELSE" },
+                new[] { "attempts = 0", "MAX_ATTEMPTS = 3", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "Search the room", "attempts = attempts + 1", "END WHILE", "IF keyFound == true", "IF studentID == true", "Open the door", "ELSE", "Show student ID", "END IF", "ELSE", "Ask for help", "END IF" }),
+            _ => (
+                new[] { "END IF", "Wait until morning", "Show student ID", "MAX_ATTEMPTS = 3", "ELSE", "attempts = attempts + 1", "Open the door", "IF schoolOpen == false", "Search the room", "END WHILE", "IF studentID == true", "Ask for help", "END IF", "attempts = 0", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "IF keyFound == true", "ELSE" },
+                new[] { "attempts = 0", "MAX_ATTEMPTS = 3", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "Search the room", "attempts = attempts + 1", "END WHILE", "IF keyFound == true", "IF studentID == true", "Open the door", "ELSE", "Show student ID", "END IF", "ELSE", "Ask for help", "END IF", "IF schoolOpen == false", "Wait until morning", "END IF" })
+        };
+    }
+
+    private static (string[] Palette, string[] Answer) BuildFlowchartChallenge(int level)
+    {
+        return level switch
+        {
+            1 => (FlowchartBlocks, FlowchartAnswer),
+            2 => (
+                new[] { "Start", "Output: Fail", "Input score", "End", "Decision: score >= 50?", "Output: Pass" },
+                new[] { "Start", "Input score", "Decision: score >= 50?", "Output: Pass", "Output: Fail", "End" }),
+            3 => (
+                new[] { "Output: Fail", "Decision: score >= 50?", "Start", "Output: Excellent", "Input score", "End", "Decision: score >= 75?", "Output: Pass" },
+                new[] { "Start", "Input score", "Decision: score >= 75?", "Output: Excellent", "Decision: score >= 50?", "Output: Pass", "Output: Fail", "End" }),
+            4 => (
+                new[] { "Output: Not eligible", "Decision: score >= 50?", "Input attendance", "Start", "Output: Pass", "Decision: attendance >= 75%?", "End", "Input score", "Output: Excellent", "Decision: score >= 75?", "Output: Fail", "Output: Eligible" },
+                new[] { "Start", "Input score", "Input attendance", "Decision: score >= 75?", "Output: Excellent", "Decision: score >= 50?", "Output: Pass", "Output: Fail", "Decision: attendance >= 75%?", "Output: Eligible", "Output: Not eligible", "End" }),
+            _ => (
+                new[] { "Output: Fail", "Decision: attempts < 3?", "Set attempts = attempts + 1", "Input score", "End", "Output: Invalid score", "Start", "Decision: score valid?", "Decision: score >= 75?", "Output: Excellent", "Set attempts = 0", "Output: Pass", "Output: Retry", "Output: Fail", "Output: Invalid score" },
+                new[] { "Start", "Set attempts = 0", "Input score", "Decision: score valid?", "Output: Invalid score", "Set attempts = attempts + 1", "Decision: attempts < 3?", "Output: Retry", "Input score", "Decision: score >= 75?", "Output: Excellent", "Decision: score >= 50?", "Output: Pass", "Output: Fail", "End" })
+        };
+    }
+
+    private static (string[] Initial, string[] Answer) BuildFinalChallenge(int level)
+    {
+        return level switch
+        {
+            1 => (
+                new[] { "Output Fail", "Read score", "IF score >= 50", "Output Pass", "ELSE", "END IF" },
+                new[] { "Read score", "IF score >= 50", "Output Pass", "ELSE", "Output Fail", "END IF" }),
+            2 => (
+                new[] { "END WHILE", "Output Fail", "attempts = 0", "IF score >= 50", "Read score", "ELSE", "attempts = attempts + 1", "Output Pass", "WHILE attempts < 2", "END IF" },
+                new[] { "attempts = 0", "WHILE attempts < 2", "Read score", "IF score >= 50", "Output Pass", "ELSE", "Output Fail", "END IF", "attempts = attempts + 1", "END WHILE" }),
+            3 => (
+                new[] { "Output Fail", "Read score", "END IF", "Output Invalid score", "IF score >= 50", "END WHILE", "Read score", "Output Pass", "ELSE", "IF score >= 75", "END IF", "WHILE score < 0 OR score > 100", "Output Excellent", "ELSE", "END IF" },
+                new[] { "Read score", "WHILE score < 0 OR score > 100", "Output Invalid score", "Read score", "END WHILE", "IF score >= 75", "Output Excellent", "ELSE", "IF score >= 50", "Output Pass", "ELSE", "Output Fail", "END IF", "END IF" }),
+            4 => (
+                new[] { "Output Fail", "Read score", "END WHILE", "Output Too many invalid attempts", "IF attempts < 3", "Output Pass", "attempts = 0", "ELSE", "Read score", "END IF", "WHILE (score < 0 OR score > 100) AND attempts < 3", "Output Invalid score", "END IF", "attempts = attempts + 1", "IF score >= 75", "Output Excellent", "IF score >= 50", "ELSE", "END IF" },
+                new[] { "Read score", "attempts = 0", "WHILE (score < 0 OR score > 100) AND attempts < 3", "Output Invalid score", "attempts = attempts + 1", "IF attempts < 3", "Read score", "ELSE", "Output Too many invalid attempts", "END IF", "END WHILE", "IF score >= 75", "Output Excellent", "ELSE", "IF score >= 50", "Output Pass", "ELSE", "Output Fail", "END IF", "END IF" }),
+            _ => (
+                new[] { "average = total / 3", "END IF", "Read scores", "Output Fail", "count = count + 1", "IF average >= 75", "Output Excellent", "total = total + scores[count]", "END WHILE", "IF average >= 50", "total = 0", "count = 0", "Output Pass", "ELSE", "WHILE count < 3", "END IF", "ELSE" },
+                new[] { "Read scores", "total = 0", "count = 0", "WHILE count < 3", "total = total + scores[count]", "count = count + 1", "END WHILE", "average = total / 3", "IF average >= 75", "Output Excellent", "ELSE", "IF average >= 50", "Output Pass", "ELSE", "Output Fail", "END IF", "END IF" })
+        };
     }
 
     private void RenderReorderableItems()
@@ -213,7 +319,7 @@ public partial class ChallengeScene : Control
         _itemList.AddChild(paletteTitle);
         var palette = new HFlowContainer();
         _itemList.AddChild(palette);
-        foreach (string block in FlowchartBlocks)
+        foreach (string block in _flowchartPalette)
         {
             var source = new ChallengeDragBlockButton { Text = block, BlockName = block, CustomMinimumSize = new Vector2(150, 48) };
             palette.AddChild(source);
@@ -294,12 +400,7 @@ public partial class ChallengeScene : Control
         else
         {
             _items.Clear();
-            if (ChallengeId.ToLowerInvariant() == "sequence")
-                _items.AddRange(SequenceItems);
-            else if (ChallengeId.ToLowerInvariant() == "condition")
-                _items.AddRange(ConditionItems);
-            else
-                _items.AddRange(new[] { "Output Fail", "Read score", "IF score >= 50", "Output Pass", "ELSE", "END IF" });
+            _items.AddRange(_initialItems);
             RenderReorderableItems();
         }
     }
