@@ -166,20 +166,45 @@ public static class GeneratedChallengeFactory
         if (level <= 2)
         {
             int threshold = rng.Next(50, 71);
+            int maxAttempts = rng.Next(3, 5);
             return Code(
                 "Write a grading algorithm",
-                $"Write complete pseudocode that reads a mark, validates that it is between 0 and 100, and then outputs PASS if it is at least {threshold} or FAIL otherwise. Invalid marks must be rejected.",
+                $"Write complete pseudocode that reads a mark, validates that it is between 0 and 100 with at most {maxAttempts} attempts, then outputs PASS if the valid mark is at least {threshold} or FAIL otherwise. Invalid marks must be rejected.",
                 "Input validation and selection",
-                new[] { "START", "INPUT mark", "WHILE mark < 0 OR mark > 100", "OUTPUT INVALID MARK", "INPUT mark", "END WHILE", $"IF mark >= {threshold} THEN", "OUTPUT PASS", "ELSE", "OUTPUT FAIL", "END IF", "END" });
+                new[] { "START", "attempts = 0", "INPUT mark", $"WHILE (mark < 0 OR mark > 100) AND attempts < {maxAttempts}", "attempts = attempts + 1", "OUTPUT INVALID MARK", "INPUT mark", "END WHILE", "IF mark >= 0 AND mark <= 100 THEN", $"IF mark >= {threshold} THEN", "OUTPUT PASS", "ELSE", "OUTPUT FAIL", "END IF", "ELSE", "OUTPUT STOP", "END IF", "END" });
+        }
+
+        if (level == 3)
+        {
+            int itemCount = rng.Next(3, 6);
+            int threshold = rng.Next(60, 81);
+            return Code(
+                "Process a set of measurements",
+                $"Write pseudocode to read {itemCount} measurements, accumulate their total in a loop, calculate the average, then output PASS if the average is at least {threshold} or REVIEW otherwise.",
+                "Loops, accumulators, and selection",
+                new[] { "START", "total = 0", "count = 0", $"WHILE count < {itemCount}", "INPUT measurement", "total = total + measurement", "count = count + 1", "END WHILE", $"average = total / {itemCount}", $"IF average >= {threshold} THEN", "OUTPUT PASS", "ELSE", "OUTPUT REVIEW", "END IF", "END" });
+        }
+
+        if (level == 4)
+        {
+            int maxAttempts = rng.Next(3, 6);
+            int threshold = rng.Next(60, 76);
+            int bonus = rng.Next(3, 11);
+            return Code(
+                "Validate and classify a score",
+                $"Write pseudocode that lets the user enter a score between 0 and 100 with at most {maxAttempts} retries. For a valid score, add a bonus of {bonus}; display EXCELLENT if the adjusted score is at least {threshold}, PASS if it is at least 50, and FAIL otherwise. If retries run out, display STOP.",
+                "Bounded retries and nested selection",
+                new[] { "START", "attempts = 0", "INPUT score", $"WHILE (score < 0 OR score > 100) AND attempts < {maxAttempts}", "attempts = attempts + 1", "INPUT score", "END WHILE", "IF score >= 0 AND score <= 100 THEN", $"adjustedScore = score + {bonus}", $"IF adjustedScore >= {threshold} THEN", "OUTPUT EXCELLENT", "ELSE", "IF adjustedScore >= 50 THEN", "OUTPUT PASS", "ELSE", "OUTPUT FAIL", "END IF", "END IF", "ELSE", "OUTPUT STOP", "END IF", "END" });
         }
 
         int itemCount = rng.Next(3, 6);
-        int thresholdBonus = rng.Next(5, 16);
+        int minimumAttendance = rng.Next(75, 91);
+        int passingAverage = rng.Next(60, 76);
         return Code(
-            "Process a set of measurements",
-            $"Write pseudocode to read {itemCount} measurements, accumulate the total in a loop, calculate the average, add a bonus of {thresholdBonus}, then output the adjusted average and whether it reaches 75.",
-            "Loops, accumulators, and nested selection",
-            new[] { "START", "total = 0", "count = 0", $"WHILE count < {itemCount}", "INPUT measurement", "total = total + measurement", "count = count + 1", "END WHILE", $"average = total / {itemCount}", $"adjustedAverage = average + {thresholdBonus}", "OUTPUT adjustedAverage", "IF adjustedAverage >= 75 THEN", "OUTPUT PASS", "ELSE", "OUTPUT REVIEW", "END IF", "END" });
+            "Compute and verify final eligibility",
+            $"Write pseudocode to read {itemCount} scores in a loop, calculate the average, then read attendance. Display ELIGIBLE only if the average is at least {passingAverage} AND attendance is at least {minimumAttendance}%. Otherwise display NOT ELIGIBLE.",
+            "Loop, accumulator, input, and compound Boolean logic",
+            new[] { "START", "total = 0", "count = 0", $"WHILE count < {itemCount}", "INPUT score", "total = total + score", "count = count + 1", "END WHILE", $"average = total / {itemCount}", "INPUT attendance", $"IF average >= {passingAverage} AND attendance >= {minimumAttendance} THEN", "OUTPUT ELIGIBLE", "ELSE", "OUTPUT NOT ELIGIBLE", "END IF", "END" });
     }
 
     private static GeneratedChallenge GenerateFlowchart(int level, Random rng)
@@ -224,7 +249,7 @@ public static class GeneratedChallengeFactory
         }
 
         int threshold = rng.Next(50, 76);
-        if (level <= 4)
+        if (level == 3)
         {
             return Flow(
                 "Build a pass/fail flowchart",
@@ -237,6 +262,26 @@ public static class GeneratedChallengeFactory
                     B("Decision", $"mark >= {threshold}?"),
                     B("Output", "TRUE: OUTPUT PASS"),
                     B("Output", "FALSE: OUTPUT FAIL"),
+                    B("End", "END")
+                });
+        }
+
+        if (level == 4)
+        {
+            int attendance = rng.Next(75, 91);
+            return Flow(
+                "Build an eligibility flowchart",
+                $"Create a flowchart that reads mark and attendance. Check mark >= {threshold}, then check attendance >= {attendance}%. The student is ELIGIBLE only if both conditions are true.",
+                "Multiple decisions",
+                new[]
+                {
+                    B("Start", "START"),
+                    B("Input", "INPUT mark"),
+                    B("Input", "INPUT attendance"),
+                    B("Decision", $"mark >= {threshold}?"),
+                    B("Decision", $"attendance >= {attendance}?"),
+                    B("Output", "TRUE: OUTPUT ELIGIBLE"),
+                    B("Output", "FALSE: OUTPUT NOT ELIGIBLE"),
                     B("End", "END")
                 });
         }
