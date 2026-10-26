@@ -31,6 +31,7 @@ public partial class DayClock : Node
     private bool _initialized;
 
     public bool IsSchoolOpen => Hour >= SchoolOpenHour && Hour < SchoolClosingHour;
+    public bool IsNight => Hour < SchoolOpenHour || Hour >= SchoolClosingHour;
 
     public override void _Ready()
     {
@@ -66,6 +67,13 @@ public partial class DayClock : Node
 
         if (DayLengthSeconds > 0f)
             AdvanceHours((float)delta * 24f / DayLengthSeconds);
+    }
+
+    /// <summary>Set the clock to a specific hour without changing the day counter (used by the N-key debug toggle).</summary>
+    public void SetHourOfDay(float hour)
+    {
+        Hour = Mathf.PosMod(hour, 24f);
+        EmitSignal(SignalName.TimeChanged, Hour);
     }
 
     public void AdvanceHours(float amount)
