@@ -43,6 +43,12 @@ public partial class RoomManager : Node2D
 		_sun = GetNode<DirectionalLight2D>("RoomHolder/Sunlight");
 		_fade = GetNode<ColorRect>("UI/Fade");
 
+		if (SchoolYardGame.DayClock.Instance != null)
+		{
+			SchoolYardGame.DayClock.Instance.TimeChanged += OnTimeChanged;
+			SetNight(SchoolYardGame.DayClock.Instance.IsNight);
+		}
+
 		string roomPath = string.IsNullOrWhiteSpace(_requestedStartRoom) ? StartRoom : _requestedStartRoom;
 		string spawn = string.IsNullOrWhiteSpace(_requestedStartSpawn) ? StartSpawn : _requestedStartSpawn;
 		_requestedStartRoom = null;
@@ -55,7 +61,24 @@ public partial class RoomManager : Node2D
 	public override void _UnhandledInput(InputEvent @event)
 	{
 		if (AllowNightToggleKey && @event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.N })
-			SetNight(!IsNight);
+		{
+			if (SchoolYardGame.DayClock.Instance != null)
+				SchoolYardGame.DayClock.Instance.SetHourOfDay(SchoolYardGame.DayClock.Instance.IsNight ? 12f : 20f);
+			else
+				SetNight(!IsNight);
+		}
+	}
+
+	public override void _ExitTree()
+	{
+		if (SchoolYardGame.DayClock.Instance != null)
+			SchoolYardGame.DayClock.Instance.TimeChanged -= OnTimeChanged;
+	}
+
+	private void OnTimeChanged(float hour)
+	{
+		if (SchoolYardGame.DayClock.Instance != null && IsNight != SchoolYardGame.DayClock.Instance.IsNight)
+			SetNight(SchoolYardGame.DayClock.Instance.IsNight);
 	}
 
 	public async void GoTo(string roomPath, string spawn)
