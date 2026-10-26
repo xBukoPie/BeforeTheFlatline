@@ -18,6 +18,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 DayClock="*res://Scripts/GameController/DayClock.cs"
+RoomKeyProgression="*res://Scripts/GameController/RoomKeyProgression.cs"
 SanityManager="*res://Scripts/GameController/SanityManager.cs"
 window/size/viewport_width=1280
 window/size/viewport_height=720
