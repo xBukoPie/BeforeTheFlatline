@@ -13,11 +13,14 @@ public partial class MainMenu : Control
         var playBtn = GetNode<Button>("playButton");
         var settingsBtn = GetNode<Button>("settingsButton");
         var supportBtn = GetNode<Button>("supportButton");
+        var algorithmLabBtn = GetNodeOrNull<Button>("algorithmLabButton");
         _fade = GetNode<ColorRect>("UI/Fade");
 
         playBtn.Pressed += OnPlayButtonPressed;
         settingsBtn.Pressed += OnSettingsButtonPressed;
         supportBtn.Pressed += OnSupportButtonPressed;
+        if (algorithmLabBtn != null)
+            algorithmLabBtn.Pressed += OnAlgorithmLabButtonPressed;
     }
 
     private async Task FadeScreen(float alpha)
@@ -38,6 +41,11 @@ public partial class MainMenu : Control
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             GetTree().ChangeSceneToFile("res://Scenes/Home/Rooms/World.tscn");
         }
+    }
+
+    private void OnAlgorithmLabButtonPressed()
+    {
+        GetTree().ChangeSceneToFile("res://Scenes/Challenges/ChallengeHub.tscn");
     }
 
     private void OnSettingsButtonPressed()
