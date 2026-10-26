@@ -134,6 +134,7 @@ position = Vector2(20, -100)
 TargetRoom = "uid://cj7clvm56javo"
 TargetSpawn = "FromSala"
 Prompt = "Kusina"
+UnlockRoomId = "kusina"
 Size = Vector2(36, 12)
 
 [node name="ToKwarto" parent="Doors" unique_id=581595697 instance=ExtResource("3_door")]
@@ -148,6 +149,7 @@ position = Vector2(128, -15)
 TargetRoom = "uid://v3tb8ouk3bes"
 TargetSpawn = "FromSala"
 Prompt = "Pasilyo"
+UnlockRoomId = "pasilyo"
 Size = Vector2(12, 55)
 
 [node name="ToBanyo" parent="Doors" unique_id=1210053727 instance=ExtResource("3_door")]
@@ -155,6 +157,7 @@ position = Vector2(138, -52)
 TargetRoom = "uid://c00eqbn1gw22p"
 TargetSpawn = "FromSala"
 Prompt = "Banyo"
+UnlockRoomId = "banyo"
 Size = Vector2(12, 55)
 
 [node name="ToBalkonahe" parent="Doors" unique_id=1887010473 instance=ExtResource("3_door")]

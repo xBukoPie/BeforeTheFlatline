@@ -310,6 +310,7 @@ position = Vector2(398, -37)
 TargetRoom = "uid://bx0xki6ftwah0"
 TargetSpawn = "FromLot"
 Prompt = "Dirty Kitchen"
+UnlockRoomId = "dirty_kitchen"
 Size = Vector2(70, 12)
 
 [node name="Spawns" type="Node2D" parent="." unique_id=1908490760]
