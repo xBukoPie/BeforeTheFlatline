@@ -30,17 +30,33 @@ public partial class ChallengeHub : Control
         subtitle.AddThemeColorOverride("font_color", new Color("cbd5e1"));
         stack.AddChild(subtitle);
 
-        AddChallengeButton(stack, "Start challenge path", "res://Scenes/Challenges/SequenceChallenge.tscn");
-        AddChallengeButton(stack, "Practice: IF / ELSE", "res://Scenes/Challenges/ConditionChallenge.tscn");
-        AddChallengeButton(stack, "Practice: Flowchart blocks", "res://Scenes/Challenges/FlowchartChallenge.tscn");
+        if (ChallengeProgress.AllCompleted)
+        {
+            var banner = new Label { Text = "★ ALL CHALLENGES COMPLETE ★", HorizontalAlignment = HorizontalAlignment.Center };
+            banner.AddThemeFontSizeOverride("font_size", 20);
+            banner.AddThemeColorOverride("font_color", new Color("86efac"));
+            stack.AddChild(banner);
+        }
+
+        AddChallengeButton(stack, "01  Sequence — morning routine", "res://Scenes/Challenges/SequenceChallenge.tscn", ChallengeProgress.SequenceId);
+        AddChallengeButton(stack, "02  IF / ELSE — door logic", "res://Scenes/Challenges/ConditionChallenge.tscn", ChallengeProgress.ConditionId);
+        AddChallengeButton(stack, "03  Flowchart — grading program", "res://Scenes/Challenges/FlowchartChallenge.tscn", ChallengeProgress.FlowchartId);
+        AddChallengeButton(stack, "04  Final — complete algorithm", "res://Scenes/Challenges/FinalChallenge.tscn", ChallengeProgress.FinalId);
+
         var back = new Button { Text = "Return to Main Menu", CustomMinimumSize = new Vector2(0, 42) };
         back.Pressed += () => GetTree().ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
         stack.AddChild(back);
     }
 
-    private static void AddChallengeButton(VBoxContainer parent, string text, string path)
+    private static void AddChallengeButton(VBoxContainer parent, string text, string path, string challengeId)
     {
-        var button = new Button { Text = text, CustomMinimumSize = new Vector2(0, 46) };
+        bool done = ChallengeProgress.IsCompleted(challengeId);
+        var button = new Button
+        {
+            Text = done ? text + "    ✓" : text,
+            CustomMinimumSize = new Vector2(0, 46),
+            Disabled = false
+        };
         button.Pressed += () => button.GetTree().ChangeSceneToFile(path);
         parent.AddChild(button);
     }
