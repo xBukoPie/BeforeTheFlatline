@@ -20,7 +20,7 @@ public partial class DayClock : Node
     [Export(PropertyHint.Range, "0,24,0.25")] public float StartHour { get; set; } = 8f;
     [Export] public bool Running { get; set; } = true;
     [Export(PropertyHint.Range, "0,24,0.25")] public float SchoolOpenHour { get; set; } = 6.5f;
-    [Export(PropertyHint.Range, "0,24,0.25")] public float SchoolClosingHour { get; set; } = 18.5f;
+    [Export(PropertyHint.Range, "0,24,0.25")] public float SchoolClosingHour { get; set; } = 17f;
 
     public float Hour { get; private set; }
     public int DayNumber { get; private set; } = 1;
