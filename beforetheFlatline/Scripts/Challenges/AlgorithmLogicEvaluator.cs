@@ -351,6 +351,18 @@ public static class AlgorithmLogicEvaluator
                 string expression = output.Groups[2].Value.Trim();
                 if (expression.StartsWith("TO ", StringComparison.OrdinalIgnoreCase))
                     expression = expression.Substring(3).Trim();
+
+                // Multi-word, unquoted labels (for example OUTPUT NOT ELIGIBLE) are common in
+                // pseudocode. Treat them as a literal only when none of the words is a variable.
+                var labelWords = Regex.Matches(expression, @"[A-Za-z_]\w*").Select(m => m.Value).ToArray();
+                if (labelWords.Length > 1 &&
+                    Regex.IsMatch(expression, @"^[A-Za-z_]\w*(?:\s+[A-Za-z_]\w*)+$") &&
+                    labelWords.All(word => !c.Variables.ContainsKey(word)))
+                {
+                    c.Outputs.Add(expression.Trim());
+                    return;
+                }
+
                 c.Outputs.Add(ExpressionEvaluator.Evaluate(expression, c.Variables, outputMode: true));
                 return;
             }
