@@ -163,12 +163,22 @@ public static class GeneratedChallengeFactory
 
     private static GeneratedChallenge GenerateFinal(int level, Random rng)
     {
-        if (level <= 2)
+        if (level == 1)
+        {
+            int threshold = rng.Next(50, 71);
+            return Code(
+                "Write a pass/fail algorithm",
+                $"Write pseudocode that reads a student's mark and displays PASS if the mark is at least {threshold}; otherwise, display FAIL.",
+                "Input and selection",
+                new[] { "START", "INPUT mark", $"IF mark >= {threshold} THEN", "OUTPUT PASS", "ELSE", "OUTPUT FAIL", "END IF", "END" });
+        }
+
+        if (level == 2)
         {
             int threshold = rng.Next(50, 71);
             int maxAttempts = rng.Next(3, 5);
             return Code(
-                "Write a grading algorithm",
+                "Write a grading algorithm with validation",
                 $"Write complete pseudocode that reads a mark, validates that it is between 0 and 100 with at most {maxAttempts} attempts, then outputs PASS if the valid mark is at least {threshold} or FAIL otherwise. Invalid marks must be rejected.",
                 "Input validation and selection",
                 new[] { "START", "attempts = 0", "INPUT mark", $"WHILE (mark < 0 OR mark > 100) AND attempts < {maxAttempts}", "attempts = attempts + 1", "OUTPUT INVALID MARK", "INPUT mark", "END WHILE", "IF mark >= 0 AND mark <= 100 THEN", $"IF mark >= {threshold} THEN", "OUTPUT PASS", "ELSE", "OUTPUT FAIL", "END IF", "ELSE", "OUTPUT STOP", "END IF", "END" });
