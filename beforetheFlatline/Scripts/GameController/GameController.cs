@@ -2,15 +2,17 @@ using Godot;
 
 namespace SchoolYardGame;
 
-/// GameController: Allows all scenes to access the time of day/night.
+/// <summary>
+/// Applies the global clock's time-of-day colors to the room this node belongs to.
+/// Actual timekeeping lives in the DayClock Autoload and survives scene changes.
+/// </summary>
 public partial class GameController : CanvasModulate
 {
     public static GameController Instance { get; private set; }
     public static float Darkness { get; private set; }
 
-    [Export] public float DayLengthSeconds = 720f;
-    [Export(PropertyHint.Range, "0,24,0.25")] public float StartHour = 16.5f;
-    [Export] public bool Running = true;
+    // Kept as an exported setting for the School scene's existing configuration.
+    [Export] public float DayLengthSeconds { get; set; } = 180f;
 
     public float Hour { get; private set; }
 
@@ -21,7 +23,7 @@ public partial class GameController : CanvasModulate
         (6.5f,new Color("e8a77a")),   // Sunrise
         (8f,  new Color("ffffff")),
         (15f, new Color("ffffff")),
-        (17f, new Color("ffd9a8")),   // Golden Hour
+        (17f, new Color("ffd9a8")),   // Golden hour
         (18.5f,new Color("c27d86")),  // Sunset
         (20f, new Color("2c3463")),
         (24f, new Color("1a2144")),
@@ -30,34 +32,45 @@ public partial class GameController : CanvasModulate
     public override void _Ready()
     {
         Instance = this;
-        Hour = StartHour;
+
+        // The scene previously owned the clock. Keep its configured day length, but do not
+        // reset the hour when the player re-enters school.
+        if (DayClock.Instance != null && DayLengthSeconds > 0f)
+            DayClock.Instance.DayLengthSeconds = DayLengthSeconds;
+
         Apply();
     }
 
     public override void _Process(double delta)
     {
-        if (Input.IsActionJustPressed("time_skip")) Hour = (Hour + 3f) % 24f;
-        if (Running) Hour = (Hour + (float)delta * 24f / DayLengthSeconds) % 24f;
         Apply();
+    }
+
+    public override void _ExitTree()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 
     private void Apply()
     {
+        Hour = DayClock.Instance?.Hour ?? 8f;
         Color = Sample(Hour);
         float lum = (Color.R + Color.G + Color.B) / 3f;
         Darkness = Mathf.Clamp(Mathf.Remap(lum, 0.95f, 0.25f, 0f, 1f), 0f, 1f);
     }
 
-    private static Color Sample(float h)
+    private static Color Sample(float hour)
     {
         for (int i = 0; i < Keys.Length - 1; i++)
         {
-            if (h >= Keys[i].hour && h <= Keys[i + 1].hour)
+            if (hour >= Keys[i].hour && hour <= Keys[i + 1].hour)
             {
-                float t = (h - Keys[i].hour) / (Keys[i + 1].hour - Keys[i].hour);
+                float t = (hour - Keys[i].hour) / (Keys[i + 1].hour - Keys[i].hour);
                 return Keys[i].color.Lerp(Keys[i + 1].color, t);
             }
         }
+
         return Colors.White;
     }
 }
