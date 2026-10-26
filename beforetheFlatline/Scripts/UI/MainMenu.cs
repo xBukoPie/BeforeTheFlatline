@@ -61,7 +61,6 @@ public partial class MainMenu : Control
             Title = "Support & Controls",
             DialogText = "BEFORE THE FLATLINE\n\nMove: WASD or arrow keys\nInteract: E\nAdvance time outside school: T\n\nUse Settings to adjust master volume, brightness, and fullscreen."
         };
-        dialog.CustomMinimumSize = new Vector2(480, 260);
         AddChild(dialog);
         dialog.Confirmed += () => dialog.QueueFree();
         dialog.CloseRequested += () => dialog.QueueFree();
