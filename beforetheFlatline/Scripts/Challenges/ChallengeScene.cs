@@ -1,8 +1,6 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
 using SchoolYardGame;
 
 /// <summary>
@@ -328,80 +326,14 @@ public partial class ChallengeScene : Control
 
     private bool CheckPseudocodeAnswer()
     {
-        if (_codeEditor == null)
-            return false;
-
-        var entered = _codeEditor.Text
-            .Replace("\r", "")
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-            .Select(NormalizeStatement)
-            .Where(line => line.Length > 0)
-            .ToArray();
-
-        var expected = _challenge.PseudocodeSolution.Select(NormalizeStatement).ToArray();
-        return entered.SequenceEqual(expected);
+        return _codeEditor != null &&
+               AlgorithmLogicEvaluator.EvaluatePseudocode(_codeEditor.Text, _challenge);
     }
 
     private bool CheckFlowchartAnswer()
     {
-        if (_flowCanvas == null)
-            return false;
-
-        List<FlowchartBlockDefinition> actual = _flowCanvas.GetDefinitions();
-        var expected = _challenge.FlowchartSolution;
-        if (actual.Count != expected.Length)
-            return false;
-
-        for (int i = 0; i < expected.Length; i++)
-        {
-            if (!string.Equals(actual[i].Type, expected[i].Type, StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            if (!string.Equals(NormalizeStatement(actual[i].Text), NormalizeStatement(expected[i].Text), StringComparison.Ordinal))
-                return false;
-        }
-
-        return true;
-    }
-
-    private static string NormalizeStatement(string source)
-    {
-        string line = (source ?? "").Split("//", StringSplitOptions.None)[0].Trim().ToLowerInvariant();
-        line = line.Replace("←", "=").Replace("×", "*").Replace("÷", "/");
-        line = line.TrimEnd(';').Trim();
-
-        if (line == "begin" || line == "begin program") line = "start";
-        else if (line == "stop" || line == "stop program" || line == "finish") line = "end";
-
-        if (line.StartsWith("read ")) line = "input " + line.Substring(5);
-        else if (line.StartsWith("print ")) line = "output " + line.Substring(6);
-        else if (line.StartsWith("display ")) line = "output " + line.Substring(8);
-
-        line = Regex.Replace(line, @"\s+", "");
-        if (line.EndsWith("then", StringComparison.Ordinal))
-            line = line.Substring(0, line.Length - 4);
-
-        int assignment = line.IndexOf('=');
-        if (assignment > 0 && assignment == line.LastIndexOf('='))
-        {
-            string left = line.Substring(0, assignment);
-            string right = line.Substring(assignment + 1);
-            foreach (string op in new[] { "+", "*" })
-            {
-                int operatorIndex = right.IndexOf(op, StringComparison.Ordinal);
-                if (operatorIndex > 0 && operatorIndex == right.LastIndexOf(op, StringComparison.Ordinal))
-                {
-                    string first = right.Substring(0, operatorIndex);
-                    string second = right.Substring(operatorIndex + op.Length);
-                    if (string.CompareOrdinal(first, second) > 0)
-                        right = second + op + first;
-                    break;
-                }
-            }
-            line = left + "=" + right;
-        }
-
-        return line;
+        return _flowCanvas != null &&
+               AlgorithmLogicEvaluator.EvaluateFlowchart(_flowCanvas.GetDefinitions(), _challenge);
     }
 
     private void ResetChallenge()
