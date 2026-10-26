@@ -47,6 +47,8 @@ public partial class RoomManager : Node2D
 		string spawn = string.IsNullOrWhiteSpace(_requestedStartSpawn) ? StartSpawn : _requestedStartSpawn;
 		_requestedStartRoom = null;
 		_requestedStartSpawn = null;
+		if (SchoolYardGame.DayClock.Instance != null)
+			SchoolYardGame.DayClock.Instance.Running = true;
 		LoadRoom(roomPath, spawn);
 	}
 
