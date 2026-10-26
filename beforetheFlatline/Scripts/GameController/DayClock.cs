@@ -25,6 +25,7 @@ public partial class DayClock : Node
     public float Hour { get; private set; }
     public int DayNumber { get; private set; } = 1;
     public bool SchoolChallengeStartedToday { get; private set; }
+    public bool SchoolChallengeCompletedToday { get; private set; }
 
     private bool _skipSchoolGreetingOnNextLoad;
     private bool _initialized;
@@ -78,6 +79,7 @@ public partial class DayClock : Node
             updated -= 24f;
             DayNumber++;
             SchoolChallengeStartedToday = false;
+            SchoolChallengeCompletedToday = false;
             EmitSignal(SignalName.DayChanged, DayNumber);
         }
 
@@ -88,6 +90,11 @@ public partial class DayClock : Node
     public void MarkSchoolChallengeStartedToday()
     {
         SchoolChallengeStartedToday = true;
+    }
+
+    public void MarkSchoolChallengeCompletedToday()
+    {
+        SchoolChallengeCompletedToday = true;
     }
 
     public void SkipSchoolGreetingOnNextLoad()
