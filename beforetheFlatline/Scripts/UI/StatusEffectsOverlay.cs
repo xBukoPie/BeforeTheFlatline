@@ -112,22 +112,44 @@ public partial class StatusEffectsOverlay : CanvasLayer
         _effectWash = MakeRect("DebuffWash");
 
         _topEdge = MakeRect("TopEdge");
+        _topEdge.AnchorLeft = 0f;
+        _topEdge.AnchorTop = 0f;
         _topEdge.AnchorRight = 1f;
+        _topEdge.AnchorBottom = 0f;
+        _topEdge.OffsetLeft = 0f;
+        _topEdge.OffsetTop = 0f;
+        _topEdge.OffsetRight = 0f;
         _topEdge.OffsetBottom = 14f;
 
         _bottomEdge = MakeRect("BottomEdge");
+        _bottomEdge.AnchorLeft = 0f;
         _bottomEdge.AnchorTop = 1f;
         _bottomEdge.AnchorRight = 1f;
+        _bottomEdge.AnchorBottom = 1f;
+        _bottomEdge.OffsetLeft = 0f;
         _bottomEdge.OffsetTop = -18f;
+        _bottomEdge.OffsetRight = 0f;
+        _bottomEdge.OffsetBottom = 0f;
 
         _leftEdge = MakeRect("LeftEdge");
+        _leftEdge.AnchorLeft = 0f;
+        _leftEdge.AnchorTop = 0f;
+        _leftEdge.AnchorRight = 0f;
         _leftEdge.AnchorBottom = 1f;
+        _leftEdge.OffsetLeft = 0f;
+        _leftEdge.OffsetTop = 0f;
         _leftEdge.OffsetRight = 16f;
+        _leftEdge.OffsetBottom = 0f;
 
         _rightEdge = MakeRect("RightEdge");
         _rightEdge.AnchorLeft = 1f;
+        _rightEdge.AnchorTop = 0f;
+        _rightEdge.AnchorRight = 1f;
         _rightEdge.AnchorBottom = 1f;
         _rightEdge.OffsetLeft = -16f;
+        _rightEdge.OffsetTop = 0f;
+        _rightEdge.OffsetRight = 0f;
+        _rightEdge.OffsetBottom = 0f;
 
         _statusLabel = new Label
         {
