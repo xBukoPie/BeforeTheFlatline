@@ -335,7 +335,9 @@ public static class AlgorithmLogicEvaluator
             var input = Regex.Match(line, @"^(INPUT|READ|GET|ACCEPT)\s+(.+)$", RegexOptions.IgnoreCase);
             if (input.Success)
             {
-                foreach (string part in input.Groups[2].Value.Split(','))
+                string inputList = Regex.Replace(input.Groups[2].Value,
+                    @"^\s*(""[^""]*""|'[^']*')\s*,?\s*", "");
+                foreach (string part in inputList.Split(','))
                 {
                     string variable = part.Trim();
                     if (variable.Length == 0) { c.Failed = true; return; }
