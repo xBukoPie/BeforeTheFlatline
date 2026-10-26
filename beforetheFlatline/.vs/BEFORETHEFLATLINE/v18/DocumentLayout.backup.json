@@ -3,6 +3,10 @@
   "WorkspaceRootPath": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|c:\\users\\defin\\beforetheflatline\\beforetheflatline\\scripts\\challenges\\challengescene.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|solutionrelative:scripts\\challenges\\challengescene.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|c:\\users\\defin\\beforetheflatline\\beforetheflatline\\scripts\\ui\\sanityhud.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|solutionrelative:scripts\\ui\\sanityhud.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -31,6 +35,19 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "ChallengeScene.cs",
+              "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\Challenges\\ChallengeScene.cs",
+              "RelativeDocumentMoniker": "Scripts\\Challenges\\ChallengeScene.cs",
+              "ToolTip": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\Challenges\\ChallengeScene.cs",
+              "RelativeToolTip": "Scripts\\Challenges\\ChallengeScene.cs",
+              "ViewState": "AgIAAPcAAAAAAAAAAAAmwBUBAAAyAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-26T08:32:06.717Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
               "Title": "SanityHUD.cs",
               "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\UI\\SanityHUD.cs",
               "RelativeDocumentMoniker": "Scripts\\UI\\SanityHUD.cs",
@@ -38,12 +55,11 @@
               "RelativeToolTip": "Scripts\\UI\\SanityHUD.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAVAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-26T07:23:40.815Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-10-26T07:23:40.815Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "SanityManager.cs",
               "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\GameController\\SanityManager.cs",
               "RelativeDocumentMoniker": "Scripts\\GameController\\SanityManager.cs",
@@ -51,8 +67,7 @@
               "RelativeToolTip": "Scripts\\GameController\\SanityManager.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAhAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-26T07:13:27.667Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-10-26T07:13:27.667Z"
             }
           ]
         }

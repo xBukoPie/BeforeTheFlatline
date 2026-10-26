@@ -3,8 +3,20 @@
   "WorkspaceRootPath": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|c:\\users\\defin\\beforetheflatline\\beforetheflatline\\scripts\\gamecontroller\\gamecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|solutionrelative:scripts\\gamecontroller\\gamecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|c:\\users\\defin\\beforetheflatline\\beforetheflatline\\scripts\\school\\classroom.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|solutionrelative:scripts\\school\\classroom.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|c:\\users\\defin\\beforetheflatline\\beforetheflatline\\scripts\\challenges\\challengehub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|solutionrelative:scripts\\challenges\\challengehub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|c:\\users\\defin\\beforetheflatline\\beforetheflatline\\scripts\\challenges\\challengescene.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|solutionrelative:scripts\\challenges\\challengescene.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\Challenges\\ChallengeProgress.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Scripts\\Challenges\\ChallengeProgress.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|c:\\users\\defin\\beforetheflatline\\beforetheflatline\\scripts\\ui\\sanityhud.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -35,19 +47,58 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "GameController.cs",
-              "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\GameController\\GameController.cs",
-              "RelativeDocumentMoniker": "Scripts\\GameController\\GameController.cs",
-              "ToolTip": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\GameController\\GameController.cs",
-              "RelativeToolTip": "Scripts\\GameController\\GameController.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAxwAAAAAAAAAAAAAAAAA==",
+              "Title": "Classroom.cs",
+              "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\School\\Classroom.cs",
+              "RelativeDocumentMoniker": "Scripts\\School\\Classroom.cs",
+              "ToolTip": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\School\\Classroom.cs",
+              "RelativeToolTip": "Scripts\\School\\Classroom.cs",
+              "ViewState": "AgIAABQAAAAAAAAAAAAuwCkAAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-26T07:51:11.952Z",
+              "WhenOpened": "2026-10-26T10:33:14.558Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
+              "Title": "ChallengeHub.cs",
+              "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\Challenges\\ChallengeHub.cs",
+              "RelativeDocumentMoniker": "Scripts\\Challenges\\ChallengeHub.cs",
+              "ToolTip": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\Challenges\\ChallengeHub.cs",
+              "RelativeToolTip": "Scripts\\Challenges\\ChallengeHub.cs",
+              "ViewState": "AgIAAB8AAAAAAAAAAAAQwD4AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-26T10:29:06.344Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "ChallengeProgress.cs",
+              "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\Challenges\\ChallengeProgress.cs",
+              "RelativeDocumentMoniker": "Scripts\\Challenges\\ChallengeProgress.cs",
+              "ToolTip": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\Challenges\\ChallengeProgress.cs",
+              "RelativeToolTip": "Scripts\\Challenges\\ChallengeProgress.cs",
+              "ViewState": "AgIAAAQAAAAAAAAAAAAuwBwAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-26T10:27:49.074Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "ChallengeScene.cs",
+              "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\Challenges\\ChallengeScene.cs",
+              "RelativeDocumentMoniker": "Scripts\\Challenges\\ChallengeScene.cs",
+              "ToolTip": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\Challenges\\ChallengeScene.cs",
+              "RelativeToolTip": "Scripts\\Challenges\\ChallengeScene.cs",
+              "ViewState": "AgIAACEBAAAAAAAAAAAQwEYBAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-26T08:32:06.717Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
               "Title": "SanityHUD.cs",
               "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\UI\\SanityHUD.cs",
               "RelativeDocumentMoniker": "Scripts\\UI\\SanityHUD.cs",
@@ -55,12 +106,11 @@
               "RelativeToolTip": "Scripts\\UI\\SanityHUD.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAVAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-26T07:23:40.815Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-10-26T07:23:40.815Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 5,
               "Title": "SanityManager.cs",
               "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\GameController\\SanityManager.cs",
               "RelativeDocumentMoniker": "Scripts\\GameController\\SanityManager.cs",

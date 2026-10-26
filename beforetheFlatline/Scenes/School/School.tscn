@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://de3e7ohtfdqqw" path="res://Assets/Map/School/School.jpg" id="1_map"]
 [ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_xqy2q"]
-[ext_resource type="Script" uid="uid://e2i3et7i6d0s" path="res://Scripts/GameController/DayNightCycle.cs" id="3_dn"]
+[ext_resource type="Script" uid="uid://cwar2ouikcogv" path="res://Scripts/GameController/GameController.cs" id="3_xqy2q"]
 [ext_resource type="Script" uid="uid://b3n44xxs1mak7" path="res://Scripts/Map/School/StreetLamp.cs" id="4_lamp"]
 [ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="5_xqy2q"]
 
@@ -98,7 +98,8 @@ region_rect = Rect2(0, 0, 1024, 572)
 
 [node name="DayNightCycle" type="CanvasModulate" parent="." unique_id=1135704423]
 position = Vector2(-485, -282)
-script = ExtResource("3_dn")
+script = ExtResource("3_xqy2q")
+DayLengthSeconds = 180.0
 
 [node name="Collisions" type="StaticBody2D" parent="." unique_id=2071613401 groups=["solid"]]
 position = Vector2(-485, -282)
