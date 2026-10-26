@@ -207,14 +207,14 @@ public static class GeneratedChallengeFactory
                 new[] { "START", "attempts = 0", "INPUT score", $"WHILE (score < 0 OR score > 100) AND attempts < {maxAttempts}", "attempts = attempts + 1", "INPUT score", "END WHILE", "IF score >= 0 AND score <= 100 THEN", $"adjustedScore = score + {bonus}", $"IF adjustedScore >= {threshold} THEN", "OUTPUT EXCELLENT", "ELSE", "IF adjustedScore >= 50 THEN", "OUTPUT PASS", "ELSE", "OUTPUT FAIL", "END IF", "END IF", "ELSE", "OUTPUT STOP", "END IF", "END" });
         }
 
-        int itemCount = rng.Next(3, 6);
+        int finalItemCount = rng.Next(3, 6);
         int minimumAttendance = rng.Next(75, 91);
         int passingAverage = rng.Next(60, 76);
         return Code(
             "Compute and verify final eligibility",
-            $"Write pseudocode to read {itemCount} scores in a loop, calculate the average, then read attendance. Display ELIGIBLE only if the average is at least {passingAverage} AND attendance is at least {minimumAttendance}%. Otherwise display NOT ELIGIBLE.",
+            $"Write pseudocode to read {finalItemCount} scores in a loop, calculate the average, then read attendance. Display ELIGIBLE only if the average is at least {passingAverage} AND attendance is at least {minimumAttendance}%. Otherwise display NOT ELIGIBLE.",
             "Loop, accumulator, input, and compound Boolean logic",
-            new[] { "START", "total = 0", "count = 0", $"WHILE count < {itemCount}", "INPUT score", "total = total + score", "count = count + 1", "END WHILE", $"average = total / {itemCount}", "INPUT attendance", $"IF average >= {passingAverage} AND attendance >= {minimumAttendance} THEN", "OUTPUT ELIGIBLE", "ELSE", "OUTPUT NOT ELIGIBLE", "END IF", "END" });
+            new[] { "START", "total = 0", "count = 0", $"WHILE count < {finalItemCount}", "INPUT score", "total = total + score", "count = count + 1", "END WHILE", $"average = total / {finalItemCount}", "INPUT attendance", $"IF average >= {passingAverage} AND attendance >= {minimumAttendance} THEN", "OUTPUT ELIGIBLE", "ELSE", "OUTPUT NOT ELIGIBLE", "END IF", "END" });
     }
 
     private static GeneratedChallenge GenerateFlowchart(int level, Random rng)
