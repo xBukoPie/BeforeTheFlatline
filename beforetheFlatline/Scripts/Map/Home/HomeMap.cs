@@ -21,15 +21,35 @@ public partial class HomeMap : Node2D
 		_ambient = GetNode<CanvasModulate>("AmbientLight");
 		_sun = GetNode<DirectionalLight2D>("Sunlight");
         _lights = GetNode<Node2D>("Lights");
-        _sanityManager = GetNode<SanityManager>("../SanityManager");
+        _sanityManager = SanityManager.Instance;
 
 		// The Player is on physics layer 2, so these zones only react to it.
 		var interior = GetNode<Area2D>("Zones/InteriorZone");
 		interior.BodyEntered += _ => SetInside(true);
 		interior.BodyExited += _ => SetInside(false);
 
-		SetNight(IsNight);
+        if (DayClock.Instance != null)
+        {
+            DayClock.Instance.TimeChanged += OnTimeChanged;
+            SetNight(DayClock.Instance.IsNight);
+        }
+        else
+        {
+            SetNight(IsNight);
+        }
 	}
+
+    public override void _ExitTree()
+    {
+        if (DayClock.Instance != null)
+            DayClock.Instance.TimeChanged -= OnTimeChanged;
+    }
+
+    private void OnTimeChanged(float hour)
+    {
+        if (DayClock.Instance != null && IsNight != DayClock.Instance.IsNight)
+            SetNight(DayClock.Instance.IsNight);
+    }
 
 	public void SetNight(bool night)
 	{
