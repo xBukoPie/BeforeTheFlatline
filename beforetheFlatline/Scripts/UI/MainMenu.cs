@@ -70,9 +70,6 @@ public partial class MainMenu : Control
         dialog.Confirmed += () => dialog.QueueFree();
         dialog.CloseRequested += () => dialog.QueueFree();
 
-        var repository = new Button { Text = "Open GitHub repository", CustomMinimumSize = new Vector2(0, 38) };
-        repository.Pressed += () => OS.ShellOpen("https://github.com/xBukoPie/BeforeTheFlatline");
-        dialog.AddChild(repository);
         dialog.PopupCentered();
     }
 }
