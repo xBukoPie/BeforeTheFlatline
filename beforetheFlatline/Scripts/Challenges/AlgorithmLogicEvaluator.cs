@@ -617,9 +617,7 @@ public static class AlgorithmLogicEvaluator
                 if (token.Equals("FALSE", StringComparison.OrdinalIgnoreCase)) return false;
                 if (_variables.TryGetValue(token, out object value)) return value;
                 if (_outputMode) return token;
-                // Bare output labels such as PASS/FAIL are legal constants; all other unknown
-                // identifiers in calculations are treated as text so output labels remain usable.
-                return token;
+                throw new FormatException($"Unknown variable '{token}'.");
             }
 
             private bool Take(string token)
