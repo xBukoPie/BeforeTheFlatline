@@ -68,6 +68,9 @@ public partial class SchoolGreeting : Node2D
 
         var panelInstance = _dialoguePanelScene.Instantiate<Control>();
         _activeGreetingPanel = panelInstance;
+        // Freeze in-game time while the greeting and its challenge chain are active.
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = false;
         AddChild(panelInstance);
 
         if (panelInstance is DialoguePanel dialoguePanel)
