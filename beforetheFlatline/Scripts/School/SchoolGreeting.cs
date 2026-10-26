@@ -68,4 +68,16 @@ public partial class SchoolGreeting : Node2D
         textLabel.BbcodeEnabled = true;
         textLabel.Text = $"[center]{charName} says: {timeGreeting}[/center]";
     }
+
+    private void OnGreetingAdvanced()
+    {
+        if (_greetingFinished)
+            return;
+
+        _greetingFinished = true;
+        if (IsInstanceValid(_activeGreetingPanel))
+            _activeGreetingPanel.QueueFree();
+
+        EmitSignal(SignalName.SchoolGreetingFinished);
+    }
 }
