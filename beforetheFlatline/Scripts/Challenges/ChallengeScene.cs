@@ -369,6 +369,28 @@ public partial class ChallengeScene : Control
         line = Regex.Replace(line, @"\s+", "");
         if (line.EndsWith("then", StringComparison.Ordinal))
             line = line.Substring(0, line.Length - 4);
+
+        // Accept mathematically equivalent operand order for simple commutative expressions.
+        int assignment = line.IndexOf('=');
+        if (assignment > 0 && assignment == line.LastIndexOf('='))
+        {
+            string left = line.Substring(0, assignment);
+            string right = line.Substring(assignment + 1);
+            foreach (string op in new[] { "+", "*" })
+            {
+                int operatorIndex = right.IndexOf(op, StringComparison.Ordinal);
+                if (operatorIndex > 0 && operatorIndex == right.LastIndexOf(op, StringComparison.Ordinal))
+                {
+                    string first = right.Substring(0, operatorIndex);
+                    string second = right.Substring(operatorIndex + op.Length);
+                    if (string.CompareOrdinal(first, second) > 0)
+                        right = second + op + first;
+                    break;
+                }
+            }
+            line = left + "=" + right;
+        }
+
         return line;
     }
 
