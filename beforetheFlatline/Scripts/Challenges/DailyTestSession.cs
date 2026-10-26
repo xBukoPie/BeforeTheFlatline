@@ -9,6 +9,7 @@ public static class DailyTestSession
     private static int _day = 1;
     private static bool _active;
     private static bool _finalized;
+    private static bool _failurePenaltyApplied;
 
     public const int QuestionCount = 4;
     public const int QuestionsNeededToPass = 3;
@@ -16,6 +17,7 @@ public static class DailyTestSession
     public static int Day => _day;
     public static bool IsActive => _active;
     public static bool IsFinalized => _finalized;
+    public static bool FailurePenaltyApplied => _failurePenaltyApplied;
     public static IReadOnlyList<TaskAttemptResult> Results => Attempts;
     public static IReadOnlyList<string> PendingNotifications => Notifications;
     public static int CorrectCount => Attempts.Count(result => result.Correct);
@@ -29,6 +31,7 @@ public static class DailyTestSession
         Notifications.Clear();
         _active = true;
         _finalized = false;
+        _failurePenaltyApplied = false;
     }
 
     public static void BeginIfNeeded(int day)
@@ -65,12 +68,15 @@ public static class DailyTestSession
         return Passed;
     }
 
+    public static void MarkFailurePenaltyApplied() => _failurePenaltyApplied = true;
+
     public static void Reset()
     {
         Attempts.Clear();
         Notifications.Clear();
         _active = false;
         _finalized = false;
+        _failurePenaltyApplied = false;
     }
 }
 
