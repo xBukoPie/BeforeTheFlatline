@@ -9,12 +9,6 @@ public partial class SchoolGreeting : Node2D
     [Export(PropertyHint.File, "*.tscn")]
     public string ChallengeScenePath { get; set; } = "res://Scenes/Challenges/SequenceChallenge.tscn";
 
-    [Export(PropertyHint.File, "*.tscn")]
-    public string SchoolRoomPath { get; set; } = "res://Scenes/School/School.tscn";
-
-    [Export]
-    public string SchoolSpawn { get; set; } = "FromHome";
-
     private Control _activeGreetingPanel;
     private bool _greetingFinished;
 
@@ -34,7 +28,7 @@ public partial class SchoolGreeting : Node2D
         // without restarting the greeting and challenge chain.
         if (DayClock.Instance != null &&
             (DayClock.Instance.ConsumeSkipSchoolGreetingOnNextLoad() ||
-             DayClock.Instance.SchoolChallengeStartedToday))
+             DayClock.Instance.SchoolChallengeCompletedToday))
         {
             QueueFree();
             return;
@@ -104,7 +98,6 @@ public partial class SchoolGreeting : Node2D
             _activeGreetingPanel.QueueFree();
 
         DayClock.Instance?.MarkSchoolChallengeStartedToday();
-        global::RoomManager.RequestStartRoomOnNextLoad(SchoolRoomPath, SchoolSpawn);
         EmitSignal(SignalName.SchoolGreetingFinished);
 
         if (!string.IsNullOrWhiteSpace(ChallengeScenePath) &&
