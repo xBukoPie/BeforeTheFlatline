@@ -68,7 +68,6 @@ public partial class TestResults : Control
 
         _details.Text = string.Join("\n\n", lines);
         _details.AddThemeColorOverride("font_color", new Color("e2e8f0"));
-        StatusEffectsOverlay.Instance?.Notify(_passed ? "ASSESSMENT PASSED" : "ASSESSMENT FAILED — SANITY AFFECTED");
     }
 
     private SanityManager.DebuffType NextDebuffType()
