@@ -29,8 +29,8 @@ public partial class RoomManager : Node2D
 		_holder = GetNode<Node2D>("RoomHolder");
 		_player = GetNode<Node2D>("Player");
 		_camera = GetNode<Camera2D>("Player/Camera2D");
-		_ambient = GetNode<CanvasModulate>("AmbientLight");
-		_sun = GetNode<DirectionalLight2D>("Sunlight");
+		_ambient = GetNode<CanvasModulate>("RoomHolder/AmbientLight");
+		_sun = GetNode<DirectionalLight2D>("RoomHolder/Sunlight");
 		_fade = GetNode<ColorRect>("UI/Fade");
 
 		LoadRoom(StartRoom, StartSpawn);

@@ -1,5 +1,5 @@
 using Godot;
-
+using SchoolYardGame;
 public partial class SanityHUD : ProgressBar
 {
     public override void _Ready()

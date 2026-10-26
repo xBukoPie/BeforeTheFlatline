@@ -20,7 +20,8 @@ public partial class HomeMap : Node2D
 	{
 		_ambient = GetNode<CanvasModulate>("AmbientLight");
 		_sun = GetNode<DirectionalLight2D>("Sunlight");
-		_sanityManager = GetNode<SanityManager>("/root/SanityManager");
+        _lights = GetNode<Node2D>("Lights");
+        _sanityManager = GetNode<SanityManager>("../SanityManager");
 
 		// The Player is on physics layer 2, so these zones only react to it.
 		var interior = GetNode<Area2D>("Zones/InteriorZone");

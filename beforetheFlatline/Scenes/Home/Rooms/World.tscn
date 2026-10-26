@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://bgwjsbe57as2f"]
+[gd_scene format=3 uid="uid://bgwjsbe57as2f"]
 
 [ext_resource type="PackedScene" uid="uid://pe0tdibgwd1l" path="res://Scenes/Models/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://nvjm3wprgbbm" path="res://Scripts/GameController/RoomManager.cs" id="2_manager"]
@@ -63,14 +63,14 @@ color = Color(0, 0, 0, 0)
 layer = 10
 script = ExtResource("4_hud")
 
-[node name="SanityBar" type="ProgressBar" parent="HUD" unique_id=200000001]
+[node name="SanityBar" type="ProgressBar" parent="UI/HUD" unique_id=200000001]
 offset_left = 10.0
 offset_top = 40.0
 offset_right = 190.0
 offset_bottom = 60.0
 value = 100.0
 
-[node name="Prompt" type="Label" parent="HUD" unique_id=1607028547]
+[node name="Prompt" type="Label" parent="UI/HUD" unique_id=1607028547]
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
@@ -84,7 +84,7 @@ grow_horizontal = 2
 grow_vertical = 0
 horizontal_alignment = 1
 
-[node name="Clock" type="Label" parent="HUD" unique_id=1876894038]
+[node name="Clock" type="Label" parent="UI/HUD" unique_id=1876894038]
 offset_left = 12.0
 offset_top = 8.0
 offset_right = 200.0
@@ -111,7 +111,7 @@ max_distance = 2000.0
 
 [node name="Zones" type="Node2D" parent="HomeMapRoot" unique_id=200000116]
 
-[node name="InteriorZone" type="Area2D" parent="Zones" unique_id=200000117]
+[node name="InteriorZone" type="Area2D" parent="HomeMapRoot/Zones" unique_id=200000117]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="InteriorZone" unique_id=200000118]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HomeMapRoot/Zones/InteriorZone" unique_id=200000118]
 shape = SubResource("R_200x200")

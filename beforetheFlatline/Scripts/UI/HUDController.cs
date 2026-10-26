@@ -4,18 +4,24 @@ using SchoolYardGame;
 public partial class HUDController : CanvasLayer
 {
     private ProgressBar _sanityBar;
+    private Label _clock;
 
     public override void _Ready()
     {
-        // Find the sanity bar under this CanvasLayer
-        _sanityBar = GetNode<ProgressBar>("SanityBar");
-        // Subscribe to SanityManager events
-        if (SanityManager.Instance != null)
+        float hour = 8f; // Fallback error incase GameController fails.
+
+        if (GameController.Instance != null)
+            hour = GameController.Instance.Hour;
+        else if (DayNightCycle.Instance != null)
+            hour = DayNightCycle.Instance.Hour;
+
+        int h = (int)hour;
+        int m = (int)((hour - h) * 60);
+
+        if (_clock != null)
         {
-            SanityManager.Instance.OnSanityChanged += UpdateSanity;
+            _clock.Text = $"{h:00}:{m:00}   [T] skip 3h";
         }
-        // Initialize bar
-        UpdateSanity(SanityManager.Instance?.CurrentSanity ?? SanityManager.MaxSanity);
     }
 
     private void UpdateSanity(int current)

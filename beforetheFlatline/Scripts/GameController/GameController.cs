@@ -2,15 +2,13 @@ using Godot;
 
 namespace SchoolYardGame;
 
-/// <summary>
-/// Global game controller for time of day. Provides a day/night cycle that all scenes can query.
-/// </summary>
+/// GameController: Allows all scenes to access the time of day/night.
 public partial class GameController : CanvasModulate
 {
     public static GameController Instance { get; private set; }
     public static float Darkness { get; private set; }
 
-    [Export] public float DayLengthSeconds = 180f;   // real seconds per 24 in‑game hours
+    [Export] public float DayLengthSeconds = 720f;
     [Export(PropertyHint.Range, "0,24,0.25")] public float StartHour = 16.5f;
     [Export] public bool Running = true;
 
@@ -20,11 +18,11 @@ public partial class GameController : CanvasModulate
     {
         (0f,  new Color("1a2144")),
         (5f,  new Color("232b57")),
-        (6.5f,new Color("e8a77a")),   // sunrise
+        (6.5f,new Color("e8a77a")),   // Sunrise
         (8f,  new Color("ffffff")),
         (15f, new Color("ffffff")),
-        (17f, new Color("ffd9a8")),   // golden hour
-        (18.5f,new Color("c27d86")),  // sunset
+        (17f, new Color("ffd9a8")),   // Golden Hour
+        (18.5f,new Color("c27d86")),  // Sunset
         (20f, new Color("2c3463")),
         (24f, new Color("1a2144")),
     };
@@ -46,15 +44,8 @@ public partial class GameController : CanvasModulate
     private void Apply()
     {
         Color = Sample(Hour);
-        // darkness from colour luminance of the ramp
         float lum = (Color.R + Color.G + Color.B) / 3f;
         Darkness = Mathf.Clamp(Mathf.Remap(lum, 0.95f, 0.25f, 0f, 1f), 0f, 1f);
-        var label = GetNodeOrNull<Label>("../HUD/Clock");
-        if (label != null)
-        {
-            int h = (int)Hour; int m = (int)((Hour - h) * 60);
-            label.Text = $"{h:00}:{m:00}   [T] skip 3h";
-        }
     }
 
     private static Color Sample(float h)

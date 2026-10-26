@@ -5,6 +5,7 @@ public partial class MainMenu : Control
 {
     [Export] public float FadeTime { get; set; } = 0.25f;
     private ColorRect _fade;
+    private bool _isStarting = false;
 
     public override void _Ready()
     {
@@ -28,12 +29,15 @@ public partial class MainMenu : Control
 
     private async void OnPlayButtonPressed()
     {
+        if (_isStarting) return;
+        _isStarting = true;
         await FadeScreen(1f);
-        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
 
-        GetTree().ChangeSceneToFile("res://Scenes/Home/Rooms/World.tscn");
-        await FadeScreen(0f);
-        await FadeScreen(1f); 
+        if (GetTree() != null)
+        {
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            GetTree().ChangeSceneToFile("res://Scenes/Home/Rooms/World.tscn");
+        }
     }
 
     private void OnSettingsButtonPressed()

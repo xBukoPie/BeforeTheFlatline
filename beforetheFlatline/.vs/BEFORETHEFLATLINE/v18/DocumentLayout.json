@@ -1,7 +1,20 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|c:\\users\\defin\\beforetheflatline\\beforetheflatline\\scripts\\gamecontroller\\gamecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|solutionrelative:scripts\\gamecontroller\\gamecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|c:\\users\\defin\\beforetheflatline\\beforetheflatline\\scripts\\ui\\sanityhud.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|solutionrelative:scripts\\ui\\sanityhud.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|c:\\users\\defin\\beforetheflatline\\beforetheflatline\\scripts\\gamecontroller\\sanitymanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{15AD4BBF-0FBF-484D-B858-A709463C6DC5}|BeforetheFlatline.csproj|solutionrelative:scripts\\gamecontroller\\sanitymanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,7 +22,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Bookmark",
@@ -18,6 +31,44 @@
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "GameController.cs",
+              "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\GameController\\GameController.cs",
+              "RelativeDocumentMoniker": "Scripts\\GameController\\GameController.cs",
+              "ToolTip": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\GameController\\GameController.cs",
+              "RelativeToolTip": "Scripts\\GameController\\GameController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAxwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-26T07:51:11.952Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "SanityHUD.cs",
+              "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\UI\\SanityHUD.cs",
+              "RelativeDocumentMoniker": "Scripts\\UI\\SanityHUD.cs",
+              "ToolTip": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\UI\\SanityHUD.cs",
+              "RelativeToolTip": "Scripts\\UI\\SanityHUD.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-26T07:23:40.815Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "SanityManager.cs",
+              "DocumentMoniker": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\GameController\\SanityManager.cs",
+              "RelativeDocumentMoniker": "Scripts\\GameController\\SanityManager.cs",
+              "ToolTip": "C:\\Users\\Defin\\BeforeTheFlatline\\beforetheFlatline\\Scripts\\GameController\\SanityManager.cs",
+              "RelativeToolTip": "Scripts\\GameController\\SanityManager.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-26T07:13:27.667Z"
             }
           ]
         }
