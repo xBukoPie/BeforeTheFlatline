@@ -7,6 +7,14 @@ namespace SchoolYardGame;
 // This will check the player and triggers the friend greeting based on time.
 public partial class SchoolGreeting : Node2D
 {
+    /// <summary>Emitted when the player advances past the school greeting dialogue.</summary>
+    [Signal] public delegate void SchoolGreetingFinishedEventHandler();
+
+    /// <summary>Challenge scene opened after the greeting is dismissed.</summary>
+    [Export(PropertyHint.File, "*.tscn")] public string ChallengeScenePath { get; set; } = "res://Scenes/Challenges/SequenceChallenge.tscn";
+
+    private Control _activeGreetingPanel;
+    private bool _greetingFinished;
     // List of characters that will greet the player with their portrait paths.
     private readonly (string name, string portraitPath)[] _characters = new[]
     {
@@ -48,7 +56,11 @@ public partial class SchoolGreeting : Node2D
             timeGreeting = "Good evening!";
 
         var panelInstance = (Control)_dialoguePanelScene.Instantiate();
+        _activeGreetingPanel = panelInstance;
         AddChild(panelInstance);
+
+        if (panelInstance is DialoguePanel dialoguePanel)
+            dialoguePanel.DialogueAdvanced += OnGreetingAdvanced;
 
         var portrait = panelInstance.GetNode<TextureRect>("PanelBackground/Portrait");
         portrait.Texture = GD.Load<Texture2D>(portraitPath);
@@ -58,5 +70,23 @@ public partial class SchoolGreeting : Node2D
         var textLabel = panelInstance.GetNode<RichTextLabel>("PanelBackground/TextLabel");
         textLabel.BbcodeEnabled = true;
         textLabel.Text = $"[center]{charName} says: {timeGreeting}[/center]";
+    }
+
+    private void OnGreetingAdvanced()
+    {
+        if (_greetingFinished)
+            return;
+
+        _greetingFinished = true;
+        if (IsInstanceValid(_activeGreetingPanel))
+            _activeGreetingPanel.QueueFree();
+
+        EmitSignal(SignalName.SchoolGreetingFinished);
+
+        // Start the first challenge only after the greeting panel has been dismissed.
+        if (!string.IsNullOrWhiteSpace(ChallengeScenePath) && ResourceLoader.Exists(ChallengeScenePath))
+            GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, ChallengeScenePath);
+        else
+            GD.PushError($"SchoolGreeting: Challenge scene not found: {ChallengeScenePath}");
     }
 }
