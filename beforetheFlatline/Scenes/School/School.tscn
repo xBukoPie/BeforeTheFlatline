@@ -255,8 +255,8 @@ position = Vector2(-485, -282)
 
 [node name="Lamp1" type="PointLight2D" parent="Lamps" unique_id=855847009 groups=["night_lights"]]
 position = Vector2(105, 440)
-color = Color(1, 0.84, 0.52, 1)
-energy = 1.2
+color = Color(0.86, 0.76, 0.61, 1)
+energy = 0.62
 shadow_enabled = true
 shadow_filter = 1
 texture = SubResource("GradientTexture2D_2")
@@ -265,8 +265,8 @@ script = ExtResource("4_lamp")
 
 [node name="Lamp2" type="PointLight2D" parent="Lamps" unique_id=1296755615 groups=["night_lights"]]
 position = Vector2(165, 440)
-color = Color(1, 0.84, 0.52, 1)
-energy = 1.2
+color = Color(0.86, 0.76, 0.61, 1)
+energy = 0.62
 shadow_enabled = true
 shadow_filter = 1
 texture = SubResource("GradientTexture2D_2")
@@ -275,8 +275,8 @@ script = ExtResource("4_lamp")
 
 [node name="Lamp3" type="PointLight2D" parent="Lamps" unique_id=244377841 groups=["night_lights"]]
 position = Vector2(883, 440)
-color = Color(1, 0.84, 0.52, 1)
-energy = 1.2
+color = Color(0.86, 0.76, 0.61, 1)
+energy = 0.62
 shadow_enabled = true
 shadow_filter = 1
 texture = SubResource("GradientTexture2D_2")
@@ -285,8 +285,8 @@ script = ExtResource("4_lamp")
 
 [node name="Lamp4" type="PointLight2D" parent="Lamps" unique_id=1599663246 groups=["night_lights"]]
 position = Vector2(938, 440)
-color = Color(1, 0.84, 0.52, 1)
-energy = 1.2
+color = Color(0.86, 0.76, 0.61, 1)
+energy = 0.62
 shadow_enabled = true
 shadow_filter = 1
 texture = SubResource("GradientTexture2D_2")
@@ -295,8 +295,8 @@ script = ExtResource("4_lamp")
 
 [node name="Lamp5" type="PointLight2D" parent="Lamps" unique_id=916252572 groups=["night_lights"]]
 position = Vector2(462, 540)
-color = Color(1, 0.84, 0.52, 1)
-energy = 1.2
+color = Color(0.86, 0.76, 0.61, 1)
+energy = 0.62
 shadow_enabled = true
 shadow_filter = 1
 texture = SubResource("GradientTexture2D_2")
@@ -305,8 +305,8 @@ script = ExtResource("4_lamp")
 
 [node name="Lamp6" type="PointLight2D" parent="Lamps" unique_id=751607235 groups=["night_lights"]]
 position = Vector2(578, 540)
-color = Color(1, 0.84, 0.52, 1)
-energy = 1.2
+color = Color(0.86, 0.76, 0.61, 1)
+energy = 0.62
 shadow_enabled = true
 shadow_filter = 1
 texture = SubResource("GradientTexture2D_2")
@@ -326,8 +326,8 @@ position = Vector2(-485, -282)
 
 [node name="Window0" type="PointLight2D" parent="Windows" unique_id=2121666161 groups=["night_lights"]]
 position = Vector2(385, 128)
-color = Color(1, 0.92, 0.6, 1)
-energy = 0.7
+color = Color(0.84, 0.78, 0.64, 1)
+energy = 0.42
 texture = SubResource("GradientTexture2D_2")
 texture_scale = 0.22
 script = ExtResource("4_lamp")
@@ -335,8 +335,8 @@ Flicker = false
 
 [node name="Window1" type="PointLight2D" parent="Windows" unique_id=1979301608 groups=["night_lights"]]
 position = Vector2(440, 128)
-color = Color(1, 0.92, 0.6, 1)
-energy = 0.7
+color = Color(0.84, 0.78, 0.64, 1)
+energy = 0.42
 texture = SubResource("GradientTexture2D_2")
 texture_scale = 0.22
 script = ExtResource("4_lamp")
@@ -344,8 +344,8 @@ Flicker = false
 
 [node name="Window2" type="PointLight2D" parent="Windows" unique_id=947345468 groups=["night_lights"]]
 position = Vector2(550, 128)
-color = Color(1, 0.92, 0.6, 1)
-energy = 0.7
+color = Color(0.84, 0.78, 0.64, 1)
+energy = 0.42
 texture = SubResource("GradientTexture2D_2")
 texture_scale = 0.22
 script = ExtResource("4_lamp")
@@ -353,8 +353,8 @@ Flicker = false
 
 [node name="Window3" type="PointLight2D" parent="Windows" unique_id=985288692 groups=["night_lights"]]
 position = Vector2(610, 128)
-color = Color(1, 0.92, 0.6, 1)
-energy = 0.7
+color = Color(0.84, 0.78, 0.64, 1)
+energy = 0.42
 texture = SubResource("GradientTexture2D_2")
 texture_scale = 0.22
 script = ExtResource("4_lamp")
@@ -362,8 +362,8 @@ Flicker = false
 
 [node name="Window4" type="PointLight2D" parent="Windows" unique_id=145645484 groups=["night_lights"]]
 position = Vector2(385, 193)
-color = Color(1, 0.92, 0.6, 1)
-energy = 0.7
+color = Color(0.84, 0.78, 0.64, 1)
+energy = 0.42
 texture = SubResource("GradientTexture2D_2")
 texture_scale = 0.22
 script = ExtResource("4_lamp")
@@ -371,8 +371,8 @@ Flicker = false
 
 [node name="Window5" type="PointLight2D" parent="Windows" unique_id=163197374 groups=["night_lights"]]
 position = Vector2(440, 193)
-color = Color(1, 0.92, 0.6, 1)
-energy = 0.7
+color = Color(0.84, 0.78, 0.64, 1)
+energy = 0.42
 texture = SubResource("GradientTexture2D_2")
 texture_scale = 0.22
 script = ExtResource("4_lamp")
@@ -380,8 +380,8 @@ Flicker = false
 
 [node name="Window6" type="PointLight2D" parent="Windows" unique_id=462385651 groups=["night_lights"]]
 position = Vector2(550, 193)
-color = Color(1, 0.92, 0.6, 1)
-energy = 0.7
+color = Color(0.84, 0.78, 0.64, 1)
+energy = 0.42
 texture = SubResource("GradientTexture2D_2")
 texture_scale = 0.22
 script = ExtResource("4_lamp")
@@ -389,8 +389,8 @@ Flicker = false
 
 [node name="Window7" type="PointLight2D" parent="Windows" unique_id=1792136393 groups=["night_lights"]]
 position = Vector2(610, 193)
-color = Color(1, 0.92, 0.6, 1)
-energy = 0.7
+color = Color(0.84, 0.78, 0.64, 1)
+energy = 0.42
 texture = SubResource("GradientTexture2D_2")
 texture_scale = 0.22
 script = ExtResource("4_lamp")
