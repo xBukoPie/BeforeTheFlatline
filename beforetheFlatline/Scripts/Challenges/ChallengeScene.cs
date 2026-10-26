@@ -228,7 +228,7 @@ public partial class ChallengeScene : Control
                 new[] { "Show student ID", "END IF", "attempts = 0", "ELSE", "Open the door", "Search the room", "IF studentID == true", "MAX_ATTEMPTS = 3", "Ask for help", "END WHILE", "IF keyFound == true", "attempts = attempts + 1", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "END IF", "ELSE" },
                 new[] { "attempts = 0", "MAX_ATTEMPTS = 3", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "Search the room", "attempts = attempts + 1", "END WHILE", "IF keyFound == true", "IF studentID == true", "Open the door", "ELSE", "Show student ID", "END IF", "ELSE", "Ask for help", "END IF" }),
             _ => (
-                new[] { "END IF", "Wait until morning", "Show student ID", "MAX_ATTEMPTS = 3", "ELSE", "attempts = attempts + 1", "Open the door", "IF schoolOpen == false", "Search the room", "END WHILE", "IF studentID == true", "Ask for help", "END IF", "attempts = 0", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "IF keyFound == true", "ELSE" },
+                new[] { "END IF", "Wait until morning", "Show student ID", "MAX_ATTEMPTS = 3", "ELSE", "attempts = attempts + 1", "Open the door", "IF schoolOpen == false", "Search the room", "END WHILE", "IF studentID == true", "Ask for help", "END IF", "attempts = 0", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "IF keyFound == true", "ELSE", "END IF" },
                 new[] { "attempts = 0", "MAX_ATTEMPTS = 3", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "Search the room", "attempts = attempts + 1", "END WHILE", "IF keyFound == true", "IF studentID == true", "Open the door", "ELSE", "Show student ID", "END IF", "ELSE", "Ask for help", "END IF", "IF schoolOpen == false", "Wait until morning", "END IF" })
         };
     }
@@ -248,7 +248,7 @@ public partial class ChallengeScene : Control
                 new[] { "Output: Not eligible", "Decision: score >= 50?", "Input attendance", "Start", "Output: Pass", "Decision: attendance >= 75%?", "End", "Input score", "Output: Excellent", "Decision: score >= 75?", "Output: Fail", "Output: Eligible" },
                 new[] { "Start", "Input score", "Input attendance", "Decision: score >= 75?", "Output: Excellent", "Decision: score >= 50?", "Output: Pass", "Output: Fail", "Decision: attendance >= 75%?", "Output: Eligible", "Output: Not eligible", "End" }),
             _ => (
-                new[] { "Output: Fail", "Decision: attempts < 3?", "Set attempts = attempts + 1", "Input score", "End", "Output: Invalid score", "Start", "Decision: score valid?", "Decision: score >= 75?", "Output: Excellent", "Set attempts = 0", "Output: Pass", "Output: Retry", "Output: Fail", "Output: Invalid score" },
+                new[] { "Output: Fail", "Decision: attempts < 3?", "Set attempts = attempts + 1", "Input score", "End", "Output: Invalid score", "Start", "Decision: score valid?", "Decision: score >= 75?", "Output: Excellent", "Set attempts = 0", "Output: Pass", "Output: Retry", "Input score", "Decision: score >= 50?" },
                 new[] { "Start", "Set attempts = 0", "Input score", "Decision: score valid?", "Output: Invalid score", "Set attempts = attempts + 1", "Decision: attempts < 3?", "Output: Retry", "Input score", "Decision: score >= 75?", "Output: Excellent", "Decision: score >= 50?", "Output: Pass", "Output: Fail", "End" })
         };
     }
@@ -264,10 +264,10 @@ public partial class ChallengeScene : Control
                 new[] { "END WHILE", "Output Fail", "attempts = 0", "IF score >= 50", "Read score", "ELSE", "attempts = attempts + 1", "Output Pass", "WHILE attempts < 2", "END IF" },
                 new[] { "attempts = 0", "WHILE attempts < 2", "Read score", "IF score >= 50", "Output Pass", "ELSE", "Output Fail", "END IF", "attempts = attempts + 1", "END WHILE" }),
             3 => (
-                new[] { "Output Fail", "Read score", "END IF", "Output Invalid score", "IF score >= 50", "END WHILE", "Read score", "Output Pass", "ELSE", "IF score >= 75", "END IF", "WHILE score < 0 OR score > 100", "Output Excellent", "ELSE", "END IF" },
+                new[] { "Output Fail", "Read score", "Output Invalid score", "IF score >= 50", "END WHILE", "Read score", "Output Pass", "ELSE", "IF score >= 75", "END IF", "WHILE score < 0 OR score > 100", "Output Excellent", "ELSE", "END IF" },
                 new[] { "Read score", "WHILE score < 0 OR score > 100", "Output Invalid score", "Read score", "END WHILE", "IF score >= 75", "Output Excellent", "ELSE", "IF score >= 50", "Output Pass", "ELSE", "Output Fail", "END IF", "END IF" }),
             4 => (
-                new[] { "Output Fail", "Read score", "END WHILE", "Output Too many invalid attempts", "IF attempts < 3", "Output Pass", "attempts = 0", "ELSE", "Read score", "END IF", "WHILE (score < 0 OR score > 100) AND attempts < 3", "Output Invalid score", "END IF", "attempts = attempts + 1", "IF score >= 75", "Output Excellent", "IF score >= 50", "ELSE", "END IF" },
+                new[] { "Output Fail", "Read score", "END WHILE", "Output Too many invalid attempts", "IF attempts < 3", "Output Pass", "attempts = 0", "ELSE", "Read score", "END IF", "WHILE (score < 0 OR score > 100) AND attempts < 3", "Output Invalid score", "END IF", "attempts = attempts + 1", "IF score >= 75", "Output Excellent", "IF score >= 50", "ELSE", "ELSE", "END IF" },
                 new[] { "Read score", "attempts = 0", "WHILE (score < 0 OR score > 100) AND attempts < 3", "Output Invalid score", "attempts = attempts + 1", "IF attempts < 3", "Read score", "ELSE", "Output Too many invalid attempts", "END IF", "END WHILE", "IF score >= 75", "Output Excellent", "ELSE", "IF score >= 50", "Output Pass", "ELSE", "Output Fail", "END IF", "END IF" }),
             _ => (
                 new[] { "average = total / 3", "END IF", "Read scores", "Output Fail", "count = count + 1", "IF average >= 75", "Output Excellent", "total = total + scores[count]", "END WHILE", "IF average >= 50", "total = 0", "count = 0", "Output Pass", "ELSE", "WHILE count < 3", "END IF", "ELSE" },
