@@ -15,6 +15,8 @@ public partial class FlowchartBlockControl : HBoxContainer
         BlockType = type;
         InitialText = text;
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        MouseFilter = MouseFilterEnum.Pass;
         CustomMinimumSize = new Vector2(0, 80);
         AddThemeConstantOverride("separation", 6);
 
