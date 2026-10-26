@@ -173,11 +173,14 @@ public static class GeneratedChallengeFactory
 
     private static GeneratedChallenge GenerateFlowchart(int level, Random rng)
     {
-        if (level <= 2)
+        if (level == 1)
         {
+            int quantity = rng.Next(2, 9);
+            int price = rng.Next(4, 26);
+            string item = Pick(rng, Nouns);
             return Flow(
                 "Build a total-cost flowchart",
-                "Drag the matching shaped blocks into the canvas and define each block. Create a flowchart that reads quantity and unit price, calculates totalCost, and outputs the result.",
+                $"A student buys {quantity} {item} at {price} pesos each. Drag the shaped blocks into the canvas, define every block, and calculate the total from quantity and unit price.",
                 "Input, process, output",
                 new[]
                 {
@@ -186,6 +189,25 @@ public static class GeneratedChallengeFactory
                     B("Input", "INPUT unitPrice"),
                     B("Process", "totalCost = quantity * unitPrice"),
                     B("Output", "OUTPUT totalCost"),
+                    B("End", "END")
+                });
+        }
+
+        if (level == 2)
+        {
+            int width = rng.Next(3, 16);
+            int height = rng.Next(2, 13);
+            return Flow(
+                "Build a rectangle flowchart",
+                $"Create a flowchart that reads width and height (example values: {width} and {height}), calculates area = width * height, then displays area.",
+                "Input, calculation, output",
+                new[]
+                {
+                    B("Start", "START"),
+                    B("Input", "INPUT width"),
+                    B("Input", "INPUT height"),
+                    B("Process", "area = width * height"),
+                    B("Output", "OUTPUT area"),
                     B("End", "END")
                 });
         }
