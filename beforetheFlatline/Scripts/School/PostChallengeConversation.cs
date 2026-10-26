@@ -147,6 +147,7 @@ public partial class PostChallengeConversation : Control
         _isReturning = true;
 
         // The school is a Room inside World.tscn, not a standalone playable world.
+        DayClock.Instance?.MarkSchoolChallengeCompletedToday();
         DayClock.Instance?.SkipSchoolGreetingOnNextLoad();
         global::RoomManager.RequestStartRoomOnNextLoad(SchoolRoomPath, SchoolSpawn);
 
