@@ -239,6 +239,8 @@ public partial class StatusEffectsOverlay : CanvasLayer
         float baseAlpha = lowSanity * 0.13f + debuff * 0.075f;
 
         Color tint = DebuffColor(_dominantDebuff);
+        if (_flashTime > 0f)
+            tint = tint.Lerp(_flashColor, 0.62f);
         if (_sanity < 25f)
             tint = tint.Lerp(new Color("d9233e"), 0.35f);
 
