@@ -60,7 +60,6 @@ public partial class FlowchartDropCanvas : PanelContainer
             _blocks.RemoveChild(child);
             child.QueueFree();
         }
-        ShowEmptyMessage();
     }
 
     private void ShowEmptyMessage()
