@@ -233,7 +233,7 @@ public partial class ChallengeScene : Control
     private void AddFlowchartBlock(string block)
     {
         _flowchart.Add(block);
-        if (_flowCanvas is FlowchartDropCanvas canvas) canvas.ShowBlocks(_flowchart);
+        if (_flowCanvas is FlowchartFlowchartDropCanvas canvas) canvas.ShowBlocks(_flowchart);
         _feedback.Text = $"Blocks placed: {_flowchart.Count}. You can drag the same block more than once; duplicates will fail validation.";
     }
 
@@ -275,7 +275,7 @@ public partial class ChallengeScene : Control
         if (ChallengeId.ToLowerInvariant() == "flowchart")
         {
             _flowchart.Clear();
-            if (_flowCanvas is DropCanvas canvas) canvas.ClearBlocks();
+            if (_flowCanvas is FlowchartDropCanvas canvas) canvas.ClearBlocks();
         }
         else
         {
