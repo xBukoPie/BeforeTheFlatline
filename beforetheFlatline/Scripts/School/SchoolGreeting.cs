@@ -7,6 +7,11 @@ namespace SchoolYardGame;
 // This will check the player and triggers the friend greeting based on time.
 public partial class SchoolGreeting : Node2D
 {
+    /// <summary>Emitted when the player advances past the school greeting dialogue.</summary>
+    [Signal] public delegate void SchoolGreetingFinishedEventHandler();
+
+    private Control _activeGreetingPanel;
+    private bool _greetingFinished;
     // List of characters that will greet the player with their portrait paths.
     private readonly (string name, string portraitPath)[] _characters = new[]
     {
@@ -48,7 +53,11 @@ public partial class SchoolGreeting : Node2D
             timeGreeting = "Good evening!";
 
         var panelInstance = (Control)_dialoguePanelScene.Instantiate();
+        _activeGreetingPanel = panelInstance;
         AddChild(panelInstance);
+
+        if (panelInstance is DialoguePanel dialoguePanel)
+            dialoguePanel.DialogueAdvanced += OnGreetingAdvanced;
 
         var portrait = panelInstance.GetNode<TextureRect>("PanelBackground/Portrait");
         portrait.Texture = GD.Load<Texture2D>(portraitPath);
