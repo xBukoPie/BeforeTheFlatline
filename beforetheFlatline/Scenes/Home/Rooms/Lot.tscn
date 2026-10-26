@@ -302,6 +302,8 @@ TargetRoom = "uid://cm1hdkm5fbv14"
 TargetSpawn = "FromHome"
 Prompt = "School"
 Size = Vector2(30, 62)
+RequiresSchoolHours = true
+ClosedPrompt = "Too late for school today. Come back tomorrow morning."
 
 [node name="ToDirtyKitchen" parent="Doors" unique_id=2059623979 instance=ExtResource("3_door")]
 position = Vector2(398, -37)

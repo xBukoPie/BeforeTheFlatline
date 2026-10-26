@@ -1,4 +1,5 @@
 using Godot;
+using SchoolYardGame;
 using System.Threading.Tasks;
 
 public partial class MainMenu : Control
@@ -9,6 +10,9 @@ public partial class MainMenu : Control
 
     public override void _Ready()
     {
+        // Keep the in-game clock paused while the player is on the main menu.
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = false;
         // Ensure buttons are connected (they are via scene file, but safety check)
         var playBtn = GetNode<Button>("playButton");
         var settingsBtn = GetNode<Button>("settingsButton");
@@ -34,6 +38,8 @@ public partial class MainMenu : Control
     {
         if (_isStarting) return;
         _isStarting = true;
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = true;
         await FadeScreen(1f);
 
         if (GetTree() != null)
