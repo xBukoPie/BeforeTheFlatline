@@ -1,7 +1,8 @@
 using Godot;
+using SchoolYardGame;
 using System.Collections.Generic;
 
-namespace SchoolYardGame;
+
 
 /// <summary>
 /// Root of Classroom.tscn. The classroom is the base scene; when the player enters, a visual-novel

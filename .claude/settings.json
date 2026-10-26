@@ -2,6 +2,10 @@
   "enabledPlugins": {
     "code-simplifier@anthropic-plugin-directory": true,
     "playground@anthropic-plugin-directory": true,
-    "asset-generator@anthropic-plugin-directory": true
+    "asset-generator@anthropic-plugin-directory": true,
+    "headroom-large-file-and-log-reader@anthropic-plugin-directory": true,
+    "github@claude-plugins-official": true,
+    "task-observer-learn-your-preferences@anthropic-plugin-directory": true,
+    "graph-query-mcp@anthropic-plugin-directory": true
   }
 }

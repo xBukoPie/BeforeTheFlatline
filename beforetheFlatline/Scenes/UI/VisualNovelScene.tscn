@@ -1,59 +1,19 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://2yyo34dm8phe"]
 
-[ext_resource type="Script" path="res://Scripts/UI/VisualNovelScene.cs" id="1_vnscript"]
+[ext_resource type="Script" uid="uid://b4golkw6hql6n" path="res://Scripts/UI/VisualNovelScene.cs" id="1_vnscript"]
 [ext_resource type="Texture2D" uid="uid://bq3263mwocfps" path="res://Assets/Scenes/CLassroom.jpg" id="2_bg"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-content_margin_left = 32.0
-content_margin_top = 22.0
-content_margin_right = 32.0
-content_margin_bottom = 22.0
-bg_color = Color(0.7686, 0.5882, 0.3725, 0.97)
-border_width_left = 6
-border_width_top = 6
-border_width_right = 6
-border_width_bottom = 6
-border_color = Color(0.8588, 0.6627, 0.4196, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_focus"]
+draw_center = false
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.9608, 0.8157, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
-shadow_color = Color(0, 0, 0, 0.4)
-shadow_size = 8
-shadow_offset = Vector2(0, 4)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nametag"]
-content_margin_left = 20.0
-content_margin_top = 8.0
-content_margin_right = 20.0
-content_margin_bottom = 8.0
-bg_color = Color(0.7686, 0.5882, 0.3725, 1)
-border_width_left = 5
-border_width_top = 5
-border_width_right = 5
-border_width_bottom = 5
-border_color = Color(0.8588, 0.6627, 0.4196, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
-content_margin_left = 10.0
-content_margin_right = 10.0
-bg_color = Color(0.7686, 0.5882, 0.3725, 1)
-border_width_left = 5
-border_width_top = 5
-border_width_right = 5
-border_width_bottom = 5
-border_color = Color(0.8588, 0.6627, 0.4196, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-shadow_color = Color(0, 0, 0, 0.3)
-shadow_size = 4
-shadow_offset = Vector2(0, 3)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
 content_margin_left = 10.0
@@ -86,29 +46,22 @@ corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_focus"]
-draw_center = false
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(1, 0.9608, 0.8157, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
+content_margin_left = 10.0
+content_margin_right = 10.0
+bg_color = Color(0.7686, 0.5882, 0.3725, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.8588, 0.6627, 0.4196, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_placeholder"]
-bg_color = Color(0.08, 0.08, 0.1, 0.4)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(1, 1, 1, 0.5)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
+shadow_color = Color(0, 0, 0, 0.3)
+shadow_size = 4
+shadow_offset = Vector2(0, 3)
 
 [sub_resource type="Theme" id="Theme_vn"]
 default_font_size = 22
@@ -128,7 +81,54 @@ RichTextLabel/colors/default_color = Color(0.17, 0.11, 0.06, 1)
 RichTextLabel/font_sizes/bold_font_size = 24
 RichTextLabel/font_sizes/normal_font_size = 27
 
-[node name="VisualNovelScene" type="Control"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_placeholder"]
+bg_color = Color(0.08, 0.08, 0.1, 0.4)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 1, 1, 0.5)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nametag"]
+content_margin_left = 20.0
+content_margin_top = 8.0
+content_margin_right = 20.0
+content_margin_bottom = 8.0
+bg_color = Color(0.7686, 0.5882, 0.3725, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.8588, 0.6627, 0.4196, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 32.0
+content_margin_top = 22.0
+content_margin_right = 32.0
+content_margin_bottom = 22.0
+bg_color = Color(0.7686, 0.5882, 0.3725, 0.97)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(0.8588, 0.6627, 0.4196, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0, 0, 0, 0.4)
+shadow_size = 8
+shadow_offset = Vector2(0, 4)
+
+[node name="VisualNovelScene" type="Control" unique_id=638868629]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -138,7 +138,7 @@ grow_vertical = 2
 theme = SubResource("Theme_vn")
 script = ExtResource("1_vnscript")
 
-[node name="Background" type="TextureRect" parent="."]
+[node name="Background" type="TextureRect" parent="." unique_id=1654519109]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -151,7 +151,7 @@ texture = ExtResource("2_bg")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="Dim" type="ColorRect" parent="."]
+[node name="Dim" type="ColorRect" parent="." unique_id=1054596375]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -161,7 +161,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 0.35)
 
-[node name="Characters" type="Control" parent="."]
+[node name="Characters" type="Control" parent="." unique_id=1554412798]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -170,10 +170,9 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="LeftCharacter" type="Control" parent="Characters"]
+[node name="LeftCharacter" type="Control" parent="Characters" unique_id=1484835249]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = -1
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 110.0
@@ -183,7 +182,7 @@ offset_bottom = -210.0
 grow_vertical = 0
 mouse_filter = 2
 
-[node name="LeftPlaceholder" type="Panel" parent="Characters/LeftCharacter"]
+[node name="LeftPlaceholder" type="Panel" parent="Characters/LeftCharacter" unique_id=555551214]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -194,7 +193,7 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder")
 
-[node name="Label" type="Label" parent="Characters/LeftCharacter/LeftPlaceholder"]
+[node name="Label" type="Label" parent="Characters/LeftCharacter/LeftPlaceholder" unique_id=1314363869]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -208,7 +207,7 @@ PLACEHOLDER"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="LeftPortraitRect" type="TextureRect" parent="Characters/LeftCharacter"]
+[node name="LeftPortraitRect" type="TextureRect" parent="Characters/LeftCharacter" unique_id=2012036077]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -220,10 +219,9 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="RightCharacter" type="Control" parent="Characters"]
+[node name="RightCharacter" type="Control" parent="Characters" unique_id=849059615]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = -1
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
@@ -236,7 +234,7 @@ grow_horizontal = 0
 grow_vertical = 0
 mouse_filter = 2
 
-[node name="RightPlaceholder" type="Panel" parent="Characters/RightCharacter"]
+[node name="RightPlaceholder" type="Panel" parent="Characters/RightCharacter" unique_id=464632373]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -247,7 +245,7 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder")
 
-[node name="Label" type="Label" parent="Characters/RightCharacter/RightPlaceholder"]
+[node name="Label" type="Label" parent="Characters/RightCharacter/RightPlaceholder" unique_id=349635628]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -261,7 +259,7 @@ PLACEHOLDER"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="RightPortraitRect" type="TextureRect" parent="Characters/RightCharacter"]
+[node name="RightPortraitRect" type="TextureRect" parent="Characters/RightCharacter" unique_id=1464523037]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -273,7 +271,7 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="UI" type="Control" parent="."]
+[node name="UI" type="Control" parent="." unique_id=1312070117]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -282,7 +280,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="ChoiceContainer" type="VBoxContainer" parent="UI"]
+[node name="ChoiceContainer" type="VBoxContainer" parent="UI" unique_id=2051193436]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 5
@@ -295,19 +293,19 @@ offset_bottom = 270.0
 grow_horizontal = 2
 theme_override_constants/separation = 12
 
-[node name="Choice1" type="Button" parent="UI/ChoiceContainer"]
+[node name="Choice1" type="Button" parent="UI/ChoiceContainer" unique_id=1246028841]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Sure thing"
 
-[node name="Choice2" type="Button" parent="UI/ChoiceContainer"]
+[node name="Choice2" type="Button" parent="UI/ChoiceContainer" unique_id=1018329764]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "If I have to"
 
-[node name="NameTag" type="PanelContainer" parent="UI"]
+[node name="NameTag" type="PanelContainer" parent="UI" unique_id=1026352852]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(190, 0)
 layout_mode = 0
@@ -318,14 +316,14 @@ offset_bottom = 470.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_nametag")
 
-[node name="NameLabel" type="Label" parent="UI/NameTag"]
+[node name="NameLabel" type="Label" parent="UI/NameTag" unique_id=56869784]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
 text = "Erin"
 horizontal_alignment = 1
 
-[node name="DialoguePanel" type="PanelContainer" parent="UI"]
+[node name="DialoguePanel" type="PanelContainer" parent="UI" unique_id=779896257]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 12
@@ -340,10 +338,10 @@ grow_horizontal = 2
 grow_vertical = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="Content" type="Control" parent="UI/DialoguePanel"]
+[node name="Content" type="Control" parent="UI/DialoguePanel" unique_id=1449720005]
 layout_mode = 2
 
-[node name="DialogueText" type="RichTextLabel" parent="UI/DialoguePanel/Content"]
+[node name="DialogueText" type="RichTextLabel" parent="UI/DialoguePanel/Content" unique_id=1096613534]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -356,7 +354,7 @@ bbcode_enabled = true
 text = "Hey, could you maybe keep my ring in your wallet for now? I don't want it to fall off just because my sister has decided that this is the day I go crazy."
 scroll_active = false
 
-[node name="ContinueHint" type="Label" parent="UI/DialoguePanel/Content"]
+[node name="ContinueHint" type="Label" parent="UI/DialoguePanel/Content" unique_id=757780784]
 unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0.4)
 layout_mode = 1
@@ -370,12 +368,11 @@ offset_top = -26.0
 offset_right = 200.0
 grow_horizontal = 2
 grow_vertical = 0
-mouse_filter = 2
 theme_override_font_sizes/font_size = 18
 text = "Press [Space] to interact"
 horizontal_alignment = 1
 
-[node name="SideButtons" type="VBoxContainer" parent="UI"]
+[node name="SideButtons" type="VBoxContainer" parent="UI" unique_id=748100770]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -390,7 +387,7 @@ grow_horizontal = 0
 grow_vertical = 0
 theme_override_constants/separation = 8
 
-[node name="AutoButton" type="Button" parent="UI/SideButtons"]
+[node name="AutoButton" type="Button" parent="UI/SideButtons" unique_id=1618568852]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
@@ -398,7 +395,7 @@ focus_mode = 0
 toggle_mode = true
 text = "Auto"
 
-[node name="SkipButton" type="Button" parent="UI/SideButtons"]
+[node name="SkipButton" type="Button" parent="UI/SideButtons" unique_id=295514068]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
@@ -406,21 +403,21 @@ focus_mode = 0
 toggle_mode = true
 text = "Skip"
 
-[node name="LogButton" type="Button" parent="UI/SideButtons"]
+[node name="LogButton" type="Button" parent="UI/SideButtons" unique_id=2131277926]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 focus_mode = 0
 text = "Log"
 
-[node name="OptionsButton" type="Button" parent="UI/SideButtons"]
+[node name="OptionsButton" type="Button" parent="UI/SideButtons" unique_id=645509988]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 focus_mode = 0
 text = "Menu"
 
-[node name="LogPanel" type="PanelContainer" parent="UI"]
+[node name="LogPanel" type="PanelContainer" parent="UI" unique_id=1753313953]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1
@@ -437,24 +434,24 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="VBox" type="VBoxContainer" parent="UI/LogPanel"]
+[node name="VBox" type="VBoxContainer" parent="UI/LogPanel" unique_id=1229453597]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="LogTitle" type="Label" parent="UI/LogPanel/VBox"]
+[node name="LogTitle" type="Label" parent="UI/LogPanel/VBox" unique_id=2110653887]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Log"
 horizontal_alignment = 1
 
-[node name="LogText" type="RichTextLabel" parent="UI/LogPanel/VBox"]
+[node name="LogText" type="RichTextLabel" parent="UI/LogPanel/VBox" unique_id=753787046]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true
 scroll_following = true
 
-[node name="CloseLogButton" type="Button" parent="UI/LogPanel/VBox"]
+[node name="CloseLogButton" type="Button" parent="UI/LogPanel/VBox" unique_id=40903232]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
