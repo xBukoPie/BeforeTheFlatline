@@ -57,10 +57,13 @@ public partial class DayClock : Node
 
     public override void _Process(double delta)
     {
+        if (!Running)
+            return;
+
         if (Input.IsActionJustPressed("time_skip"))
             AdvanceHours(3f);
 
-        if (Running && DayLengthSeconds > 0f)
+        if (DayLengthSeconds > 0f)
             AdvanceHours((float)delta * 24f / DayLengthSeconds);
     }
 
