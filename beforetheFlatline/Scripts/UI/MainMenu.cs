@@ -20,10 +20,9 @@ public partial class MainMenu : Control
         var algorithmLabBtn = GetNodeOrNull<Button>("algorithmLabButton");
         _fade = GetNode<ColorRect>("UI/Fade");
 
-        playBtn.Pressed += OnPlayButtonPressed;
-        settingsBtn.Pressed += OnSettingsButtonPressed;
-        supportBtn.Pressed += OnSupportButtonPressed;
-        if (algorithmLabBtn != null)
+        // Play, Settings, and Support are already connected in Main.tscn.
+        // Do not connect them twice. Algorithm Lab is a code-only optional button.
+        if (algorithmLabBtn != null && !algorithmLabBtn.IsConnected(Button.SignalName.Pressed, new Callable(this, nameof(OnAlgorithmLabButtonPressed))))
             algorithmLabBtn.Pressed += OnAlgorithmLabButtonPressed;
     }
 
@@ -56,11 +55,24 @@ public partial class MainMenu : Control
 
     private void OnSettingsButtonPressed()
     {
-        GD.Print("Settings pressed - not implemented yet");
+        GetTree().ChangeSceneToFile("res://Scenes/Menu/SettingsMenu.tscn");
     }
 
     private void OnSupportButtonPressed()
     {
-        GD.Print("Support pressed - not implemented yet");
+        var dialog = new AcceptDialog
+        {
+            Title = "Support & Controls",
+            DialogText = "BEFORE THE FLATLINE\n\nMove: WASD or arrow keys\nInteract: E\nAdvance time outside school: T\n\nUse Settings to adjust master volume, brightness, and fullscreen."
+        };
+        dialog.CustomMinimumSize = new Vector2(480, 260);
+        AddChild(dialog);
+        dialog.Confirmed += () => dialog.QueueFree();
+        dialog.Canceled += () => dialog.QueueFree();
+
+        var repository = new Button { Text = "Open GitHub repository", CustomMinimumSize = new Vector2(0, 38) };
+        repository.Pressed += () => OS.ShellOpen("https://github.com/xBukoPie/BeforeTheFlatline");
+        dialog.AddChild(repository);
+        dialog.PopupCentered();
     }
 }
