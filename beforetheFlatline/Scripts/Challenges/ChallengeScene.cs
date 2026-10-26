@@ -23,7 +23,7 @@ public partial class ChallengeScene : Control
 
     private static readonly string[] SequenceItems =
     {
-        "Wake up", "Get dressed", "Eat breakfast", "Leave for school"
+        "Eat breakfast", "Wake up", "Leave for school", "Get dressed"
     };
     private static readonly string[] SequenceAnswer =
     {
@@ -121,17 +121,18 @@ public partial class ChallengeScene : Control
     {
         var title = _main.GetNode<Label>("ChallengeTitle");
         var prompt = _main.GetNode<Label>("ChallengePrompt");
+        bool alreadyDone = ChallengeProgress.IsCompleted(ChallengeId);
 
         switch (ChallengeId.ToLowerInvariant())
         {
             case "sequence":
                 title.Text = "01 — Put the morning routine in order";
                 prompt.Text = "Rearrange the pseudocode statements so the routine executes from beginning to end. Use the arrow buttons to move each line.";
-                _items.AddRange(new[] { "Eat breakfast", "Wake up", "Leave for school", "Get dressed" });
+                _items.AddRange(SequenceItems);
                 _expected = string.Join("|", SequenceAnswer);
                 _nextScene = "res://Scenes/Challenges/ConditionChallenge.tscn";
                 RenderReorderableItems();
-                _progress.Text = "Concept: sequence";
+                _progress.Text = "Concept: sequence" + (alreadyDone ? "   ✓ completed" : "");
                 break;
             case "condition":
                 title.Text = "02 — Repair the door logic";
@@ -140,7 +141,7 @@ public partial class ChallengeScene : Control
                 _expected = string.Join("|", ConditionAnswer);
                 _nextScene = "res://Scenes/Challenges/FlowchartChallenge.tscn";
                 RenderReorderableItems();
-                _progress.Text = "Concept: selection (IF / ELSE)";
+                _progress.Text = "Concept: selection (IF / ELSE)" + (alreadyDone ? "   ✓ completed" : "");
                 break;
             case "flowchart":
                 title.Text = "03 — Build the grading flowchart";
@@ -148,7 +149,7 @@ public partial class ChallengeScene : Control
                 RenderFlowchartEditor();
                 _expected = string.Join("|", FlowchartAnswer);
                 _nextScene = "res://Scenes/Challenges/FinalChallenge.tscn";
-                _progress.Text = "Concept: flowchart structure";
+                _progress.Text = "Concept: flowchart structure" + (alreadyDone ? "   ✓ completed" : "");
                 break;
             default:
                 title.Text = "04 — Final algorithm";
@@ -157,8 +158,14 @@ public partial class ChallengeScene : Control
                 _expected = "Read score|IF score >= 50|Output Pass|ELSE|Output Fail|END IF";
                 _nextScene = "";
                 RenderReorderableItems();
-                _progress.Text = "Final challenge";
+                _progress.Text = "Final challenge" + (alreadyDone ? "   ✓ completed" : "");
                 break;
+        }
+
+        if (alreadyDone)
+        {
+            _feedback.Text = "You already solved this one — replay it any time. Solving it again still restores sanity.";
+            _feedback.AddThemeColorOverride("font_color", new Color("86efac"));
         }
     }
 
@@ -250,12 +257,20 @@ public partial class ChallengeScene : Control
             return;
         }
 
-        _feedback.Text = _nextScene.Length > 0
-            ? "Correct. Challenge complete — proceeding to the next exercise."
-            : "Correct. You completed the algorithm path. Return to the challenge hub to replay any exercise.";
+        ChallengeProgress.MarkCompleted(ChallengeId);
+
+        bool allDone = ChallengeProgress.AllCompleted;
+        _feedback.Text = allDone
+            ? $"Correct. ALL CHALLENGES COMPLETE — +{ChallengeProgress.SanityReward} sanity restored. Return to the hub to see your record."
+            : (_nextScene.Length > 0
+                ? $"Correct. Challenge complete — +{ChallengeProgress.SanityReward} sanity restored. Proceeding to the next exercise."
+                : $"Correct. +{ChallengeProgress.SanityReward} sanity restored. Return to the challenge hub to replay any exercise.");
         _feedback.AddThemeColorOverride("font_color", new Color("86efac"));
-        foreach (var child in _main.GetChildren())
-            if (child is Button button && button.Text == "Check Answer") button.Disabled = true;
+
+        // FIXED: search recursively — the buttons live inside the footer HBoxContainer,
+        // so the old _main.GetChildren() loop never found them.
+        if (FindButtonByText(_main, "Check Answer") is Button checkBtn) checkBtn.Disabled = true;
+        if (FindButtonByText(_main, "Reset") is Button resetBtn) resetBtn.Disabled = true;
 
         if (!string.IsNullOrEmpty(_nextScene))
             CallDeferred(nameof(GoToNextChallenge));
@@ -269,8 +284,7 @@ public partial class ChallengeScene : Control
     private void ResetChallenge()
     {
         _feedback.Text = "";
-        foreach (var child in _main.GetChildren())
-            if (child is Button button && button.Text == "Check Answer") button.Disabled = false;
+        if (FindButtonByText(_main, "Check Answer") is Button checkBtn) checkBtn.Disabled = false;
 
         if (ChallengeId.ToLowerInvariant() == "flowchart")
         {
@@ -281,13 +295,25 @@ public partial class ChallengeScene : Control
         {
             _items.Clear();
             if (ChallengeId.ToLowerInvariant() == "sequence")
-                _items.AddRange(new[] { "Eat breakfast", "Wake up", "Leave for school", "Get dressed" });
+                _items.AddRange(SequenceItems);
             else if (ChallengeId.ToLowerInvariant() == "condition")
                 _items.AddRange(ConditionItems);
             else
                 _items.AddRange(new[] { "Output Fail", "Read score", "IF score >= 50", "Output Pass", "ELSE", "END IF" });
             RenderReorderableItems();
         }
+    }
+
+    private static Button FindButtonByText(Node node, string text)
+    {
+        foreach (Node child in node.GetChildren())
+        {
+            if (child is Button button && button.Text == text)
+                return button;
+            Button found = FindButtonByText(child, text);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     private static void ClearContainer(Node container)
@@ -298,5 +324,4 @@ public partial class ChallengeScene : Control
             child.QueueFree();
         }
     }
-
 }

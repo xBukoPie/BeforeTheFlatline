@@ -12,8 +12,8 @@ public partial class HUDController : CanvasLayer
 
         if (GameController.Instance != null)
             hour = GameController.Instance.Hour;
-        else if (DayNightCycle.Instance != null)
-            hour = DayNightCycle.Instance.Hour;
+        else if (GameController.Instance != null)
+            hour = GameController.Instance.Hour;
 
         int h = (int)hour;
         int m = (int)((hour - h) * 60);
