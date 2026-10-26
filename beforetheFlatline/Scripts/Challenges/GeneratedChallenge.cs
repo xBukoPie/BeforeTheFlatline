@@ -272,14 +272,13 @@ public static class GeneratedChallengeFactory
             return Flow(
                 "Build an eligibility flowchart",
                 $"Create a flowchart that reads mark and attendance. Check mark >= {threshold}, then check attendance >= {attendance}%. The student is ELIGIBLE only if both conditions are true.",
-                "Multiple decisions",
+                "Compound Boolean decision",
                 new[]
                 {
                     B("Start", "START"),
                     B("Input", "INPUT mark"),
                     B("Input", "INPUT attendance"),
-                    B("Decision", $"mark >= {threshold}?"),
-                    B("Decision", $"attendance >= {attendance}?"),
+                    B("Decision", $"mark >= {threshold} AND attendance >= {attendance}?"),
                     B("Output", "TRUE: OUTPUT ELIGIBLE"),
                     B("Output", "FALSE: OUTPUT NOT ELIGIBLE"),
                     B("End", "END")
