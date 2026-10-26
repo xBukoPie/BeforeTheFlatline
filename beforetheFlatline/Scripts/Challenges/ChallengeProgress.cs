@@ -4,7 +4,7 @@ using SchoolYardGame;
 
 /// <summary>
 /// Daily challenge completion record. Progress is tracked by in-game day so each new day
-/// presents a fresh challenge set. A challenge rewards sanity only the first time it is solved that day.
+/// presents a fresh challenge set. The result screen handles sanity rewards or penalties after the full assessment.
 /// </summary>
 public static class ChallengeProgress
 {
@@ -35,10 +35,7 @@ public static class ChallengeProgress
 
     public static bool MarkCompleted(string id)
     {
-        bool newlyCompleted = GetCurrentDaySet().Add(id.ToLowerInvariant());
-        if (newlyCompleted)
-            SanityManager.Instance?.Recover(SanityReward);
-        return newlyCompleted;
+        return GetCurrentDaySet().Add(id.ToLowerInvariant());
     }
 
     public static bool AllCompleted =>

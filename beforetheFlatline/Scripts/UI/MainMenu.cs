@@ -13,17 +13,12 @@ public partial class MainMenu : Control
         // Keep the in-game clock paused while the player is on the main menu.
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
-        // Ensure buttons are connected (they are via scene file, but safety check)
-        var playBtn = GetNode<Button>("playButton");
-        var settingsBtn = GetNode<Button>("settingsButton");
-        var supportBtn = GetNode<Button>("supportButton");
         var algorithmLabBtn = GetNodeOrNull<Button>("algorithmLabButton");
         _fade = GetNode<ColorRect>("UI/Fade");
 
-        playBtn.Pressed += OnPlayButtonPressed;
-        settingsBtn.Pressed += OnSettingsButtonPressed;
-        supportBtn.Pressed += OnSupportButtonPressed;
-        if (algorithmLabBtn != null)
+        // Play, Settings, and Support are already connected in Main.tscn.
+        // Do not connect them twice. Algorithm Lab is a code-only optional button.
+        if (algorithmLabBtn != null && !algorithmLabBtn.IsConnected(Button.SignalName.Pressed, new Callable(this, nameof(OnAlgorithmLabButtonPressed))))
             algorithmLabBtn.Pressed += OnAlgorithmLabButtonPressed;
     }
 
@@ -56,11 +51,20 @@ public partial class MainMenu : Control
 
     private void OnSettingsButtonPressed()
     {
-        GD.Print("Settings pressed - not implemented yet");
+        GetTree().ChangeSceneToFile("res://Scenes/Menu/SettingsMenu.tscn");
     }
 
     private void OnSupportButtonPressed()
     {
-        GD.Print("Support pressed - not implemented yet");
+        var dialog = new AcceptDialog
+        {
+            Title = "Support & Controls",
+            DialogText = "BEFORE THE FLATLINE\n\nMove: WASD or arrow keys\nInteract: E\nAdvance time outside school: T\n\nUse Settings to adjust master volume, brightness, and fullscreen."
+        };
+        AddChild(dialog);
+        dialog.Confirmed += () => dialog.QueueFree();
+        dialog.Canceled += () => dialog.QueueFree();
+
+        dialog.PopupCentered();
     }
 }
