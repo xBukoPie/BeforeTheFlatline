@@ -133,6 +133,11 @@ public partial class RoomManager : Node2D
 		}
 
 		_room = scene.Instantiate<Room>();
+        // The clock stops in school and stays stopped during its challenge/dialogue sequence.
+        // Leaving to any home/lot room resumes normal time progression.
+        if (SchoolYardGame.DayClock.Instance != null)
+            SchoolYardGame.DayClock.Instance.Running =
+                !string.Equals(_room.RoomName, "School", System.StringComparison.OrdinalIgnoreCase);
 		_holder.AddChild(_room);
 
 		_player.GlobalPosition = _room.GetSpawnPosition(spawn);
