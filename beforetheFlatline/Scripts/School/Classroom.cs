@@ -5,6 +5,8 @@ using System.Collections.Generic;
 /// Flow:  School door  ->  Door.Use() overlays this scene on World/UI  ->  _Ready starts the greeting.
 public partial class Classroom : Control
 {
+    /// <summary>Emitted once the classroom greeting dialogue has fully finished.</summary>
+    [Signal] public delegate void ClassroomGreetingFinishedEventHandler();
     [Export] public bool AllowEscapeToLeave { get; set; } = true;
 
     // Randomized freinds greet.
@@ -88,6 +90,7 @@ public partial class Classroom : Control
         _greetingActive = false;
         _dialogue.QueueFree();
         _leaveHint.Visible = AllowEscapeToLeave;
+        EmitSignal(SignalName.ClassroomGreetingFinished);
     }
 
     // This freezes the player while inside the classroom scene, preventing movement or interaction until the scene is closed.
