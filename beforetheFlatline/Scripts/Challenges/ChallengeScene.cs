@@ -119,11 +119,8 @@ public partial class ChallengeScene : Control
 
     private void ConfigureChallenge()
     {
-        var title = GetNode<Label>("MarginContainer/ChallengeTitle");
-        var prompt = GetNode<Label>("MarginContainer/ChallengePrompt");
-        // The shell is assembled dynamically, so resolve the labels by walking the main container.
-        title = _main.GetNode<Label>("ChallengeTitle");
-        prompt = _main.GetNode<Label>("ChallengePrompt");
+        var title = _main.GetNode<Label>("ChallengeTitle");
+        var prompt = _main.GetNode<Label>("ChallengePrompt");
 
         switch (ChallengeId.ToLowerInvariant())
         {
@@ -211,14 +208,14 @@ public partial class ChallengeScene : Control
         _itemList.AddChild(palette);
         foreach (string block in FlowchartBlocks)
         {
-            var source = new DragBlockButton { Text = block, BlockName = block, CustomMinimumSize = new Vector2(150, 48) };
+            var source = new ChallengeDragBlockButton { Text = block, BlockName = block, CustomMinimumSize = new Vector2(150, 48) };
             palette.AddChild(source);
         }
         var canvasTitle = new Label { Text = "FLOWCHART CANVAS — drop blocks here" };
         canvasTitle.AddThemeColorOverride("font_color", new Color("7dd3fc"));
         _itemList.AddChild(canvasTitle);
 
-        var canvas = new DropCanvas
+        var canvas = new FlowchartDropCanvas
         {
             CustomMinimumSize = new Vector2(0, 210),
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
@@ -236,7 +233,7 @@ public partial class ChallengeScene : Control
     private void AddFlowchartBlock(string block)
     {
         _flowchart.Add(block);
-        if (_flowCanvas is DropCanvas canvas) canvas.ShowBlocks(_flowchart);
+        if (_flowCanvas is FlowchartDropCanvas canvas) canvas.ShowBlocks(_flowchart);
         _feedback.Text = $"Blocks placed: {_flowchart.Count}. You can drag the same block more than once; duplicates will fail validation.";
     }
 
@@ -302,72 +299,4 @@ public partial class ChallengeScene : Control
         }
     }
 
-    private partial class DragBlockButton : Button
-    {
-        public string BlockName { get; set; } = "";
-
-        public override Variant _GetDragData(Vector2 atPosition)
-        {
-            var preview = new Label { Text = BlockName };
-            preview.AddThemeColorOverride("font_color", Colors.White);
-            preview.AddThemeColorOverride("font_outline_color", Colors.Black);
-            preview.AddThemeConstantOverride("outline_size", 4);
-            SetDragPreview(preview);
-            return BlockName;
-        }
-    }
-
-    private partial class DropCanvas : PanelContainer
-    {
-        public event Action<string> BlockDropped;
-        private readonly VBoxContainer _blocks = new();
-
-        public DropCanvas()
-        {
-            AddThemeStyleboxOverride("panel", new StyleBoxFlat { BgColor = new Color("1e293b"), BorderColor = new Color("475569"), BorderWidthLeft = 2, BorderWidthRight = 2, BorderWidthTop = 2, BorderWidthBottom = 2, ContentMarginLeft = 12, ContentMarginRight = 12, ContentMarginTop = 12, ContentMarginBottom = 12 });
-            AddChild(_blocks);
-        }
-
-        public override bool _CanDropData(Vector2 atPosition, Variant data)
-        {
-            return data.VariantType == Variant.Type.String && FlowchartBlocks.Contains(data.AsString());
-        }
-
-        public override void _DropData(Vector2 atPosition, Variant data)
-        {
-            if (data.VariantType == Variant.Type.String)
-                BlockDropped?.Invoke(data.AsString());
-        }
-
-        public void ShowBlocks(IEnumerable<string> blocks)
-        {
-            ClearBlocks();
-            int index = 1;
-            foreach (string block in blocks)
-            {
-                var label = new Label
-                {
-                    Text = $"{index}.  {block}",
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    CustomMinimumSize = new Vector2(0, 34)
-                };
-                label.AddThemeColorOverride("font_color", Colors.White);
-                label.AddThemeStyleboxOverride("normal", new StyleBoxFlat { BgColor = new Color("334155"), CornerRadiusTopLeft = 4, CornerRadiusTopRight = 4, CornerRadiusBottomLeft = 4, CornerRadiusBottomRight = 4 });
-                _blocks.AddChild(label);
-                index++;
-            }
-            if (!blocks.Any())
-                _blocks.AddChild(new Label { Text = "Drop blocks here", HorizontalAlignment = HorizontalAlignment.Center });
-        }
-
-        public void ClearBlocks()
-        {
-            foreach (Node child in _blocks.GetChildren())
-            {
-                _blocks.RemoveChild(child);
-                child.QueueFree();
-            }
-            _blocks.AddChild(new Label { Text = "Drop blocks here", HorizontalAlignment = HorizontalAlignment.Center });
-        }
-    }
 }
