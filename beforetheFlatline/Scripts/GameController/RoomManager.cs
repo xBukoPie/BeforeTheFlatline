@@ -50,14 +50,24 @@ public partial class RoomManager : Node2D
 		_busy = true;
 		_player.ProcessMode = ProcessModeEnum.Disabled;
 
-		await FadeTo(1f);
-		LoadRoom(roomPath, spawn);
-		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-		_camera.ResetSmoothing();
-		await FadeTo(0f);
-
-		_player.ProcessMode = ProcessModeEnum.Inherit;
-		_busy = false;
+		try
+		{
+			await FadeTo(1f);
+			LoadRoom(roomPath, spawn);
+			await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+			_camera.ResetSmoothing();
+			await FadeTo(0f);
+		}
+		catch (System.Exception ex)
+		{
+			GD.PushError($"RoomManager: Error during room transition to '{roomPath}': {ex.Message}");
+		}
+		finally
+		{
+			if (GodotObject.IsInstanceValid(_player))
+				_player.ProcessMode = ProcessModeEnum.Inherit;
+			_busy = false;
+		}
 	}
 
 	public void SetNight(bool night)

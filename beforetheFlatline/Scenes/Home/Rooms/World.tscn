@@ -1,19 +1,24 @@
-[gd_scene format=3 uid="uid://bgwjsbe57as2f"]
+[gd_scene load_steps=2 format=3 uid="uid://bgwjsbe57as2f"]
 
 [ext_resource type="PackedScene" uid="uid://pe0tdibgwd1l" path="res://Scenes/Models/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://nvjm3wprgbbm" path="res://Scripts/GameController/RoomManager.cs" id="2_manager"]
-[ext_resource type="Script" uid="uid://cwar2ouikcogv" path="res://Scripts/GameController/GameController.cs" id="8_gc"]
+[ext_resource type="Script" uid="uid://dptrulsv1dtu4" path="res://Scripts/UI/HUDController.cs" id="4_hud"]
+[ext_resource type="Script" uid="uid://dlta42yowku5n" path="res://Scripts/Map/Home/HomeMap.cs" id="5_home_map"]
+[ext_resource type="Script" uid="uid://cidst0bfuu6wa" path="res://Scripts/GameController/SanityManager.cs" id="6_sanity"]
+
+[sub_resource type="RectangleShape2D" id="R_200x200"]
+size = Vector2(200, 200)
 
 [node name="World" type="Node2D" unique_id=101925864 groups=["room_manager"]]
 script = ExtResource("2_manager")
 
-[node name="World#GameController" type="CanvasModulate" parent="." unique_id=500000001]
-script = ExtResource("8_gc")
+[node name="SanityManager" type="Node" parent="." unique_id=200000200]
+script = ExtResource("6_sanity")
 
-[node name="Background" type="CanvasLayer" parent="." unique_id=2122456619]
+[node name="Background" type="CanvasLayer" parent="." unique_id=200000100]
 layer = -100
 
-[node name="Black" type="ColorRect" parent="Background" unique_id=504845493]
+[node name="Black" type="ColorRect" parent="Background" unique_id=200000101]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -22,13 +27,13 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 1)
 
-[node name="RoomHolder" type="Node2D" parent="." unique_id=1396424029]
+[node name="RoomHolder" type="Node2D" parent="." unique_id=200000102]
 
-[node name="AmbientLight" type="CanvasModulate" parent="." unique_id=147295779]
+[node name="AmbientLight" type="CanvasModulate" parent="RoomHolder" unique_id=200000103]
 visible = false
 color = Color(0.36, 0.4, 0.62, 1)
 
-[node name="Sunlight" type="DirectionalLight2D" parent="." unique_id=1834039175]
+[node name="Sunlight" type="DirectionalLight2D" parent="RoomHolder" unique_id=200000104]
 rotation = 0.6
 color = Color(1, 0.95, 0.8, 1)
 energy = 0.0
@@ -52,10 +57,18 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0, 0, 0, 1)
+color = Color(0, 0, 0, 0)
 
-[node name="HUD" type="CanvasLayer" parent="." unique_id=1269039120]
+[node name="HUD" type="CanvasLayer" parent="UI" unique_id=1269039120]
 layer = 10
+script = ExtResource("4_hud")
+
+[node name="SanityBar" type="ProgressBar" parent="HUD" unique_id=200000001]
+offset_left = 10.0
+offset_top = 40.0
+offset_right = 190.0
+offset_bottom = 60.0
+value = 100.0
 
 [node name="Prompt" type="Label" parent="HUD" unique_id=1607028547]
 anchors_preset = 7
@@ -77,3 +90,28 @@ offset_top = 8.0
 offset_right = 200.0
 offset_bottom = 34.0
 text = "08:00"
+
+[node name="HomeMapRoot" type="Node2D" parent="." unique_id=200000112]
+script = ExtResource("5_home_map")
+
+[node name="AmbientLight" type="CanvasModulate" parent="HomeMapRoot" unique_id=200000113]
+visible = false
+color = Color(0.36, 0.4, 0.62, 1)
+
+[node name="Sunlight" type="DirectionalLight2D" parent="HomeMapRoot" unique_id=200000114]
+rotation = 0.6
+color = Color(1, 0.95, 0.8, 1)
+energy = 0.0
+shadow_enabled = true
+shadow_filter = 1
+height = 0.3
+max_distance = 2000.0
+
+[node name="Lights" type="Node2D" parent="HomeMapRoot" unique_id=200000115]
+
+[node name="Zones" type="Node2D" parent="HomeMapRoot" unique_id=200000116]
+
+[node name="InteriorZone" type="Area2D" parent="Zones" unique_id=200000117]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InteriorZone" unique_id=200000118]
+shape = SubResource("R_200x200")

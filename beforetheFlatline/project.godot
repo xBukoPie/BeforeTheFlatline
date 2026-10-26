@@ -15,8 +15,9 @@ run/main_scene="uid://c6cp4xu2fa4t4"
 config/features=PackedStringArray("4.7", "C#", "GL Compatibility")
 config/icon="res://icon.svg"
 
-[display]
+[autoload]
 
+SanityManager="res://Scripts/GameController/SanityManager.cs"
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/size/mode=1

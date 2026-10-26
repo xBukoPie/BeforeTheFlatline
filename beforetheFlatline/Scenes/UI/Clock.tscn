@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://clock123"]
+
+[node name="Clock" type="Label" parent="."]
+offset_left = 12.0
+offset_top = 8.0
+offset_right = 200.0
+offset_bottom = 34.0
+text = "08:00"

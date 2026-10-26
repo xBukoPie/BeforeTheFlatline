@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://sanbar123"]
+
+[ext_resource type="Script" uid="uid://hudscript1" path="res://Scripts/UI/SanityHUD.cs" id="1_hud"]
+
+[node name="SanityBar" type="ProgressBar" parent="."]
+offset_left = 10.0
+offset_top = 40.0
+offset_right = 190.0
+offset_bottom = 60.0
+max_value = 100.0
+value = 100.0
+script = ExtResource("1_hud")
