@@ -2,12 +2,17 @@ using Godot;
 using SchoolYardGame;
 using System.Collections.Generic;
 /// This script triggers the classroom scene. Freezing the player while inside the classroom until closed.
-/// Flow:  School door  ->  Door.Use() overlays this scene on World/UI  ->  _Ready starts the greeting.
+/// Flow:  School door  ->  Door.Use() overlays this scene on World/UI  ->  _Ready starts the greeting
+///        ->  greeting finishes  ->  hands off to the first Algorithm Lab challenge.
 public partial class Classroom : Control
 {
     [Export] public bool AllowEscapeToLeave { get; set; } = true;
 
-    // Randomized freinds greet.
+    /// <summary>Challenge scene opened once the greeting dialogue finishes.</summary>
+    [Export(PropertyHint.File, "*.tscn")]
+    public string ChallengeScenePath { get; set; } = "res://Scenes/Challenges/SequenceChallenge.tscn";
+
+    // Randomized friends greet.
     private static readonly (string Name, string PortraitPath)[] Greeters =
     {
         ("Mich", "res://Assets/Characters/Mich.png"),
@@ -35,7 +40,6 @@ public partial class Classroom : Control
 
     public override void _ExitTree()
     {
-        // This is self-explanatory.
         ReleasePlayer();
     }
 
@@ -87,6 +91,21 @@ public partial class Classroom : Control
     {
         _greetingActive = false;
         _dialogue.QueueFree();
+
+        // Class begins: hand off to the first Algorithm Lab challenge.
+        // If the player already cleared the sequence challenge, just let them leave instead.
+        bool alreadyCleared = ChallengeProgress.IsCompleted(ChallengeProgress.SequenceId);
+
+        if (!alreadyCleared
+            && !string.IsNullOrWhiteSpace(ChallengeScenePath)
+            && ResourceLoader.Exists(ChallengeScenePath))
+        {
+            _leaveHint.Visible = false;
+            // Deferred so the dialogue cleanup completes before the scene swap.
+            GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, ChallengeScenePath);
+            return;
+        }
+
         _leaveHint.Visible = AllowEscapeToLeave;
     }
 
