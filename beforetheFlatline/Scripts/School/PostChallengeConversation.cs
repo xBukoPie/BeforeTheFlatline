@@ -58,6 +58,9 @@ public partial class PostChallengeConversation : Control
 
     public override void _Ready()
     {
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = false;
+
         _dialogue = GetNode<VisualNovelScene>("%PostChallengeDialogue");
         _dialogue.PlayDemoOnReady = false;
         _dialogue.LoopDemo = false;
