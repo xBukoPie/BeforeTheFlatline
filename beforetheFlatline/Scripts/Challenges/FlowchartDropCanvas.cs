@@ -20,6 +20,7 @@ public partial class FlowchartDropCanvas : PanelContainer
             BorderWidthLeft = 2, BorderWidthRight = 2, BorderWidthTop = 2, BorderWidthBottom = 2,
             ContentMarginLeft = 10, ContentMarginRight = 10, ContentMarginTop = 10, ContentMarginBottom = 10
         });
+        _blocks.MouseFilter = MouseFilterEnum.Ignore;
         AddChild(_blocks);
         ShowEmptyMessage();
     }
