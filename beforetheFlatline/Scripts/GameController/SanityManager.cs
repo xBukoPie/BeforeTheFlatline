@@ -26,11 +26,21 @@ public partial class SanityManager : Node
 
     public override void _Ready()
     {
-        Instance = this;
+        // Only the project Autoload should own the singleton reference. World.tscn also
+        // contains a legacy child with this script, but it must not replace the Autoload.
+        if (GetParent() == GetTree().Root)
+            Instance = this;
+
         foreach (DebuffType d in Enum.GetValues(typeof(DebuffType)))
         {
             _debuffs[d] = 0;
         }
+    }
+
+    public override void _ExitTree()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 
     public void Recover(int amount)

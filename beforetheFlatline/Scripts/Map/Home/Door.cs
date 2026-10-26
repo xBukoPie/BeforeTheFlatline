@@ -10,11 +10,15 @@ public partial class Door : Area2D
     [Export] public string Prompt { get; set; } = "Enter";
     [Export] public Vector2 Size { get; set; } = new Vector2(32, 12);
     [Export] public bool AutoEnter { get; set; } = false;    // true = no key press needed (e.g. walk down stairs)
+    [Export] public bool RequiresSchoolHours { get; set; } = false;
+    [Export] public string ClosedPrompt { get; set; } = "School is closed. Come back after sunrise.";
+    [Export] public float ClosedMessageDuration { get; set; } = 2.5f;
 
     private const bool DebugLog = true;   // prints door activity to the Output panel; set to false once doors work
 
     private Label _hint;
     private bool _playerInside;
+    private float _closedPromptRemaining;
 
     public override void _Ready()
     {
@@ -51,6 +55,19 @@ public partial class Door : Area2D
         BodyExited += OnBodyExited;
     }
 
+    public override void _Process(double delta)
+    {
+        if (_closedPromptRemaining <= 0f)
+            return;
+
+        _closedPromptRemaining = Mathf.Max(0f, _closedPromptRemaining - (float)delta);
+        if (_closedPromptRemaining <= 0f && IsInstanceValid(_hint))
+        {
+            _hint.Text = $"[E] {Prompt}";
+            _hint.Visible = _playerInside;
+        }
+    }
+
     public override void _UnhandledInput(InputEvent @event)
     {
         if (_playerInside && @event.IsActionPressed("interact"))
@@ -65,6 +82,7 @@ public partial class Door : Area2D
     {
         if (DebugLog) GD.Print($"[Door] {Name}: '{body.Name}' entered the trigger");
         _playerInside = true;
+        _hint.Text = $"[E] {Prompt}";
         _hint.Visible = true;
         if (AutoEnter) Use();
     }
@@ -73,6 +91,8 @@ public partial class Door : Area2D
     {
         if (DebugLog) GD.Print($"[Door] {Name}: '{body.Name}' left the trigger");
         _playerInside = false;
+        _closedPromptRemaining = 0f;
+        _hint.Text = $"[E] {Prompt}";
         _hint.Visible = false;
     }
 
@@ -91,6 +111,14 @@ public partial class Door : Area2D
 
     private void Use()
     {
+        if (RequiresSchoolHours && (DayClock.Instance == null || !DayClock.Instance.IsSchoolOpen))
+        {
+            _hint.Text = ClosedPrompt;
+            _hint.Visible = true;
+            _closedPromptRemaining = Mathf.Max(0.5f, ClosedMessageDuration);
+            return;
+        }
+
         // Find the RoomManager (grouped as "room_manager")
         var manager = GetTree().GetFirstNodeInGroup("room_manager") as RoomManager;
         if (manager == null)
