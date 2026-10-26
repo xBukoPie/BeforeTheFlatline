@@ -127,7 +127,8 @@ public partial class FlowchartDropCanvas : PanelContainer
                 Name = "EmptyMessage",
                 Text = "Drag shaped blocks here, then define each block's value.",
                 HorizontalAlignment = HorizontalAlignment.Center,
-                AutowrapMode = TextServer.AutowrapMode.WordSmart
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                MouseFilter = MouseFilterEnum.Ignore
             });
     }
 
