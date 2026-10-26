@@ -295,6 +295,34 @@ public static class AlgorithmLogicEvaluator
             else if (type.Equals("Decision", StringComparison.OrdinalIgnoreCase))
             {
                 string condition = text.Trim().TrimEnd('?');
+
+                // When a decision is followed by its two labelled branch outputs, compile the
+                // branches by meaning, not by their visual order on the canvas.
+                if (i + 2 < blocks.Count - 1 &&
+                    blocks[i + 1].Type.Equals("Output", StringComparison.OrdinalIgnoreCase) &&
+                    blocks[i + 2].Type.Equals("Output", StringComparison.OrdinalIgnoreCase))
+                {
+                    string first = (blocks[i + 1].Text ?? "").Trim();
+                    string second = (blocks[i + 2].Text ?? "").Trim();
+                    bool firstTrue = first.StartsWith("TRUE:", StringComparison.OrdinalIgnoreCase);
+                    bool firstFalse = first.StartsWith("FALSE:", StringComparison.OrdinalIgnoreCase);
+                    bool secondTrue = second.StartsWith("TRUE:", StringComparison.OrdinalIgnoreCase);
+                    bool secondFalse = second.StartsWith("FALSE:", StringComparison.OrdinalIgnoreCase);
+
+                    if ((firstTrue && secondFalse) || (firstFalse && secondTrue))
+                    {
+                        string trueOutput = NormalizeFlowOutput(firstTrue ? first : second);
+                        string falseOutput = NormalizeFlowOutput(firstFalse ? first : second);
+                        lines.Add("IF " + condition + " THEN");
+                        lines.Add(trueOutput);
+                        lines.Add("ELSE");
+                        lines.Add(falseOutput);
+                        lines.Add("END IF");
+                        i += 2;
+                        continue;
+                    }
+                }
+
                 lines.Add("IF " + condition + " THEN");
                 openDecision++;
                 inElse = false;
@@ -313,6 +341,15 @@ public static class AlgorithmLogicEvaluator
         }
         lines.Add("END");
         return string.Join("\n", lines);
+    }
+
+    private static string NormalizeFlowOutput(string text)
+    {
+        text = Regex.Replace((text ?? "").Trim(), @"^(TRUE|FALSE):\s*", "", RegexOptions.IgnoreCase).Trim();
+        if (text.Length > 0 &&
+            !Regex.IsMatch(text, @"^(OUTPUT|PRINT|DISPLAY|WRITE)\b", RegexOptions.IgnoreCase))
+            text = "OUTPUT " + text;
+        return text;
     }
 
     private abstract class Statement
