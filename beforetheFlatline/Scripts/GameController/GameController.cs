@@ -20,11 +20,11 @@ public partial class GameController : CanvasModulate
     {
         (0f,  new Color("1a2144")),
         (5f,  new Color("232b57")),
-        (6.5f,new Color("e8a77a")),   // Sunrise
-        (8f,  new Color("ffffff")),
-        (15f, new Color("ffffff")),
-        (17f, new Color("ffd9a8")),   // Golden hour
-        (18.5f,new Color("c27d86")),  // Sunset
+        (6.5f,new Color("cf9674")),   // Sunrise
+        (8f,  new Color("e3e0da")),
+        (15f, new Color("e3e0da")),
+        (17f, new Color("d5b18a")),   // Golden hour
+        (18.5f,new Color("a96e77")),  // Sunset
         (20f, new Color("2c3463")),
         (24f, new Color("1a2144")),
     };
