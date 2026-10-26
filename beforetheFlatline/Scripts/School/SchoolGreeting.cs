@@ -10,6 +10,9 @@ public partial class SchoolGreeting : Node2D
     /// <summary>Emitted when the player advances past the school greeting dialogue.</summary>
     [Signal] public delegate void SchoolGreetingFinishedEventHandler();
 
+    /// <summary>Challenge scene opened after the greeting is dismissed.</summary>
+    [Export(PropertyHint.File, "*.tscn")] public string ChallengeScenePath { get; set; } = "res://Scenes/Challenges/SequenceChallenge.tscn";
+
     private Control _activeGreetingPanel;
     private bool _greetingFinished;
     // List of characters that will greet the player with their portrait paths.
@@ -79,5 +82,11 @@ public partial class SchoolGreeting : Node2D
             _activeGreetingPanel.QueueFree();
 
         EmitSignal(SignalName.SchoolGreetingFinished);
+
+        // Start the first challenge only after the greeting panel has been dismissed.
+        if (!string.IsNullOrWhiteSpace(ChallengeScenePath) && ResourceLoader.Exists(ChallengeScenePath))
+            GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, ChallengeScenePath);
+        else
+            GD.PushError($"SchoolGreeting: Challenge scene not found: {ChallengeScenePath}");
     }
 }
