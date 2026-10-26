@@ -6,8 +6,8 @@ using System.Text.RegularExpressions;
 using SchoolYardGame;
 
 /// <summary>
-/// Runtime-generated challenge. Pseudocode tasks require typed solutions; flowchart tasks
-/// require dragging special symbols onto the canvas and defining their text.
+/// One question in a four-question assessment. Answer correctness is recorded silently;
+/// the player always proceeds, either by submitting or giving up.
 /// </summary>
 public partial class ChallengeScene : Control
 {
@@ -19,9 +19,9 @@ public partial class ChallengeScene : Control
     private Label _progress;
     private TextEdit _codeEditor;
     private FlowchartDropCanvas _flowCanvas;
-    private Button _checkButton;
-    private Button _resetButton;
-    private Button _continueButton;
+    private Button _submitButton;
+    private Button _giveUpButton;
+    private Button _clearButton;
 
     private GeneratedChallenge _challenge;
     private string _nextScene = "";
@@ -41,7 +41,6 @@ public partial class ChallengeScene : Control
 
     public override void _Ready()
     {
-        // Clock must remain stopped through school challenge tasks and their transition UI.
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
@@ -55,7 +54,7 @@ public partial class ChallengeScene : Control
         var background = new ColorRect
         {
             Color = new Color("111827"),
-            MouseFilter = MouseFilterEnum.Ignore
+            MouseFilter = Control.MouseFilterEnum.Ignore
         };
         background.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(background);
@@ -79,18 +78,19 @@ public partial class ChallengeScene : Control
         var top = new HBoxContainer();
         _main.AddChild(top);
 
-        var banner = new Label
-        {
-            Text = "ALGORITHM LAB",
-            SizeFlagsHorizontal = SizeFlags.ExpandFill
-        };
+        var banner = new Label { Text = "ALGORITHM LAB", SizeFlagsHorizontal = SizeFlags.ExpandFill };
         banner.AddThemeFontSizeOverride("font_size", 14);
         banner.AddThemeColorOverride("font_color", new Color("7dd3fc"));
         top.AddChild(banner);
 
-        var exit = new Button { Text = "Back to Challenges" };
-        exit.Pressed += () => GetTree().ChangeSceneToFile("res://Scenes/Challenges/ChallengeHub.tscn");
-        top.AddChild(exit);
+        var leave = new Button { Text = "Leave Test" };
+        leave.Pressed += () =>
+        {
+            if (DayClock.Instance != null)
+                DayClock.Instance.Running = false;
+            GetTree().ChangeSceneToFile("res://Scenes/Challenges/ChallengeHub.tscn");
+        };
+        top.AddChild(leave);
 
         var title = new Label
         {
@@ -126,14 +126,16 @@ public partial class ChallengeScene : Control
 
         _feedback = new Label
         {
-            Text = "",
+            Text = "Your score will be revealed after the final question.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             CustomMinimumSize = new Vector2(0, 34)
         };
-        _feedback.AddThemeFontSizeOverride("font_size", 15);
+        _feedback.AddThemeFontSizeOverride("font_size", 14);
+        _feedback.AddThemeColorOverride("font_color", new Color("94a3b8"));
         _main.AddChild(_feedback);
 
         var footer = new HBoxContainer();
+        footer.AddThemeConstantOverride("separation", 8);
         _main.AddChild(footer);
 
         _progress = new Label
@@ -144,23 +146,31 @@ public partial class ChallengeScene : Control
         };
         footer.AddChild(_progress);
 
-        _checkButton = new Button { Text = "Check Answer", CustomMinimumSize = new Vector2(150, 44) };
-        _checkButton.Pressed += CheckAnswer;
-        footer.AddChild(_checkButton);
+        _clearButton = new Button { Text = "Clear Entry", CustomMinimumSize = new Vector2(105, 44) };
+        _clearButton.Pressed += ResetChallenge;
+        footer.AddChild(_clearButton);
 
-        _resetButton = new Button { Text = "Reset", CustomMinimumSize = new Vector2(90, 44) };
-        _resetButton.Pressed += ResetChallenge;
-        footer.AddChild(_resetButton);
+        _giveUpButton = new Button { Text = "Give Up & Next", CustomMinimumSize = new Vector2(142, 44) };
+        _giveUpButton.Pressed += () => RecordAndContinue(gaveUp: true);
+        footer.AddChild(_giveUpButton);
 
-        _continueButton = new Button { Text = "Continue", CustomMinimumSize = new Vector2(130, 44), Visible = false };
-        _continueButton.Pressed += ContinueToNextScene;
-        footer.AddChild(_continueButton);
+        _submitButton = new Button { Text = "Submit & Next", CustomMinimumSize = new Vector2(148, 44) };
+        _submitButton.Pressed += () => RecordAndContinue(gaveUp: false);
+        footer.AddChild(_submitButton);
     }
 
     private void GenerateCurrentTask()
     {
         _day = DayClock.Instance?.DayNumber ?? 1;
-        _difficulty = Mathf.Clamp(_day, 1, 5);
+
+        if (ChallengeId.Equals("sequence", StringComparison.OrdinalIgnoreCase))
+            DailyTestSession.Begin(_day);
+        else
+            DailyTestSession.BeginIfNeeded(_day);
+
+        int failureAdjustment = SanityManager.Instance?.DifficultyPenalty ?? 0;
+        _difficulty = Mathf.Clamp(_day + failureAdjustment - 1, 1, 5);
+
         var rng = new Random(unchecked((int)GD.Randi()));
         _challenge = GeneratedChallengeFactory.Generate(ChallengeId, _difficulty, rng);
 
@@ -174,7 +184,7 @@ public partial class ChallengeScene : Control
             "sequence" => "res://Scenes/Challenges/ConditionChallenge.tscn",
             "condition" => "res://Scenes/Challenges/FlowchartChallenge.tscn",
             "flowchart" => "res://Scenes/Challenges/FinalChallenge.tscn",
-            _ => "res://Scenes/School/PostChallengeConversation.tscn"
+            _ => "res://Scenes/School/TestResults.tscn"
         };
 
         if (_challenge.IsFlowchart)
@@ -182,7 +192,14 @@ public partial class ChallengeScene : Control
         else
             RenderPseudocodeEditor();
 
-        _progress.Text = $"Day {_day}  •  Difficulty {_difficulty}/5  •  {_challenge.Concept}";
+        int questionNumber = ChallengeId.ToLowerInvariant() switch
+        {
+            "sequence" => 1,
+            "condition" => 2,
+            "flowchart" => 3,
+            _ => 4
+        };
+        _progress.Text = $"QUESTION {questionNumber}/4   •   DAY {_day}   •   DIFFICULTY {_difficulty}/5";
     }
 
     private void RenderPseudocodeEditor()
@@ -190,7 +207,7 @@ public partial class ChallengeScene : Control
         ClearContent();
         var guide = new Label
         {
-            Text = "TYPE YOUR SOLUTION BELOW. Use one instruction per line. The reference solution is not shown.",
+            Text = "TYPE YOUR OWN PSEUDOCODE. Submit or give up to continue; individual answers are not revealed yet.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
         guide.AddThemeColorOverride("font_color", new Color("7dd3fc"));
@@ -217,7 +234,7 @@ public partial class ChallengeScene : Control
         ClearContent();
         var guide = new Label
         {
-            Text = "DRAG A SHAPE INTO THE CANVAS. Edit its definition, then use ↑ / ↓ to order the connected blocks.",
+            Text = "DRAG A SHAPE INTO THE CANVAS. Define each symbol and use ↑ / ↓ to order the connected blocks.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
         guide.AddThemeColorOverride("font_color", new Color("7dd3fc"));
@@ -249,7 +266,7 @@ public partial class ChallengeScene : Control
         {
             CustomMinimumSize = new Vector2(0, 210),
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
-            MouseFilter = MouseFilterEnum.Stop
+            MouseFilter = Control.MouseFilterEnum.Stop
         };
         _flowCanvas.BlockDropped += AddFlowchartBlock;
         _content.AddChild(_flowCanvas);
@@ -258,7 +275,7 @@ public partial class ChallengeScene : Control
         clear.Pressed += () =>
         {
             _flowCanvas.ClearBlocks();
-            _feedback.Text = "";
+            _feedback.Text = "Your score will be revealed at the end of the test.";
         };
         _content.AddChild(clear);
     }
@@ -266,53 +283,47 @@ public partial class ChallengeScene : Control
     private void AddFlowchartBlock(string type, string defaultText)
     {
         _flowCanvas?.AddBlock(type, defaultText);
-        _feedback.Text = "";
     }
 
-    private void CheckAnswer()
+    private void RecordAndContinue(bool gaveUp)
     {
         if (_completed || _challenge == null)
             return;
 
-        bool correct = _challenge.IsFlowchart
-            ? CheckFlowchartAnswer()
-            : CheckPseudocodeAnswer();
+        bool correct = !gaveUp && (_challenge.IsFlowchart ? CheckFlowchartAnswer() : CheckPseudocodeAnswer());
+        DailyTestSession.Record(ChallengeId, correct, gaveUp, _difficulty);
 
-        if (!correct)
+        if (correct)
         {
-            _feedback.Text = _challenge.IsFlowchart
-                ? "Not quite. Check the symbol types, each block's definition, and the order of the connected blocks."
-                : "Not quite. Check your input/output steps, operators, condition boundaries, and loop order, then try again.";
+            ChallengeProgress.MarkCompleted(ChallengeId);
+            var reward = RoomKeyProgression.Instance?.AwardTaskCompletion(_difficulty);
+            if (reward != null && reward.KeysEarned > 0)
+            {
+                string keyWord = reward.KeysEarned == 1 ? "key" : "keys";
+                string unlocked = string.Join(", ", reward.RoomsUnlocked);
+                DailyTestSession.QueueNotification($"Key notification: you received {reward.KeysEarned} {keyWord}; unlocked {unlocked}.");
+            }
+        }
+
+        _completed = true;
+        _submitButton.Disabled = true;
+        _giveUpButton.Disabled = true;
+        _clearButton.Disabled = true;
+
+        // Do not reveal the answer result between questions. Every submit/skip advances the test.
+        _feedback.Text = gaveUp
+            ? "Question skipped. Moving to the next question; the overall result appears at the end."
+            : "Response recorded. Moving to the next question; the overall result appears at the end.";
+        _feedback.AddThemeColorOverride("font_color", new Color("cbd5e1"));
+
+        if (!ResourceLoader.Exists(_nextScene))
+        {
+            _feedback.Text = $"Next scene was not found: {_nextScene}";
             _feedback.AddThemeColorOverride("font_color", new Color("fca5a5"));
             return;
         }
 
-        _completed = true;
-        _checkButton.Disabled = true;
-        _resetButton.Disabled = true;
-        _continueButton.Visible = true;
-
-        bool newDailyCategory = ChallengeProgress.MarkCompleted(ChallengeId);
-        var reward = RoomKeyProgression.Instance?.AwardTaskCompletion(_difficulty);
-
-        var messages = new List<string> { "Correct! Task completed." };
-        if (reward != null && reward.KeysEarned > 0)
-        {
-            string keyWord = reward.KeysEarned == 1 ? "key" : "keys";
-            string unlocked = string.Join(", ", reward.RoomsUnlocked);
-            messages.Add($"You received {reward.KeysEarned} room {keyWord}! Unlocked: {unlocked}.");
-        }
-        else
-        {
-            messages.Add("Keep completing tasks to earn keys for new rooms.");
-        }
-
-        if (newDailyCategory)
-            messages.Add("Daily challenge milestone recorded.");
-
-        _feedback.Text = string.Join("\n", messages);
-        _feedback.AddThemeColorOverride("font_color", new Color("86efac"));
-        _continueButton.Text = ChallengeId.ToLowerInvariant() == "final" ? "Continue" : "Next Task";
+        GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, _nextScene);
     }
 
     private bool CheckPseudocodeAnswer()
@@ -370,7 +381,6 @@ public partial class ChallengeScene : Control
         if (line.EndsWith("then", StringComparison.Ordinal))
             line = line.Substring(0, line.Length - 4);
 
-        // Accept mathematically equivalent operand order for simple commutative expressions.
         int assignment = line.IndexOf('=');
         if (assignment > 0 && assignment == line.LastIndexOf('='))
         {
@@ -394,27 +404,12 @@ public partial class ChallengeScene : Control
         return line;
     }
 
-    private void ContinueToNextScene()
-    {
-        if (!_completed || string.IsNullOrWhiteSpace(_nextScene))
-            return;
-
-        if (!ResourceLoader.Exists(_nextScene))
-        {
-            _feedback.Text = $"Next scene was not found: {_nextScene}";
-            _feedback.AddThemeColorOverride("font_color", new Color("fca5a5"));
-            return;
-        }
-
-        GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, _nextScene);
-    }
-
     private void ResetChallenge()
     {
         if (_completed)
             return;
 
-        _feedback.Text = "";
+        _feedback.Text = "Entry cleared. Submit or give up when you're ready to continue.";
         if (_challenge.IsFlowchart)
             _flowCanvas?.ClearBlocks();
         else if (_codeEditor != null)
