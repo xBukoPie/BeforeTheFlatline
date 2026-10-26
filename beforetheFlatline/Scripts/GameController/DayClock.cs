@@ -21,6 +21,7 @@ public partial class DayClock : Node
     [Export] public bool Running { get; set; } = true;
     [Export(PropertyHint.Range, "0,24,0.25")] public float SchoolOpenHour { get; set; } = 6.5f;
     [Export(PropertyHint.Range, "0,24,0.25")] public float SchoolClosingHour { get; set; } = 17f;
+    [Export(PropertyHint.Range, "0,24,0.25")] public float NightBeginsHour { get; set; } = 18.5f;
 
     public float Hour { get; private set; }
     public int DayNumber { get; private set; } = 1;
@@ -31,7 +32,7 @@ public partial class DayClock : Node
     private bool _initialized;
 
     public bool IsSchoolOpen => Hour >= SchoolOpenHour && Hour < SchoolClosingHour;
-    public bool IsNight => Hour < SchoolOpenHour || Hour >= SchoolClosingHour;
+    public bool IsNight => Hour < SchoolOpenHour || Hour >= NightBeginsHour;
 
     public override void _Ready()
     {
