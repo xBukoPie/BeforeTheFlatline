@@ -63,7 +63,7 @@ public partial class MainMenu : Control
         };
         AddChild(dialog);
         dialog.Confirmed += () => dialog.QueueFree();
-        dialog.CloseRequested += () => dialog.QueueFree();
+        dialog.Canceled += () => dialog.QueueFree();
 
         dialog.PopupCentered();
     }
