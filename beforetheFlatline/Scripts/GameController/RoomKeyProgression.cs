@@ -47,10 +47,12 @@ public partial class RoomKeyProgression : Node
     public bool IsRoomUnlocked(string roomId)
     {
         string id = (roomId ?? "").Trim().ToLowerInvariant();
-        int index = Array.FindIndex(LockedRooms, room => room.Id == id);
+        if (string.IsNullOrEmpty(id))
+            return true;
 
-        // Rooms not listed here (Kwarto, Sala, Lot, School, etc.) are open by default.
-        return index < 0 || TotalKeysEarned > index;
+        int index = Array.FindIndex(LockedRooms, room => room.Id == id);
+        // Fail closed for a misspelled lock ID; unlocked rooms simply leave UnlockRoomId empty.
+        return index >= 0 && TotalKeysEarned > index;
     }
 
     /// <summary>Grant hidden points for a correctly completed task and unlock any reached quotas.</summary>
