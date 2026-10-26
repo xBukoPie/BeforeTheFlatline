@@ -19,7 +19,7 @@ public partial class RoomManager : Node2D
 	[Export] public bool IsNight { get; set; } = true;
 	[Export] public bool AllowNightToggleKey { get; set; } = true;   // press N to flip day/night while testing
 	[Export] public float FadeTime { get; set; } = 0.25f;
-	[Export] public Color DayColor { get; set; } = new Color(0.78f, 0.80f, 0.85f);
+	[Export] public Color DayColor { get; set; } = new Color(0.86f, 0.88f, 0.92f);
 	[Export] public Color NightColor { get; set; } = new Color(0.22f, 0.24f, 0.38f);
 	[Export] public float DaySunEnergy { get; set; } = 0.32f;
 
