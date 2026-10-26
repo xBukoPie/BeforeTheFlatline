@@ -2,57 +2,51 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using SchoolYardGame;
 
 /// <summary>
-/// Reusable challenge UI. Each .tscn sets ChallengeId to choose its exercise.
-/// Pseudocode tasks use explicit move controls; the flowchart task accepts draggable blocks.
+/// Runtime-generated challenge. Pseudocode tasks require typed solutions; flowchart tasks
+/// require dragging special symbols onto the canvas and defining their text.
 /// </summary>
 public partial class ChallengeScene : Control
 {
     [Export] public string ChallengeId { get; set; } = "sequence";
 
-    private readonly List<string> _items = new();
-    private readonly List<string> _initialItems = new();
-    private readonly List<string> _flowchart = new();
-    private string[] _flowchartPalette = FlowchartBlocks;
-    private VBoxContainer _itemList;
     private VBoxContainer _main;
+    private VBoxContainer _content;
     private Label _feedback;
     private Label _progress;
-    private Control _flowCanvas;
-    private string _nextScene = "";
-    private string _expected = "";
+    private TextEdit _codeEditor;
+    private FlowchartDropCanvas _flowCanvas;
+    private Button _checkButton;
+    private Button _resetButton;
+    private Button _continueButton;
 
-    private static readonly string[] SequenceItems =
+    private GeneratedChallenge _challenge;
+    private string _nextScene = "";
+    private int _difficulty = 1;
+    private int _day = 1;
+    private bool _completed;
+
+    private static readonly (string Type, string DefaultText)[] BlockPalette =
     {
-        "Eat breakfast", "Wake up", "Leave for school", "Get dressed"
-    };
-    private static readonly string[] SequenceAnswer =
-    {
-        "Wake up", "Get dressed", "Eat breakfast", "Leave for school"
-    };
-    private static readonly string[] ConditionItems =
-    {
-        "ELSE", "Open the door", "IF keyFound == true", "END IF", "Find the key"
-    };
-    private static readonly string[] ConditionAnswer =
-    {
-        "IF keyFound == true", "Open the door", "ELSE", "Find the key", "END IF"
-    };
-    private static readonly string[] FlowchartAnswer =
-    {
-        "Start", "Input score", "Decision: score >= 50?", "Output: Pass / Fail", "End"
-    };
-    private static readonly string[] FlowchartBlocks =
-    {
-        "Start", "Input score", "Decision: score >= 50?", "Output: Pass / Fail", "End"
+        ("Start", "START"),
+        ("Input", "INPUT variable"),
+        ("Process", "total = a + b"),
+        ("Output", "OUTPUT value"),
+        ("Decision", "condition?"),
+        ("End", "END")
     };
 
     public override void _Ready()
     {
+        // Clock must remain stopped through school challenge tasks and their transition UI.
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = false;
+
         BuildShell();
-        ConfigureChallenge();
+        GenerateCurrentTask();
     }
 
     private void BuildShell()
@@ -68,361 +62,351 @@ public partial class ChallengeScene : Control
 
         var margin = new MarginContainer();
         margin.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        margin.AddThemeConstantOverride("margin_left", 42);
-        margin.AddThemeConstantOverride("margin_right", 42);
-        margin.AddThemeConstantOverride("margin_top", 28);
-        margin.AddThemeConstantOverride("margin_bottom", 28);
+        margin.AddThemeConstantOverride("margin_left", 38);
+        margin.AddThemeConstantOverride("margin_right", 38);
+        margin.AddThemeConstantOverride("margin_top", 24);
+        margin.AddThemeConstantOverride("margin_bottom", 24);
         AddChild(margin);
 
-        _main = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ExpandFill };
-        _main.AddThemeConstantOverride("separation", 14);
+        _main = new VBoxContainer
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ExpandFill
+        };
+        _main.AddThemeConstantOverride("separation", 10);
         margin.AddChild(_main);
 
         var top = new HBoxContainer();
         _main.AddChild(top);
-        var title = new Label { Text = "ALGORITHM LAB", SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        title.AddThemeFontSizeOverride("font_size", 14);
-        title.AddThemeColorOverride("font_color", new Color("7dd3fc"));
-        top.AddChild(title);
+
+        var banner = new Label
+        {
+            Text = "ALGORITHM LAB",
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
+        banner.AddThemeFontSizeOverride("font_size", 14);
+        banner.AddThemeColorOverride("font_color", new Color("7dd3fc"));
+        top.AddChild(banner);
+
         var exit = new Button { Text = "Back to Challenges" };
         exit.Pressed += () => GetTree().ChangeSceneToFile("res://Scenes/Challenges/ChallengeHub.tscn");
         top.AddChild(exit);
 
-        var heading = new Label { Name = "ChallengeTitle", Text = "Challenge", AutowrapMode = TextServer.AutowrapMode.WordSmart };
-        heading.AddThemeFontSizeOverride("font_size", 30);
-        heading.AddThemeColorOverride("font_color", Colors.White);
-        _main.AddChild(heading);
+        var title = new Label
+        {
+            Name = "ChallengeTitle",
+            Text = "Generated challenge",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        title.AddThemeFontSizeOverride("font_size", 28);
+        title.AddThemeColorOverride("font_color", Colors.White);
+        _main.AddChild(title);
 
-        var prompt = new Label { Name = "ChallengePrompt", AutowrapMode = TextServer.AutowrapMode.WordSmart };
+        var prompt = new Label
+        {
+            Name = "ChallengePrompt",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            CustomMinimumSize = new Vector2(0, 62)
+        };
         prompt.AddThemeFontSizeOverride("font_size", 16);
         prompt.AddThemeColorOverride("font_color", new Color("cbd5e1"));
         _main.AddChild(prompt);
 
-        var contentScroll = new ScrollContainer { SizeFlagsVertical = SizeFlags.ExpandFill, SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        _main.AddChild(contentScroll);
-        _itemList = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        _itemList.AddThemeConstantOverride("separation", 8);
-        contentScroll.AddChild(_itemList);
+        var scroll = new ScrollContainer
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled
+        };
+        _main.AddChild(scroll);
 
-        _feedback = new Label { Text = "", AutowrapMode = TextServer.AutowrapMode.WordSmart };
+        _content = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        _content.AddThemeConstantOverride("separation", 8);
+        scroll.AddChild(_content);
+
+        _feedback = new Label
+        {
+            Text = "",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            CustomMinimumSize = new Vector2(0, 34)
+        };
         _feedback.AddThemeFontSizeOverride("font_size", 15);
         _main.AddChild(_feedback);
 
         var footer = new HBoxContainer();
         _main.AddChild(footer);
-        _progress = new Label { Text = "", SizeFlagsHorizontal = SizeFlags.ExpandFill, VerticalAlignment = VerticalAlignment.Center };
+
+        _progress = new Label
+        {
+            Text = "",
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            VerticalAlignment = VerticalAlignment.Center
+        };
         footer.AddChild(_progress);
-        var check = new Button { Text = "Check Answer", CustomMinimumSize = new Vector2(160, 44) };
-        check.Pressed += CheckAnswer;
-        footer.AddChild(check);
-        var reset = new Button { Text = "Reset", CustomMinimumSize = new Vector2(100, 44) };
-        reset.Pressed += ResetChallenge;
-        footer.AddChild(reset);
+
+        _checkButton = new Button { Text = "Check Answer", CustomMinimumSize = new Vector2(150, 44) };
+        _checkButton.Pressed += CheckAnswer;
+        footer.AddChild(_checkButton);
+
+        _resetButton = new Button { Text = "Reset", CustomMinimumSize = new Vector2(90, 44) };
+        _resetButton.Pressed += ResetChallenge;
+        footer.AddChild(_resetButton);
+
+        _continueButton = new Button { Text = "Continue", CustomMinimumSize = new Vector2(130, 44), Visible = false };
+        _continueButton.Pressed += ContinueToNextScene;
+        footer.AddChild(_continueButton);
     }
 
-    private void ConfigureChallenge()
+    private void GenerateCurrentTask()
     {
+        _day = DayClock.Instance?.DayNumber ?? 1;
+        _difficulty = Mathf.Clamp(_day, 1, 5);
+        var rng = new Random(unchecked((int)GD.Randi()));
+        _challenge = GeneratedChallengeFactory.Generate(ChallengeId, _difficulty, rng);
+
         var title = _main.GetNode<Label>("ChallengeTitle");
         var prompt = _main.GetNode<Label>("ChallengePrompt");
-        int currentDay = DayClock.Instance?.DayNumber ?? 1;
-        int difficulty = Mathf.Clamp(currentDay, 1, 5);
-        bool alreadyDone = ChallengeProgress.IsCompleted(ChallengeId);
+        title.Text = _challenge.Title;
+        prompt.Text = _challenge.Prompt;
 
-        switch (ChallengeId.ToLowerInvariant())
+        _nextScene = ChallengeId.ToLowerInvariant() switch
         {
-            case "sequence":
-            {
-                var challenge = BuildSequenceChallenge(difficulty);
-                title.Text = "01 — Put the routine in order";
-                prompt.Text = "Rearrange the pseudocode statements so the routine executes from beginning to end. Use the arrow buttons to move each line.";
-                SetPseudocodeChallenge(challenge.Initial, challenge.Answer);
-                _nextScene = "res://Scenes/Challenges/ConditionChallenge.tscn";
-                _progress.Text = $"Day {currentDay} • Difficulty {difficulty}/5 • Sequence" + (alreadyDone ? "   ✓ completed today" : "");
-                break;
-            }
-            case "condition":
-            {
-                var challenge = BuildConditionChallenge(difficulty);
-                title.Text = "02 — Repair the program logic";
-                prompt.Text = difficulty == 1
-                    ? "Arrange the IF / ELSE pseudocode. If a key is found, open the door; otherwise, find the key."
-                    : "Arrange the statements into a valid algorithm. Pay attention to loop boundaries, counters, and nested conditions.";
-                SetPseudocodeChallenge(challenge.Initial, challenge.Answer);
-                _nextScene = "res://Scenes/Challenges/FlowchartChallenge.tscn";
-                _progress.Text = $"Day {currentDay} • Difficulty {difficulty}/5 • Conditions and loops" + (alreadyDone ? "   ✓ completed today" : "");
-                break;
-            }
-            case "flowchart":
-            {
-                var challenge = BuildFlowchartChallenge(difficulty);
-                title.Text = "03 — Build the flowchart";
-                prompt.Text = "Drag every block from the palette into the canvas in the correct execution order. Later days introduce more branches and validation steps.";
-                _flowchartPalette = challenge.Palette;
-                _expected = string.Join("|", challenge.Answer);
-                RenderFlowchartEditor();
-                _nextScene = "res://Scenes/Challenges/FinalChallenge.tscn";
-                _progress.Text = $"Day {currentDay} • Difficulty {difficulty}/5 • Flowchart" + (alreadyDone ? "   ✓ completed today" : "");
-                break;
-            }
-            default:
-            {
-                var challenge = BuildFinalChallenge(difficulty);
-                title.Text = "04 — Final algorithm";
-                prompt.Text = "Arrange the pseudocode so the complete algorithm executes correctly. The task grows more complex as the in-game day advances.";
-                SetPseudocodeChallenge(challenge.Initial, challenge.Answer);
-                _nextScene = "res://Scenes/School/PostChallengeConversation.tscn";
-                _progress.Text = $"Day {currentDay} • Difficulty {difficulty}/5 • Final algorithm" + (alreadyDone ? "   ✓ completed today" : "");
-                break;
-            }
-        }
-
-        if (alreadyDone)
-        {
-            _feedback.Text = "You already solved this challenge today. You can replay it, but the sanity reward is only given once per day.";
-            _feedback.AddThemeColorOverride("font_color", new Color("86efac"));
-        }
-    }
-
-    private void SetPseudocodeChallenge(string[] initial, string[] answer)
-    {
-        _initialItems.Clear();
-        _initialItems.AddRange(initial);
-        _items.Clear();
-        _items.AddRange(_initialItems);
-        _expected = string.Join("|", answer);
-        RenderReorderableItems();
-    }
-
-    private static (string[] Initial, string[] Answer) BuildSequenceChallenge(int level)
-    {
-        return level switch
-        {
-            1 => (SequenceItems, SequenceAnswer),
-            2 => (
-                new[] { "Pack school bag", "Wake up", "Check timetable", "Eat breakfast", "Leave for school", "Get dressed", "Check homework" },
-                new[] { "Wake up", "Get dressed", "Eat breakfast", "Check homework", "Check timetable", "Pack school bag", "Leave for school" }),
-            3 => (
-                new[] { "Check timetable", "Leave for school", "Brush teeth", "Eat breakfast", "Wake up", "Pack school bag", "Check homework", "Get dressed" },
-                new[] { "Wake up", "Get dressed", "Brush teeth", "Eat breakfast", "Check homework", "Check timetable", "Pack school bag", "Leave for school" }),
-            4 => (
-                new[] { "Fill water bottle", "Check timetable", "Wake up", "Leave for school", "Eat breakfast", "Pack school bag", "Brush teeth", "Check homework", "Get dressed" },
-                new[] { "Wake up", "Get dressed", "Brush teeth", "Eat breakfast", "Check homework", "Check timetable", "Fill water bottle", "Pack school bag", "Leave for school" }),
-            _ => (
-                new[] { "Pack school bag", "Check weather", "Fill water bottle", "Eat breakfast", "Leave for school", "Check timetable", "Wake up", "Brush teeth", "Check homework", "Get dressed" },
-                new[] { "Wake up", "Check weather", "Get dressed", "Brush teeth", "Eat breakfast", "Check homework", "Check timetable", "Fill water bottle", "Pack school bag", "Leave for school" })
+            "sequence" => "res://Scenes/Challenges/ConditionChallenge.tscn",
+            "condition" => "res://Scenes/Challenges/FlowchartChallenge.tscn",
+            "flowchart" => "res://Scenes/Challenges/FinalChallenge.tscn",
+            _ => "res://Scenes/School/PostChallengeConversation.tscn"
         };
+
+        if (_challenge.IsFlowchart)
+            RenderFlowchartEditor();
+        else
+            RenderPseudocodeEditor();
+
+        _progress.Text = $"Day {_day}  •  Difficulty {_difficulty}/5  •  {_challenge.Concept}";
     }
 
-    private static (string[] Initial, string[] Answer) BuildConditionChallenge(int level)
+    private void RenderPseudocodeEditor()
     {
-        return level switch
+        ClearContent();
+        var guide = new Label
         {
-            1 => (ConditionItems, ConditionAnswer),
-            2 => (
-                new[] { "END IF", "Find the key", "ELSE", "attempts = attempts + 1", "Open the door", "WHILE keyFound == false", "Ask for help", "attempts = 0", "IF keyFound == true", "END WHILE" },
-                new[] { "attempts = 0", "WHILE keyFound == false", "Find the key", "attempts = attempts + 1", "END WHILE", "IF keyFound == true", "Open the door", "ELSE", "Ask for help", "END IF" }),
-            3 => (
-                new[] { "END WHILE", "Search the room", "IF keyFound == true", "MAX_ATTEMPTS = 3", "Ask for help", "attempts = attempts + 1", "END IF", "Open the door", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "attempts = 0", "ELSE" },
-                new[] { "attempts = 0", "MAX_ATTEMPTS = 3", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "Search the room", "attempts = attempts + 1", "END WHILE", "IF keyFound == true", "Open the door", "ELSE", "Ask for help", "END IF" }),
-            4 => (
-                new[] { "Show student ID", "END IF", "attempts = 0", "ELSE", "Open the door", "Search the room", "IF studentID == true", "MAX_ATTEMPTS = 3", "Ask for help", "END WHILE", "IF keyFound == true", "attempts = attempts + 1", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "END IF", "ELSE" },
-                new[] { "attempts = 0", "MAX_ATTEMPTS = 3", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "Search the room", "attempts = attempts + 1", "END WHILE", "IF keyFound == true", "IF studentID == true", "Open the door", "ELSE", "Show student ID", "END IF", "ELSE", "Ask for help", "END IF" }),
-            _ => (
-                new[] { "END IF", "Wait until morning", "Show student ID", "MAX_ATTEMPTS = 3", "ELSE", "attempts = attempts + 1", "Open the door", "IF schoolOpen == false", "Search the room", "END WHILE", "IF studentID == true", "Ask for help", "END IF", "attempts = 0", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "IF keyFound == true", "ELSE", "END IF" },
-                new[] { "attempts = 0", "MAX_ATTEMPTS = 3", "WHILE keyFound == false AND attempts < MAX_ATTEMPTS", "Search the room", "attempts = attempts + 1", "END WHILE", "IF keyFound == true", "IF studentID == true", "Open the door", "ELSE", "Show student ID", "END IF", "ELSE", "Ask for help", "END IF", "IF schoolOpen == false", "Wait until morning", "END IF" })
+            Text = "TYPE YOUR SOLUTION BELOW. Use one instruction per line. The reference solution is not shown.",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
-    }
+        guide.AddThemeColorOverride("font_color", new Color("7dd3fc"));
+        _content.AddChild(guide);
 
-    private static (string[] Palette, string[] Answer) BuildFlowchartChallenge(int level)
-    {
-        return level switch
+        _codeEditor = new TextEdit
         {
-            1 => (FlowchartBlocks, FlowchartAnswer),
-            2 => (
-                new[] { "Start", "Output: Fail", "Input score", "End", "Decision: score >= 50?", "Output: Pass" },
-                new[] { "Start", "Input score", "Decision: score >= 50?", "Output: Pass", "Output: Fail", "End" }),
-            3 => (
-                new[] { "Output: Fail", "Decision: score >= 50?", "Start", "Output: Excellent", "Input score", "End", "Decision: score >= 75?", "Output: Pass" },
-                new[] { "Start", "Input score", "Decision: score >= 75?", "Output: Excellent", "Decision: score >= 50?", "Output: Pass", "Output: Fail", "End" }),
-            4 => (
-                new[] { "Output: Not eligible", "Decision: score >= 50?", "Input attendance", "Start", "Output: Pass", "Decision: attendance >= 75%?", "End", "Input score", "Output: Excellent", "Decision: score >= 75?", "Output: Fail", "Output: Eligible" },
-                new[] { "Start", "Input score", "Input attendance", "Decision: score >= 75?", "Output: Excellent", "Decision: score >= 50?", "Output: Pass", "Output: Fail", "Decision: attendance >= 75%?", "Output: Eligible", "Output: Not eligible", "End" }),
-            _ => (
-                new[] { "Output: Fail", "Decision: attempts < 3?", "Set attempts = attempts + 1", "Input score", "End", "Output: Invalid score", "Start", "Decision: score valid?", "Decision: score >= 75?", "Output: Excellent", "Set attempts = 0", "Output: Pass", "Output: Retry", "Input score", "Decision: score >= 50?" },
-                new[] { "Start", "Set attempts = 0", "Input score", "Decision: score valid?", "Output: Invalid score", "Set attempts = attempts + 1", "Decision: attempts < 3?", "Output: Retry", "Input score", "Decision: score >= 75?", "Output: Excellent", "Decision: score >= 50?", "Output: Pass", "Output: Fail", "End" })
+            Name = "PseudocodeEditor",
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(0, 300),
+            PlaceholderText = "START\nINPUT value\n...\nEND",
+            ScrollFitContentHeight = false,
+            WrapMode = TextEdit.LineWrappingMode.Boundary
         };
-    }
-
-    private static (string[] Initial, string[] Answer) BuildFinalChallenge(int level)
-    {
-        return level switch
-        {
-            1 => (
-                new[] { "Output Fail", "Read score", "IF score >= 50", "Output Pass", "ELSE", "END IF" },
-                new[] { "Read score", "IF score >= 50", "Output Pass", "ELSE", "Output Fail", "END IF" }),
-            2 => (
-                new[] { "END WHILE", "Output Fail", "attempts = 0", "IF score >= 50", "Read score", "ELSE", "attempts = attempts + 1", "Output Pass", "WHILE attempts < 2", "END IF" },
-                new[] { "attempts = 0", "WHILE attempts < 2", "Read score", "IF score >= 50", "Output Pass", "ELSE", "Output Fail", "END IF", "attempts = attempts + 1", "END WHILE" }),
-            3 => (
-                new[] { "Output Fail", "Read score", "Output Invalid score", "IF score >= 50", "END WHILE", "Read score", "Output Pass", "ELSE", "IF score >= 75", "END IF", "WHILE score < 0 OR score > 100", "Output Excellent", "ELSE", "END IF" },
-                new[] { "Read score", "WHILE score < 0 OR score > 100", "Output Invalid score", "Read score", "END WHILE", "IF score >= 75", "Output Excellent", "ELSE", "IF score >= 50", "Output Pass", "ELSE", "Output Fail", "END IF", "END IF" }),
-            4 => (
-                new[] { "Output Fail", "Read score", "END WHILE", "Output Too many invalid attempts", "IF attempts < 3", "Output Pass", "attempts = 0", "ELSE", "Read score", "END IF", "WHILE (score < 0 OR score > 100) AND attempts < 3", "Output Invalid score", "END IF", "attempts = attempts + 1", "IF score >= 75", "Output Excellent", "IF score >= 50", "ELSE", "ELSE", "END IF" },
-                new[] { "Read score", "attempts = 0", "WHILE (score < 0 OR score > 100) AND attempts < 3", "Output Invalid score", "attempts = attempts + 1", "IF attempts < 3", "Read score", "ELSE", "Output Too many invalid attempts", "END IF", "END WHILE", "IF score >= 75", "Output Excellent", "ELSE", "IF score >= 50", "Output Pass", "ELSE", "Output Fail", "END IF", "END IF" }),
-            _ => (
-                new[] { "average = total / 3", "END IF", "Read scores", "Output Fail", "count = count + 1", "IF average >= 75", "Output Excellent", "total = total + scores[count]", "END WHILE", "IF average >= 50", "total = 0", "count = 0", "Output Pass", "ELSE", "WHILE count < 3", "END IF", "ELSE" },
-                new[] { "Read scores", "total = 0", "count = 0", "WHILE count < 3", "total = total + scores[count]", "count = count + 1", "END WHILE", "average = total / 3", "IF average >= 75", "Output Excellent", "ELSE", "IF average >= 50", "Output Pass", "ELSE", "Output Fail", "END IF", "END IF" })
-        };
-    }
-
-    private void RenderReorderableItems()
-    {
-        ClearContainer(_itemList);
-        for (int i = 0; i < _items.Count; i++)
-        {
-            int index = i;
-            var row = new HBoxContainer();
-            _itemList.AddChild(row);
-            var label = new Label
-            {
-                Text = $"{i + 1}.  {_items[i]}",
-                SizeFlagsHorizontal = SizeFlags.ExpandFill,
-                VerticalAlignment = VerticalAlignment.Center,
-                CustomMinimumSize = new Vector2(0, 42),
-                AutowrapMode = TextServer.AutowrapMode.WordSmart
-            };
-            label.AddThemeColorOverride("font_color", Colors.White);
-            row.AddChild(label);
-            var up = new Button { Text = "↑", Disabled = i == 0, CustomMinimumSize = new Vector2(44, 40) };
-            up.Pressed += () => MoveItem(index, -1);
-            row.AddChild(up);
-            var down = new Button { Text = "↓", Disabled = i == _items.Count - 1, CustomMinimumSize = new Vector2(44, 40) };
-            down.Pressed += () => MoveItem(index, 1);
-            row.AddChild(down);
-        }
-    }
-
-    private void MoveItem(int index, int delta)
-    {
-        int target = index + delta;
-        if (target < 0 || target >= _items.Count) return;
-        (_items[index], _items[target]) = (_items[target], _items[index]);
-        RenderReorderableItems();
-        _feedback.Text = "";
+        _codeEditor.AddThemeFontSizeOverride("font_size", 17);
+        _codeEditor.AddThemeColorOverride("font_color", Colors.White);
+        _codeEditor.AddThemeColorOverride("background_color", new Color("0f172a"));
+        _content.AddChild(_codeEditor);
     }
 
     private void RenderFlowchartEditor()
     {
-        ClearContainer(_itemList);
-        var paletteTitle = new Label { Text = "BLOCK PALETTE — drag a block into the canvas" };
-        paletteTitle.AddThemeColorOverride("font_color", new Color("7dd3fc"));
-        _itemList.AddChild(paletteTitle);
-        var palette = new HFlowContainer();
-        _itemList.AddChild(palette);
-        foreach (string block in _flowchartPalette)
+        ClearContent();
+        var guide = new Label
         {
-            var source = new ChallengeDragBlockButton { Text = block, BlockName = block, CustomMinimumSize = new Vector2(150, 48) };
-            palette.AddChild(source);
-        }
-        var canvasTitle = new Label { Text = "FLOWCHART CANVAS — drop blocks here" };
-        canvasTitle.AddThemeColorOverride("font_color", new Color("7dd3fc"));
-        _itemList.AddChild(canvasTitle);
+            Text = "DRAG A SHAPE INTO THE CANVAS. Edit its definition, then use ↑ / ↓ to order the connected blocks.",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        guide.AddThemeColorOverride("font_color", new Color("7dd3fc"));
+        _content.AddChild(guide);
 
-        var canvas = new FlowchartDropCanvas
+        var palette = new HFlowContainer();
+        palette.AddThemeConstantOverride("h_separation", 8);
+        palette.AddThemeConstantOverride("v_separation", 8);
+        _content.AddChild(palette);
+
+        foreach (var item in BlockPalette)
+        {
+            var button = new ChallengeDragBlockButton
+            {
+                Text = $"{item.Type}  +",
+                BlockType = item.Type,
+                BlockName = item.DefaultText,
+                CustomMinimumSize = new Vector2(118, 42),
+                TooltipText = $"Drag to add {item.Type.ToLowerInvariant()} block"
+            };
+            palette.AddChild(button);
+        }
+
+        var canvasTitle = new Label { Text = "CONNECTED FLOWCHART" };
+        canvasTitle.AddThemeColorOverride("font_color", new Color("7dd3fc"));
+        _content.AddChild(canvasTitle);
+
+        _flowCanvas = new FlowchartDropCanvas
         {
             CustomMinimumSize = new Vector2(0, 210),
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             MouseFilter = MouseFilterEnum.Stop
         };
-        canvas.BlockDropped += AddFlowchartBlock;
-        _itemList.AddChild(canvas);
-        _flowCanvas = canvas;
+        _flowCanvas.BlockDropped += AddFlowchartBlock;
+        _content.AddChild(_flowCanvas);
 
-        var clear = new Button { Text = "Clear flowchart", CustomMinimumSize = new Vector2(140, 36) };
-        clear.Pressed += () => { _flowchart.Clear(); canvas.ClearBlocks(); _feedback.Text = ""; };
-        _itemList.AddChild(clear);
+        var clear = new Button { Text = "Clear flowchart", CustomMinimumSize = new Vector2(130, 36) };
+        clear.Pressed += () =>
+        {
+            _flowCanvas.ClearBlocks();
+            _feedback.Text = "";
+        };
+        _content.AddChild(clear);
     }
 
-    private void AddFlowchartBlock(string block)
+    private void AddFlowchartBlock(string type, string defaultText)
     {
-        _flowchart.Add(block);
-        if (_flowCanvas is FlowchartDropCanvas canvas) canvas.ShowBlocks(_flowchart);
-        _feedback.Text = $"Blocks placed: {_flowchart.Count}. You can drag the same block more than once; duplicates will fail validation.";
+        _flowCanvas?.AddBlock(type, defaultText);
+        _feedback.Text = "";
     }
 
     private void CheckAnswer()
     {
-        bool correct = ChallengeId.ToLowerInvariant() == "flowchart"
-            ? string.Join("|", _flowchart) == _expected
-            : string.Join("|", _items) == _expected;
+        if (_completed || _challenge == null)
+            return;
+
+        bool correct = _challenge.IsFlowchart
+            ? CheckFlowchartAnswer()
+            : CheckPseudocodeAnswer();
 
         if (!correct)
         {
-            _feedback.Text = "Not quite. Review the order and try again. Check the dependency between each step.";
+            _feedback.Text = _challenge.IsFlowchart
+                ? "Not quite. Check the symbol types, each block's definition, and the order of the connected blocks."
+                : "Not quite. Check your input/output steps, operators, condition boundaries, and loop order, then try again.";
             _feedback.AddThemeColorOverride("font_color", new Color("fca5a5"));
             return;
         }
 
-        ChallengeProgress.MarkCompleted(ChallengeId);
+        _completed = true;
+        _checkButton.Disabled = true;
+        _resetButton.Disabled = true;
+        _continueButton.Visible = true;
 
-        bool allDone = ChallengeProgress.AllCompleted;
-        _feedback.Text = allDone
-            ? $"Correct. ALL CHALLENGES COMPLETE — +{ChallengeProgress.SanityReward} sanity restored. Return to the hub to see your record."
-            : (_nextScene.Length > 0
-                ? $"Correct. Challenge complete — +{ChallengeProgress.SanityReward} sanity restored. Proceeding to the next exercise."
-                : $"Correct. +{ChallengeProgress.SanityReward} sanity restored. Return to the challenge hub to replay any exercise.");
+        bool newDailyCategory = ChallengeProgress.MarkCompleted(ChallengeId);
+        var reward = RoomKeyProgression.Instance?.AwardTaskCompletion(_difficulty);
+
+        var messages = new List<string> { "Correct! Task completed." };
+        if (reward != null && reward.KeysEarned > 0)
+        {
+            string keyWord = reward.KeysEarned == 1 ? "key" : "keys";
+            string unlocked = string.Join(", ", reward.RoomsUnlocked);
+            messages.Add($"You received {reward.KeysEarned} room {keyWord}! Unlocked: {unlocked}.");
+        }
+        else
+        {
+            messages.Add("Keep completing tasks to earn keys for new rooms.");
+        }
+
+        if (newDailyCategory)
+            messages.Add("Daily challenge milestone recorded.");
+
+        _feedback.Text = string.Join("\n", messages);
         _feedback.AddThemeColorOverride("font_color", new Color("86efac"));
-
-        // FIXED: search recursively — the buttons live inside the footer HBoxContainer,
-        // so the old _main.GetChildren() loop never found them.
-        if (FindButtonByText(_main, "Check Answer") is Button checkBtn) checkBtn.Disabled = true;
-        if (FindButtonByText(_main, "Reset") is Button resetBtn) resetBtn.Disabled = true;
-
-        if (!string.IsNullOrEmpty(_nextScene))
-            CallDeferred(nameof(GoToNextChallenge));
+        _continueButton.Text = ChallengeId.ToLowerInvariant() == "final" ? "Continue" : "Next Task";
     }
 
-    private void GoToNextChallenge()
+    private bool CheckPseudocodeAnswer()
     {
-        GetTree().ChangeSceneToFile(_nextScene);
+        if (_codeEditor == null)
+            return false;
+
+        var entered = _codeEditor.Text
+            .Replace("\r", "")
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(NormalizeStatement)
+            .Where(line => line.Length > 0)
+            .ToArray();
+
+        var expected = _challenge.PseudocodeSolution.Select(NormalizeStatement).ToArray();
+        return entered.SequenceEqual(expected);
+    }
+
+    private bool CheckFlowchartAnswer()
+    {
+        if (_flowCanvas == null)
+            return false;
+
+        List<FlowchartBlockDefinition> actual = _flowCanvas.GetDefinitions();
+        var expected = _challenge.FlowchartSolution;
+        if (actual.Count != expected.Length)
+            return false;
+
+        for (int i = 0; i < expected.Length; i++)
+        {
+            if (!string.Equals(actual[i].Type, expected[i].Type, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            if (!string.Equals(NormalizeStatement(actual[i].Text), NormalizeStatement(expected[i].Text), StringComparison.Ordinal))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static string NormalizeStatement(string source)
+    {
+        string line = (source ?? "").Split("//", StringSplitOptions.None)[0].Trim().ToLowerInvariant();
+        line = line.Replace("←", "=").Replace("×", "*").Replace("÷", "/");
+        line = line.TrimEnd(';').Trim();
+
+        if (line == "begin" || line == "begin program") line = "start";
+        else if (line == "stop" || line == "stop program" || line == "finish") line = "end";
+
+        if (line.StartsWith("read ")) line = "input " + line.Substring(5);
+        else if (line.StartsWith("print ")) line = "output " + line.Substring(6);
+        else if (line.StartsWith("display ")) line = "output " + line.Substring(8);
+
+        line = Regex.Replace(line, @"\s+", "");
+        if (line.EndsWith("then", StringComparison.Ordinal))
+            line = line.Substring(0, line.Length - 4);
+        return line;
+    }
+
+    private void ContinueToNextScene()
+    {
+        if (!_completed || string.IsNullOrWhiteSpace(_nextScene))
+            return;
+
+        if (!ResourceLoader.Exists(_nextScene))
+        {
+            _feedback.Text = $"Next scene was not found: {_nextScene}";
+            _feedback.AddThemeColorOverride("font_color", new Color("fca5a5"));
+            return;
+        }
+
+        GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, _nextScene);
     }
 
     private void ResetChallenge()
     {
+        if (_completed)
+            return;
+
         _feedback.Text = "";
-        if (FindButtonByText(_main, "Check Answer") is Button checkBtn) checkBtn.Disabled = false;
-
-        if (ChallengeId.ToLowerInvariant() == "flowchart")
-        {
-            _flowchart.Clear();
-            if (_flowCanvas is FlowchartDropCanvas canvas) canvas.ClearBlocks();
-        }
-        else
-        {
-            _items.Clear();
-            _items.AddRange(_initialItems);
-            RenderReorderableItems();
-        }
+        if (_challenge.IsFlowchart)
+            _flowCanvas?.ClearBlocks();
+        else if (_codeEditor != null)
+            _codeEditor.Text = "";
     }
 
-    private static Button FindButtonByText(Node node, string text)
+    private void ClearContent()
     {
-        foreach (Node child in node.GetChildren())
+        foreach (Node child in _content.GetChildren())
         {
-            if (child is Button button && button.Text == text)
-                return button;
-            Button found = FindButtonByText(child, text);
-            if (found != null) return found;
-        }
-        return null;
-    }
-
-    private static void ClearContainer(Node container)
-    {
-        foreach (Node child in container.GetChildren())
-        {
-            container.RemoveChild(child);
+            _content.RemoveChild(child);
             child.QueueFree();
         }
+        _codeEditor = null;
+        _flowCanvas = null;
     }
 }
