@@ -68,7 +68,7 @@ public partial class MainMenu : Control
         dialog.CustomMinimumSize = new Vector2(480, 260);
         AddChild(dialog);
         dialog.Confirmed += () => dialog.QueueFree();
-        dialog.Canceled += () => dialog.QueueFree();
+        dialog.CloseRequested += () => dialog.QueueFree();
 
         var repository = new Button { Text = "Open GitHub repository", CustomMinimumSize = new Vector2(0, 38) };
         repository.Pressed += () => OS.ShellOpen("https://github.com/xBukoPie/BeforeTheFlatline");
