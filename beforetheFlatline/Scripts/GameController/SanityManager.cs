@@ -9,6 +9,8 @@ public partial class SanityManager : Node
     public static SanityManager Instance { get; private set; }
 
     public const int MaxSanity = 100;
+    public int FailedTestCount { get; private set; }
+    public int DifficultyPenalty { get; private set; }
     public int CurrentSanity { get; private set; } = MaxSanity;
 
     public enum DebuffType
@@ -41,6 +43,13 @@ public partial class SanityManager : Node
     {
         if (Instance == this)
             Instance = null;
+    }
+
+    /// <summary>Each failed assessment slightly raises the difficulty of later tasks, capped at two tiers.</summary>
+    public void RegisterFailedTest()
+    {
+        FailedTestCount++;
+        DifficultyPenalty = Mathf.Clamp(DifficultyPenalty + 1, 0, 2);
     }
 
     public void Recover(int amount)
