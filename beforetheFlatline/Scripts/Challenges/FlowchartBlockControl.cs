@@ -34,7 +34,7 @@ public partial class FlowchartBlockControl : HBoxContainer
             Text = caption,
             CustomMinimumSize = new Vector2(30, 32),
             SizeFlagsVertical = SizeFlags.ShrinkCenter,
-            Disabled = disabled,
+            Disabled = disabled || callback == null,
             TooltipText = caption == "×" ? "Remove block" : "Reorder block"
         };
         if (callback != null)
