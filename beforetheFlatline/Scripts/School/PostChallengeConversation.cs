@@ -4,7 +4,7 @@ using SchoolYardGame;
 
 /// <summary>
 /// After the final daily challenge, a random classmate starts a short branching conversation.
-/// Finishing the conversation reloads World.tscn with the School room selected.
+/// Finishing it skips the remaining school hours and returns the player to their home room.
 /// </summary>
 public partial class PostChallengeConversation : Control
 {
@@ -12,10 +12,10 @@ public partial class PostChallengeConversation : Control
     public string WorldScenePath { get; set; } = "res://Scenes/Home/Rooms/World.tscn";
 
     [Export(PropertyHint.File, "*.tscn")]
-    public string SchoolRoomPath { get; set; } = "res://Scenes/School/School.tscn";
+    public string HomeRoomPath { get; set; } = "res://Scenes/Home/Rooms/Kwarto.tscn";
 
     [Export]
-    public string SchoolSpawn { get; set; } = "FromHome";
+    public string HomeSpawn { get; set; } = "startSpawn";
 
     private VisualNovelScene _dialogue;
     private bool _isReturning;
@@ -136,7 +136,7 @@ public partial class PostChallengeConversation : Control
 
             new(
                 character,
-                "Anyway, thanks for sticking around. Come on, let's head back to school before we get into trouble.",
+                "Anyway, thanks for sticking around. Let's head home before it gets too late.",
                 DialogueSide.Right,
                 Next: 7)
         };
@@ -149,10 +149,20 @@ public partial class PostChallengeConversation : Control
 
         _isReturning = true;
 
-        // The school is a Room inside World.tscn, not a standalone playable world.
-        DayClock.Instance?.MarkSchoolChallengeCompletedToday();
-        DayClock.Instance?.SkipSchoolGreetingOnNextLoad();
-        global::RoomManager.RequestStartRoomOnNextLoad(SchoolRoomPath, SchoolSpawn);
+        // The assessment is over for today. Move the clock beyond the school closing
+        // threshold before loading the home room so the player never re-enters the classroom
+        // and accidentally triggers its greeting/challenge entry event again.
+        var clock = DayClock.Instance;
+        if (clock != null)
+        {
+            clock.MarkSchoolChallengeCompletedToday();
+            clock.Running = false;
+            float homeTime = Mathf.Min(23.75f, clock.SchoolClosingHour + 0.25f);
+            if (clock.Hour < homeTime)
+                clock.SetHourOfDay(homeTime);
+        }
+
+        global::RoomManager.RequestStartRoomOnNextLoad(HomeRoomPath, HomeSpawn);
 
         if (!ResourceLoader.Exists(WorldScenePath))
         {
