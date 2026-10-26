@@ -226,9 +226,9 @@ public partial class StatusEffectsOverlay : CanvasLayer
 
         // Keep the sliding pressure bars below the status/notice labels so they never obscure
         // the textual cue while still overlaying the world and the persistent color tint.
-        int statusIndex = GetIndex(_statusLabel);
+        int statusIndex = _statusLabel.GetIndex();
         MoveChild(_pressureTop, statusIndex);
-        MoveChild(_pressureBottom, statusIndex);
+        MoveChild(_pressureBottom, _statusLabel.GetIndex());
     }
 
     private Label CreateCueLabel(string nodeName, string text, int fontSize, Vector2 offsetMin, Vector2 offsetMax)
