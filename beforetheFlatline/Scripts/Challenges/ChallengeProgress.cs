@@ -33,11 +33,12 @@ public static class ChallengeProgress
     public static bool IsCompleted(string id) =>
         GetCurrentDaySet().Contains(id.ToLowerInvariant());
 
-    public static void MarkCompleted(string id)
+    public static bool MarkCompleted(string id)
     {
         bool newlyCompleted = GetCurrentDaySet().Add(id.ToLowerInvariant());
         if (newlyCompleted)
             SanityManager.Instance?.Recover(SanityReward);
+        return newlyCompleted;
     }
 
     public static bool AllCompleted =>

@@ -86,6 +86,7 @@ fill_to = Vector2(1, 0.5)
 [node name="SchoolYard" type="Node2D" unique_id=969950179]
 y_sort_enabled = true
 script = ExtResource("1_xqy2q")
+RoomName = "School"
 Outdoor = true
 
 [node name="Ground" type="Sprite2D" parent="." unique_id=638028307]
