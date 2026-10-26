@@ -11,6 +11,8 @@ public partial class Door : Area2D
     [Export] public Vector2 Size { get; set; } = new Vector2(32, 12);
     [Export] public bool AutoEnter { get; set; } = false;    // true = no key press needed (e.g. walk down stairs)
     [Export] public bool RequiresSchoolHours { get; set; } = false;
+    [Export] public string UnlockRoomId { get; set; } = "";
+    [Export] public string LockedPrompt { get; set; } = "Locked. Complete tasks to earn the key.";
     [Export] public string ClosedPrompt { get; set; } = "School is closed. Come back after sunrise.";
     [Export] public float ClosedMessageDuration { get; set; } = 2.5f;
 
@@ -109,13 +111,28 @@ public partial class Door : Area2D
         InputMap.ActionAddEvent(action, new InputEventJoypadButton { ButtonIndex = JoyButton.A });
     }
 
+    private void ShowTemporaryPrompt(string message)
+    {
+        if (_hint == null || !IsInstanceValid(_hint))
+            return;
+
+        _hint.Text = message;
+        _hint.Visible = true;
+        _closedPromptRemaining = Mathf.Max(0.5f, ClosedMessageDuration);
+    }
+
     private void Use()
     {
+        if (!string.IsNullOrWhiteSpace(UnlockRoomId) &&
+            (RoomKeyProgression.Instance == null || !RoomKeyProgression.Instance.IsRoomUnlocked(UnlockRoomId)))
+        {
+            ShowTemporaryPrompt(LockedPrompt);
+            return;
+        }
+
         if (RequiresSchoolHours && (DayClock.Instance == null || !DayClock.Instance.IsSchoolOpen))
         {
-            _hint.Text = ClosedPrompt;
-            _hint.Visible = true;
-            _closedPromptRemaining = Mathf.Max(0.5f, ClosedMessageDuration);
+            ShowTemporaryPrompt(ClosedPrompt);
             return;
         }
 
