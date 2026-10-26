@@ -4,6 +4,16 @@ using Godot;
 // Root script of World.tscn. Keeps the Player and Camera alive and swaps rooms under "RoomHolder".
 public partial class RoomManager : Node2D
 {
+	private static string _requestedStartRoom;
+	private static string _requestedStartSpawn;
+
+	/// <summary>Choose the room loaded by the next World.tscn instance.</summary>
+	public static void RequestStartRoomOnNextLoad(string roomPath, string spawn)
+	{
+		_requestedStartRoom = roomPath;
+		_requestedStartSpawn = spawn;
+	}
+
 	[Export(PropertyHint.File, "*.tscn")] public string StartRoom { get; set; } = "res://Scenes/Home/Rooms/Kwarto.tscn";
 	[Export] public string StartSpawn { get; set; } = "startSpawn";
 	[Export] public bool IsNight { get; set; } = true;
@@ -33,7 +43,11 @@ public partial class RoomManager : Node2D
 		_sun = GetNode<DirectionalLight2D>("RoomHolder/Sunlight");
 		_fade = GetNode<ColorRect>("UI/Fade");
 
-		LoadRoom(StartRoom, StartSpawn);
+		string roomPath = string.IsNullOrWhiteSpace(_requestedStartRoom) ? StartRoom : _requestedStartRoom;
+		string spawn = string.IsNullOrWhiteSpace(_requestedStartSpawn) ? StartSpawn : _requestedStartSpawn;
+		_requestedStartRoom = null;
+		_requestedStartSpawn = null;
+		LoadRoom(roomPath, spawn);
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
