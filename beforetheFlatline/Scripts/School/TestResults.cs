@@ -42,6 +42,17 @@ public partial class TestResults : Control
         foreach (string notification in DailyTestSession.PendingNotifications)
             lines.Add(notification);
 
+        // Read the persistent autoload, not the retryable session, so acquired keys remain
+        // visible even when Retry Assessment clears the previous session's notifications.
+        var keyProgression = RoomKeyProgression.Instance;
+        if (keyProgression != null)
+        {
+            string[] unlockedKeys = keyProgression.GetUnlockedRoomNames();
+            lines.Add(unlockedKeys.Length > 0
+                ? $"ROOM KEYS OWNED: {string.Join(", ", unlockedKeys)}."
+                : $"No room keys acquired yet. Correct task answers contribute toward the {keyProgression.NextRoomKeyName} key.");
+        }
+
         if (_passed)
         {
             SanityManager.Instance?.Recover(5);
