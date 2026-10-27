@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using SchoolYardGame;
 
@@ -10,7 +11,7 @@ public partial class SaveManager : Node
     public const int ManualSlotCount = 3;
     public const string WorldScenePath = "res://Scenes/Home/Rooms/World.tscn";
     private const string DefaultRoomPath = "res://Scenes/Home/Rooms/Kwarto.tscn";
-    private const string SaveDirectory = "user://Saves";
+    private const string SaveDirectory = "res://Saves";
     private const string AutoSaveFileName = "autosave.json";
     private const double AutoSaveIntervalSeconds = 60.0;
 
@@ -245,9 +246,19 @@ public partial class SaveManager : Node
             ReadBool(data, "first_day_special_greeting_pending", false));
         if (SanityManager.Instance != null && sanityState.Count > 0)
             SanityManager.Instance.RestoreFromSaveData(sanityState);
+        int keysToRestore = Mathf.Max(0, ReadInt(keyState, "keys_earned", 0));
+        if (data.ContainsKey("challenge_progress"))
+        {
+            int passedAssessments = CountPassedAssessmentDays(challengeState);
+            int validKeys = Math.Min(keysToRestore, passedAssessments);
+            if (validKeys < keysToRestore)
+                GD.PushWarning($"SaveManager: ignored {keysToRestore - validKeys} room key(s) without a matching passed assessment.");
+            keysToRestore = validKeys;
+        }
+
         RoomKeyProgression.Instance?.RestoreProgress(
             ReadInt(keyState, "hidden_points", 0),
-            ReadInt(keyState, "keys_earned", 0));
+            keysToRestore);
         ChallengeProgress.RestoreFromSaveData(challengeState);
 
         RoomManager.RequestStartRoomOnNextLoad(roomPath, "startSpawn");
@@ -327,16 +338,7 @@ public partial class SaveManager : Node
     {
         EnsureSaveDirectory();
         string path = $"{SaveDirectory}/{AutoSaveFileName}";
-        const string legacyPath = "user://autosave.json";
-
-        if (!FileAccess.FileExists(path) && FileAccess.FileExists(legacyPath))
-        {
-            using var source = FileAccess.Open(legacyPath, FileAccess.ModeFlags.Read);
-            using var destination = FileAccess.Open(path, FileAccess.ModeFlags.Write);
-            if (source != null && destination != null)
-                destination.StoreString(source.GetAsText());
-        }
-
+        MigrateLegacySave(path, "user://Saves/autosave.json", "user://autosave.json");
         return path;
     }
 
@@ -344,15 +346,71 @@ public partial class SaveManager : Node
     {
         EnsureSaveDirectory();
         string path = $"{SaveDirectory}/save_slot_{slot}.json";
-        string legacyPath = $"user://save_slot_{slot}.json";
-        if (!FileAccess.FileExists(path) && FileAccess.FileExists(legacyPath))
-        {
-            using var source = FileAccess.Open(legacyPath, FileAccess.ModeFlags.Read);
-            using var destination = FileAccess.Open(path, FileAccess.ModeFlags.Write);
-            if (source != null && destination != null)
-                destination.StoreString(source.GetAsText());
-        }
+        MigrateLegacySave(path, $"user://Saves/save_slot_{slot}.json", $"user://save_slot_{slot}.json");
         return path;
+    }
+
+    private static void MigrateLegacySave(string destinationPath, params string[] legacyPaths)
+    {
+        if (FileAccess.FileExists(destinationPath))
+            return;
+
+        foreach (string legacyPath in legacyPaths)
+        {
+            if (!FileAccess.FileExists(legacyPath))
+                continue;
+
+            using var source = FileAccess.Open(legacyPath, FileAccess.ModeFlags.Read);
+            if (source == null)
+                continue;
+
+            using var destination = FileAccess.Open(destinationPath, FileAccess.ModeFlags.Write);
+            if (destination == null)
+            {
+                GD.PushError($"SaveManager: could not migrate '{legacyPath}' to '{destinationPath}'.");
+                return;
+            }
+
+            destination.StoreString(source.GetAsText());
+            destination.Flush();
+            GD.PushWarning($"SaveManager: migrated legacy save '{legacyPath}' to '{destinationPath}'.");
+            return;
+        }
+    }
+
+    private static int CountPassedAssessmentDays(Godot.Collections.Dictionary progress)
+    {
+        var validIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ChallengeProgress.SequenceId,
+            ChallengeProgress.ConditionId,
+            ChallengeProgress.FlowchartId,
+            ChallengeProgress.FinalId
+        };
+
+        int passedDays = 0;
+        foreach (Variant dayKey in progress.Keys)
+        {
+            if (!int.TryParse(dayKey.AsString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int day) ||
+                day < 1 || progress[dayKey].VariantType != Variant.Type.Array)
+                continue;
+
+            var completed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (Variant item in progress[dayKey].AsGodotArray())
+            {
+                if (item.VariantType != Variant.Type.String)
+                    continue;
+
+                string id = item.AsString();
+                if (validIds.Contains(id))
+                    completed.Add(id);
+            }
+
+            if (completed.Count >= 3)
+                passedDays++;
+        }
+
+        return passedDays;
     }
 
     private static bool IsValidSlot(int slot) => slot >= 1 && slot <= ManualSlotCount;
