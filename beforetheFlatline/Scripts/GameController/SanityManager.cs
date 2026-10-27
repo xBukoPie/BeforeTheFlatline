@@ -108,6 +108,73 @@ public partial class SanityManager : Node
             QueueBadEnding();
     }
 
+    /// <summary>Capture sanity, failure penalties, active debuffs, and their recovery gates.</summary>
+    public Godot.Collections.Dictionary CreateSaveData()
+    {
+        var debuffs = new Godot.Collections.Dictionary();
+        var targets = new Godot.Collections.Dictionary();
+
+        foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
+        {
+            debuffs[type.ToString()] = GetDebuffLevel(type);
+            targets[type.ToString()] = GetRecoveryTarget(type);
+        }
+
+        return new Godot.Collections.Dictionary
+        {
+            ["current_sanity"] = CurrentSanity,
+            ["failed_test_count"] = FailedTestCount,
+            ["difficulty_penalty"] = DifficultyPenalty,
+            ["debuffs"] = debuffs,
+            ["recovery_targets"] = targets
+        };
+    }
+
+    /// <summary>Restore saved sanity data and refresh UI subscribers.</summary>
+    public void RestoreFromSaveData(Godot.Collections.Dictionary data)
+    {
+        CurrentSanity = Mathf.Clamp(ReadInt(data, "current_sanity", MaxSanity), 1, MaxSanity);
+        FailedTestCount = Mathf.Max(0, ReadInt(data, "failed_test_count", 0));
+        DifficultyPenalty = Mathf.Clamp(ReadInt(data, "difficulty_penalty", 0), 0, 2);
+        _badEndingQueued = false;
+
+        var debuffs = ReadDictionary(data, "debuffs");
+        var targets = ReadDictionary(data, "recovery_targets");
+
+        foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
+        {
+            string key = type.ToString();
+            _debuffs[type] = Mathf.Clamp(ReadInt(debuffs, key, 0), 0, MaxSanity);
+            _recoveryTargets[type] = Mathf.Clamp(ReadInt(targets, key, MaxSanity), 0, MaxSanity);
+            OnDebuffChanged?.Invoke(type, _debuffs[type]);
+        }
+
+        OnSanityChanged?.Invoke(CurrentSanity);
+    }
+
+    private static Godot.Collections.Dictionary ReadDictionary(
+        Godot.Collections.Dictionary data, string key)
+    {
+        if (!data.ContainsKey(key))
+            return new Godot.Collections.Dictionary();
+
+        Variant value = data[key];
+        return value.VariantType == Variant.Type.Dictionary
+            ? value.AsGodotDictionary()
+            : new Godot.Collections.Dictionary();
+    }
+
+    private static int ReadInt(Godot.Collections.Dictionary data, string key, int fallback)
+    {
+        if (!data.ContainsKey(key))
+            return fallback;
+
+        Variant value = data[key];
+        return value.VariantType == Variant.Type.Int
+            ? value.AsInt32()
+            : fallback;
+    }
+
     public int GetDebuffLevel(DebuffType type) =>
         _debuffs.TryGetValue(type, out int value) ? value : 0;
 
