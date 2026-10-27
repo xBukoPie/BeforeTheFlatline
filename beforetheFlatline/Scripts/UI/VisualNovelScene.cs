@@ -78,6 +78,7 @@ public partial class VisualNovelScene : Control
     private DialogueSide _currentSide = DialogueSide.Right;
     private Tween _typeTween, _nameTagTween;
     private Control _pauseMenu;
+    private bool _clockWasRunningBeforePause;
 
     // ───────────────────────── Lifecycle ─────────────────────────
 
@@ -170,7 +171,7 @@ public partial class VisualNovelScene : Control
         if (@event.IsActionPressed("ui_cancel"))
         {
             if (_pauseMenu != null && _pauseMenu.Visible)
-                _pauseMenu.Visible = false;
+                ClosePauseMenu();
             else if (_logOpen)
                 CloseLog();
             else
@@ -452,12 +453,16 @@ public partial class VisualNovelScene : Control
             return;
         }
 
+        _clockWasRunningBeforePause = DayClock.Instance?.Running ?? false;
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = false;
+
         _pauseMenu = new Control
         {
             Name = "DialoguePauseMenu",
             MouseFilter = Control.MouseFilterEnum.Stop
         };
-        _pauseMenu.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        _pauseMenu.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         AddChild(_pauseMenu);
 
         var dim = new ColorRect
@@ -465,11 +470,11 @@ public partial class VisualNovelScene : Control
             Color = new Color(0.025f, 0.02f, 0.045f, 0.82f),
             MouseFilter = Control.MouseFilterEnum.Stop
         };
-        dim.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        dim.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         _pauseMenu.AddChild(dim);
 
         var center = new CenterContainer();
-        center.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        center.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         _pauseMenu.AddChild(center);
 
         var panel = new PanelContainer { CustomMinimumSize = new Vector2(520, 470) };
@@ -528,7 +533,7 @@ public partial class VisualNovelScene : Control
         stack.AddChild(volume);
 
         var resume = new Button { Text = "Resume", CustomMinimumSize = new Vector2(0, 44) };
-        resume.Pressed += () => _pauseMenu.Visible = false;
+        resume.Pressed += ClosePauseMenu;
         stack.AddChild(resume);
 
         var title = new Button { Text = "Return to Title", CustomMinimumSize = new Vector2(0, 44) };
@@ -543,6 +548,15 @@ public partial class VisualNovelScene : Control
 
         _pauseMenu.Visible = true;
         resume.GrabFocus();
+    }
+
+    private void ClosePauseMenu()
+    {
+        if (_pauseMenu != null)
+            _pauseMenu.Visible = false;
+
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = _clockWasRunningBeforePause;
     }
 
     private void SkipEntireDialogue()
