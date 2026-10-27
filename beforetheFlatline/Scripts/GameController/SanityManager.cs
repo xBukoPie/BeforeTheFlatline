@@ -25,6 +25,8 @@ public partial class SanityManager : Node
 
     private readonly Dictionary<DebuffType, int> _debuffs = new();
     private readonly Dictionary<DebuffType, int> _recoveryTargets = new();
+    private readonly Dictionary<DebuffType, int> _recoveryProgress = new();
+    private readonly Dictionary<DebuffType, int> _recoveryRequirements = new();
     private readonly RandomNumberGenerator _rng = new();
     private bool _badEndingQueued;
 
@@ -49,6 +51,8 @@ public partial class SanityManager : Node
         {
             _debuffs[type] = 0;
             _recoveryTargets[type] = MaxSanity;
+            _recoveryProgress[type] = 0;
+            _recoveryRequirements[type] = 0;
         }
 
         OnSanityChanged?.Invoke(CurrentSanity);
@@ -89,11 +93,13 @@ public partial class SanityManager : Node
             1f);
         int effectiveRecovery = Mathf.Max(1, Mathf.FloorToInt(clamped * recoveryEfficiency));
 
-        int previous = CurrentSanity;
         CurrentSanity = Mathf.Min(CurrentSanity + effectiveRecovery, MaxSanity);
 
-        if (CurrentSanity > previous)
-            ClearRecoveredDebuffs();
+        // Count recovery effort separately from the displayed sanity value. This prevents a
+        // single recovery event from instantly cleansing a debuff when sanity is already near
+        // full; multiple recovery events are required even if sanity has reached its cap.
+        AccumulateDebuffRecovery(effectiveRecovery);
+        ClearRecoveredDebuffs();
 
         OnSanityChanged?.Invoke(CurrentSanity);
     }
@@ -115,6 +121,8 @@ public partial class SanityManager : Node
         int recoveryNeeded = Mathf.Max(18,
             Mathf.CeilToInt(missingSanity * recoveryPercent / 100f));
         _recoveryTargets[type] = Mathf.Min(MaxSanity, CurrentSanity + recoveryNeeded);
+        _recoveryRequirements[type] = recoveryNeeded;
+        _recoveryProgress[type] = 0;
 
         OnDebuffChanged?.Invoke(type, _debuffs[type]);
         OnSanityChanged?.Invoke(CurrentSanity);
@@ -178,10 +186,25 @@ public partial class SanityManager : Node
         {
             _debuffs[type] = 0;
             _recoveryTargets[type] = MaxSanity;
+            _recoveryProgress[type] = 0;
+            _recoveryRequirements[type] = 0;
             OnDebuffChanged?.Invoke(type, 0);
         }
 
         OnSanityChanged?.Invoke(CurrentSanity);
+    }
+
+    private void AccumulateDebuffRecovery(int recoveryPoints)
+    {
+        foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
+        {
+            if (GetDebuffLevel(type) <= 0)
+                continue;
+
+            int required = _recoveryRequirements.TryGetValue(type, out int value) ? value : 0;
+            int progress = _recoveryProgress.TryGetValue(type, out int current) ? current : 0;
+            _recoveryProgress[type] = Mathf.Min(required, progress + recoveryPoints);
+        }
     }
 
     private void ClearRecoveredDebuffs()
@@ -192,8 +215,15 @@ public partial class SanityManager : Node
             if (level <= 0 || CurrentSanity < GetRecoveryTarget(type))
                 continue;
 
+            int required = _recoveryRequirements.TryGetValue(type, out int value) ? value : 0;
+            int progress = _recoveryProgress.TryGetValue(type, out int current) ? current : 0;
+            if (progress < required)
+                continue;
+
             _debuffs[type] = 0;
             _recoveryTargets[type] = MaxSanity;
+            _recoveryProgress[type] = 0;
+            _recoveryRequirements[type] = 0;
             OnDebuffChanged?.Invoke(type, 0);
         }
     }
