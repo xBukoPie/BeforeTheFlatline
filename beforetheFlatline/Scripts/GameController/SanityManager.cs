@@ -170,9 +170,27 @@ public partial class SanityManager : Node
             return fallback;
 
         Variant value = data[key];
-        return value.VariantType == Variant.Type.Int
-            ? value.AsInt32()
-            : fallback;
+        if (value.VariantType == Variant.Type.Int)
+            return value.AsInt32();
+
+        // Keep sanity/debuff state compatible with JSON values written as 25.0 or "25".
+        if (value.VariantType == Variant.Type.Float)
+        {
+            double number = value.AsDouble();
+            if (number >= int.MinValue && number <= int.MaxValue &&
+                Math.Abs(number - Math.Round(number)) < 0.000001)
+                return (int)Math.Round(number);
+            return fallback;
+        }
+
+        if (value.VariantType == Variant.Type.String &&
+            double.TryParse(value.AsString(), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out double parsed) &&
+            parsed >= int.MinValue && parsed <= int.MaxValue &&
+            Math.Abs(parsed - Math.Round(parsed)) < 0.000001)
+            return (int)Math.Round(parsed);
+
+        return fallback;
     }
 
     public int GetDebuffLevel(DebuffType type) =>
