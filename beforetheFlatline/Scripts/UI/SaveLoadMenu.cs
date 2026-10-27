@@ -173,11 +173,18 @@ public partial class SaveLoadMenu : Control
         row.AddChild(save);
 
         var load = MakeButton("Load", false);
-        load.CustomMinimumSize = new Vector2(100, 44);
+        load.CustomMinimumSize = new Vector2(90, 44);
         load.Disabled = saves?.HasSlot(slot) != true || _busy;
         int loadSlot = slot;
         load.Pressed += async () => await OnLoadSlotPressed(loadSlot);
         row.AddChild(load);
+
+        var delete = MakeButton("Delete", false);
+        delete.CustomMinimumSize = new Vector2(90, 44);
+        delete.Disabled = saves?.HasSlot(slot) != true || _busy;
+        int deleteSlot = slot;
+        delete.Pressed += () => ConfirmDeleteSlot(deleteSlot);
+        row.AddChild(delete);
 
         _slotList.AddChild(rowPanel);
     }
@@ -204,6 +211,34 @@ public partial class SaveLoadMenu : Control
         _slotList.AddChild(rowPanel);
     }
 
+    private void ConfirmDeleteSlot(int slot)
+    {
+        if (_busy || SaveManager.Instance == null || !SaveManager.Instance.HasSlot(slot))
+            return;
+
+        var confirmation = new ConfirmationDialog
+        {
+            Title = "Delete Save Slot",
+            DialogText = $"Permanently delete Save Slot {slot}? This cannot be undone.",
+            OkButtonText = "Delete",
+            CancelButtonText = "Cancel",
+            ProcessMode = ProcessModeEnum.Always
+        };
+        AddChild(confirmation);
+        confirmation.Confirmed += () =>
+        {
+            bool deleted = SaveManager.Instance?.DeleteSlot(slot) == true;
+            _status.Text = deleted
+                ? $"Save slot {slot} deleted."
+                : $"Could not delete save slot {slot}.";
+            RefreshSlots();
+            confirmation.QueueFree();
+        };
+        confirmation.Canceled += () => confirmation.QueueFree();
+        confirmation.CloseRequested += () => confirmation.QueueFree();
+        confirmation.PopupCentered(new Vector2I(460, 180));
+    }
+
     private async System.Threading.Tasks.Task OnLoadSlotPressed(int slot)
     {
         if (_busy || SaveManager.Instance == null)
@@ -214,7 +249,7 @@ public partial class SaveLoadMenu : Control
         bool loaded = await SaveManager.Instance.LoadSlotAsync(slot);
         if (!loaded && GodotObject.IsInstanceValid(this))
         {
-            _status.Text = $"Could not load slot {slot}. Check that the saved room files still exist.";
+            _status.Text = $"Could not load slot {slot}. The JSON may be invalid or its room scene path may be outdated.";
             _busy = false;
             RefreshSlots();
         }
@@ -230,7 +265,7 @@ public partial class SaveLoadMenu : Control
         bool loaded = await SaveManager.Instance.LoadAutoSaveAsync();
         if (!loaded && GodotObject.IsInstanceValid(this))
         {
-            _status.Text = "Could not load the autosave. Check that the saved room files still exist.";
+            _status.Text = "Could not load the autosave. Its JSON may be invalid or its room scene path may be outdated.";
             _busy = false;
             RefreshSlots();
         }
