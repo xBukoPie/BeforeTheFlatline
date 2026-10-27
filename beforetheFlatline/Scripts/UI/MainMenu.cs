@@ -43,7 +43,9 @@ public partial class MainMenu : Control
 
         if (SceneTransition.Instance != null)
         {
-            SceneTransition.Instance.LoadSceneWithLoadingScreen("res://Scenes/Home/Rooms/World.tscn");
+            bool loaded = await SceneTransition.Instance.LoadSceneWithLoadingScreen("res://Scenes/Home/Rooms/World.tscn");
+            if (!loaded)
+                _isStarting = false;
         }
         else
         {
