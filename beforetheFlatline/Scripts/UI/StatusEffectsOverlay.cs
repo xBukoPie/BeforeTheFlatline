@@ -84,7 +84,6 @@ public partial class StatusEffectsOverlay : CanvasLayer
         if (_noticeLabel != null)
             _noticeLabel.Visible = _noticeTime > 0f;
 
-        UpdateDebuffCue();
         RefreshEffects();
     }
 
@@ -196,9 +195,9 @@ public partial class StatusEffectsOverlay : CanvasLayer
 
         // A large, animated center cue makes the particular debuff readable at the moment it
         // is applied, instead of relying only on the persistent low-alpha screen tint.
-        _fxGlyph = CreateCueLabel("DebuffFxGlyph", "", 76, new Vector2(-95, -90), new Vector2(95, 12));
-        _fxLeftGlyph = CreateCueLabel("DebuffFxLeft", "", 36, new Vector2(-280, -42), new Vector2(-190, 36));
-        _fxRightGlyph = CreateCueLabel("DebuffFxRight", "", 36, new Vector2(190, -42), new Vector2(280, 36));
+        _fxGlyph = CreateCueLabel("DebuffFxGlyph", "", 52, new Vector2(-410, -52), new Vector2(410, 28));
+        _fxLeftGlyph = CreateCueLabel("DebuffFxLeft", "", 34, new Vector2(-560, -45), new Vector2(-470, 35));
+        _fxRightGlyph = CreateCueLabel("DebuffFxRight", "", 34, new Vector2(470, -45), new Vector2(560, 35));
 
         _pressureTop = new ColorRect
         {
@@ -301,11 +300,11 @@ public partial class StatusEffectsOverlay : CanvasLayer
         _fxLeftGlyph.Rotation = dizziness > 0 ? -_elapsed * 1.4f : confusion > 0 ? Mathf.Sin(_elapsed * 17f) * 0.12f : 0f;
         _fxRightGlyph.Rotation = dizziness > 0 ? _elapsed * 1.2f : confusion > 0 ? Mathf.Cos(_elapsed * 15f) * 0.12f : 0f;
         _fxLeftGlyph.Position = confusion > 0
-            ? new Vector2(-235f + Mathf.Sin(_elapsed * 19f) * 12f, -30f)
-            : new Vector2(-235f + (dizziness > 0 ? Mathf.Sin(_elapsed * 3f) * 24f : 0f), -30f);
+            ? new Vector2(-520f + Mathf.Sin(_elapsed * 19f) * 12f, -30f)
+            : new Vector2(-520f + (dizziness > 0 ? Mathf.Sin(_elapsed * 3f) * 24f : 0f), -30f);
         _fxRightGlyph.Position = confusion > 0
-            ? new Vector2(145f + Mathf.Cos(_elapsed * 17f) * 14f, -30f)
-            : new Vector2(145f + (dizziness > 0 ? Mathf.Cos(_elapsed * 2.7f) * 24f : 0f), -30f);
+            ? new Vector2(470f + Mathf.Cos(_elapsed * 17f) * 14f, -30f)
+            : new Vector2(470f + (dizziness > 0 ? Mathf.Cos(_elapsed * 2.7f) * 24f : 0f), -30f);
 
         float pressureProgress = Mathf.Clamp(pressure / 100f, 0f, 1f);
         float barSize = pressure > 0 ? 8f + pressureProgress * 24f + pulse * 8f : 0f;
