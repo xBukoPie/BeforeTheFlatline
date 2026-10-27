@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 
-/// <summary>Specification for one generated flowchart block.</summary>
 public sealed class FlowchartBlockDefinition
 {
     public string Type { get; }
@@ -14,7 +13,6 @@ public sealed class FlowchartBlockDefinition
     }
 }
 
-/// <summary>One task instance generated at runtime; solution is not shown in the player UI.</summary>
 public sealed class GeneratedChallenge
 {
     public string Title { get; init; } = "";
@@ -25,10 +23,6 @@ public sealed class GeneratedChallenge
     public FlowchartBlockDefinition[] FlowchartSolution { get; init; } = Array.Empty<FlowchartBlockDefinition>();
 }
 
-/// <summary>
-/// Generates task instances from reusable algorithm patterns. Runtime values, thresholds,
-/// nouns, and variable names vary, so each playthrough gets a fresh problem at the current tier.
-/// </summary>
 public static class GeneratedChallengeFactory
 {
     private static readonly string[] Nouns = { "notebooks", "snacks", "tickets", "folders", "markers", "stickers" };

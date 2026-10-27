@@ -1,7 +1,6 @@
 using Godot;
 using System;
 
-/// <summary>One flowchart symbol plus buttons to reorder or remove it.</summary>
 public partial class FlowchartBlockControl : HBoxContainer
 {
     [Export] public string BlockType { get; set; } = "Process";

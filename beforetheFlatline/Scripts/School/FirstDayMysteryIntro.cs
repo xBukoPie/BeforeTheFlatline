@@ -2,9 +2,6 @@ using Godot;
 using System.Collections.Generic;
 using SchoolYardGame;
 
-/// <summary>
-/// One-time tutorial and lore encounter shown by the classroom door before the classroom overlay opens.
-/// </summary>
 public partial class FirstDayMysteryIntro : Control
 {
     private const string PortraitPath = "res://Assets/Characters/Mysterious.svg";
@@ -68,7 +65,6 @@ public partial class FirstDayMysteryIntro : Control
         DayClock.Instance?.MarkFirstDayMysteryEncounterCompleted();
         Door door = DoorToContinue;
 
-        // Remove this encounter before asking the same doorway to open the classroom overlay.
         GetParent()?.RemoveChild(this);
         QueueFree();
 

@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using Godot;
 
-// Root script of World.tscn. Keeps the Player and Camera alive and swaps rooms under "RoomHolder".
 public partial class RoomManager : Node2D
 {
     private static string _requestedStartRoom;
@@ -17,14 +16,14 @@ public partial class RoomManager : Node2D
         _hasRequestedPlayerPosition = false;
     }
 
-    /// <summary>Stage an exact player position for the next World scene load.</summary>
+    // Stage an exact player position for the next World scene load.
     public static void RequestPlayerPositionOnNextLoad(Vector2 position)
     {
         _requestedPlayerPosition = position;
         _hasRequestedPlayerPosition = true;
     }
 
-    /// <summary>Current loaded room resource path and player position for saves.</summary>
+    // Current loaded room resource path and player position for saves.
     public string CurrentRoomPath => _room != null && !string.IsNullOrWhiteSpace(_room.SceneFilePath)
         ? _room.SceneFilePath
         : StartRoom;
@@ -60,8 +59,6 @@ public partial class RoomManager : Node2D
         _sun = GetNode<DirectionalLight2D>("RoomHolder/Sunlight");
         _fade = GetNode<ColorRect>("UI/Fade");
 
-        // Apply a soft ambient tint consistently to rooms rather than leaving unmodulated,
-        // over-bright daylight. The tint is intentionally subtle enough to preserve readability.
         _ambient.Visible = true;
 
         if (SchoolYardGame.DayClock.Instance != null)
@@ -135,8 +132,6 @@ public partial class RoomManager : Node2D
         IsNight = night;
         bool schoolHandlesItsOwnDayTint = _room != null &&
             string.Equals(_room.RoomName, "School", System.StringComparison.OrdinalIgnoreCase);
-        // The School room has its own CanvasModulate time cycle. Do not multiply two
-        // separate night tints there, which would make the yard nearly black.
         _ambient.Color = schoolHandlesItsOwnDayTint ? Colors.White : (night ? NightColor : DayColor);
         _sun.Energy = (!night && _room != null && _room.Outdoor) ? DaySunEnergy : 0f;
         _room?.ApplyTime(night);
@@ -158,8 +153,6 @@ public partial class RoomManager : Node2D
         }
 
         _room = scene.Instantiate<Room>();
-        // Time continues in the outdoor school yard. Classroom and assessment scripts explicitly
-        // pause it when the player is doing a task; returning to a world room resumes it.
         if (SchoolYardGame.DayClock.Instance != null)
             SchoolYardGame.DayClock.Instance.Running = true;
 

@@ -3,10 +3,6 @@ using System;
 using System.Globalization;
 using SchoolYardGame;
 
-/// <summary>
-/// Persistent save system: three manual slots plus a separate rolling autosave.
-/// Saves are JSON files under user:// so they survive application restarts and exported builds.
-/// </summary>
 public partial class SaveManager : Node
 {
     public static SaveManager Instance { get; private set; }
@@ -130,7 +126,7 @@ public partial class SaveManager : Node
         }
     }
 
-    /// <summary>Call after entering/loading a room to create an immediate safety autosave.</summary>
+    // Call after entering/loading a room to create an immediate safety autosave.
     public void RequestAutoSave()
     {
         _autosaveElapsed = 0;
@@ -181,7 +177,6 @@ public partial class SaveManager : Node
             ["player_y"] = position.Y,
             ["day"] = DayClock.Instance.DayNumber,
             ["hour"] = DayClock.Instance.Hour,
-            // A save taken from the pause menu resumes into a live world.
             ["clock_running"] = true,
             ["school_started"] = DayClock.Instance.SchoolChallengeStartedToday,
             ["school_completed"] = DayClock.Instance.SchoolChallengeCompletedToday,
@@ -210,10 +205,6 @@ public partial class SaveManager : Node
 
     private async System.Threading.Tasks.Task<bool> LoadSnapshotAsync(Godot.Collections.Dictionary data)
     {
-        // Older saves may not have a version field, and some hand-edited/exported
-        // JSON files may store it as a string. Treat those as the original v1 format
-        // only when the field is absent or explicitly says "1"; never silently load
-        // a save that declares a newer, unknown format.
         int saveVersion = ReadSaveVersion(data);
         if (saveVersion != 1)
         {
@@ -227,8 +218,6 @@ public partial class SaveManager : Node
         bool savedRoomExists = !string.IsNullOrWhiteSpace(roomPath) && ResourceLoader.Exists(roomPath);
         if (!savedRoomExists)
         {
-            // A save remains useful if a room was renamed or removed in a project update.
-            // Restore the saved run into the default home room instead of rejecting its JSON.
             if (!ResourceLoader.Exists(DefaultRoomPath))
             {
                 GD.PushError($"SaveManager: saved room '{roomPath}' is missing, and fallback room '{DefaultRoomPath}' is unavailable.");
@@ -250,8 +239,6 @@ public partial class SaveManager : Node
         var keyState = ReadDictionary(data, "room_keys");
         var challengeState = ReadDictionary(data, "challenge_progress");
 
-        // Apply saved autoload state before World.tscn _Ready runs so rooms/UI see the
-        // restored day, sanity, key ownership and daily progress from their first frame.
         DayClock.Instance?.RestoreState(day, hour, true, schoolStarted, schoolCompleted);
         DayClock.Instance?.RestoreFirstDayMysteryState(
             ReadBool(data, "mystery_encounter_seen", false),
@@ -276,7 +263,6 @@ public partial class SaveManager : Node
             bool loaded = await SceneTransition.Instance.LoadSceneWithLoadingScreen(WorldScenePath);
             if (!loaded)
             {
-                // If a reload fails while still in the world, keep the current session running.
                 if (DayClock.Instance != null)
                     DayClock.Instance.Running = GetTree().CurrentScene?.SceneFilePath == WorldScenePath;
                 return false;
@@ -392,8 +378,6 @@ public partial class SaveManager : Node
         if (value.VariantType == Variant.Type.Int)
             return value.AsInt32();
 
-        // JSON parsers may represent a version written as 1.0 as a floating-point
-        // value instead of an integer. Accept it only when it is a whole number.
         if (value.VariantType == Variant.Type.Float)
         {
             double numericVersion = value.AsDouble();
@@ -421,7 +405,6 @@ public partial class SaveManager : Node
         if (value.VariantType == Variant.Type.Int)
             return value.AsInt32();
 
-        // JSON numeric fields may be represented as floats (for example 3.0).
         if (value.VariantType == Variant.Type.Float)
         {
             double number = value.AsDouble();

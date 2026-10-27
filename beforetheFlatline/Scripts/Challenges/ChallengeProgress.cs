@@ -2,10 +2,6 @@ using Godot;
 using System.Collections.Generic;
 using SchoolYardGame;
 
-/// <summary>
-/// Daily challenge completion record. Progress is tracked by in-game day so each new day
-/// presents a fresh challenge set. The result screen handles sanity rewards or penalties after the full assessment.
-/// </summary>
 public static class ChallengeProgress
 {
     private static readonly Dictionary<int, HashSet<string>> CompletedByDay = new();
@@ -44,7 +40,7 @@ public static class ChallengeProgress
         IsCompleted(FlowchartId) &&
         IsCompleted(FinalId);
 
-    /// <summary>Serialize all daily completions using string day keys for JSON compatibility.</summary>
+    // Serialize all daily completions using string day keys for JSON compatibility.
     public static Godot.Collections.Dictionary CreateSaveData()
     {
         var data = new Godot.Collections.Dictionary();
@@ -81,6 +77,6 @@ public static class ChallengeProgress
         }
     }
 
-    /// <summary>Clear cached day completions when a new run starts from the title screen.</summary>
+    // Clear cached day completions when a new run starts from the title screen.
     public static void Reset() => CompletedByDay.Clear();
 }

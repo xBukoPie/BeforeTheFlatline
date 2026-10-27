@@ -4,10 +4,6 @@ using System.Collections.Generic;
 
 namespace SchoolYardGame;
 
-/// <summary>
-/// Backend-only point balance and sequential room-key progression.
-/// The point balance is deliberately never rendered in the HUD or challenge UI.
-/// </summary>
 public partial class RoomKeyProgression : Node
 {
     [Signal]
@@ -51,7 +47,7 @@ public partial class RoomKeyProgression : Node
             Instance = null;
     }
 
-    /// <summary>Restore the hidden point total and unlocked-key count from a save file.</summary>
+    // Restore the hidden point total and unlocked-key count from a save file.
     public void RestoreProgress(int hiddenPoints, int totalKeysEarned)
     {
         HiddenPoints = Math.Max(0, hiddenPoints);
@@ -74,18 +70,15 @@ public partial class RoomKeyProgression : Node
             return true;
 
         int index = Array.FindIndex(LockedRooms, room => room.Id == id);
-        // Fail closed for a misspelled lock ID; unlocked rooms simply leave UnlockRoomId empty.
         return index >= 0 && TotalKeysEarned > index;
     }
 
-    /// <summary>Grant hidden points for a correctly completed task and unlock any reached quotas.</summary>
+    // Grant hidden points for a correctly completed task and unlock any reached quotas.
     public TaskRewardResult AwardTaskCompletion(int difficulty)
     {
         int tier = Mathf.Clamp(difficulty, 1, 5);
         int earnedPoints = 20 + tier * 5;
 
-        // Keep progression owned by this autoload. Resetting DailyTestSession for a retry
-        // must never reset the accumulated points or keys already earned.
         HiddenPoints += earnedPoints;
 
         var newlyUnlocked = new List<string>();
@@ -108,7 +101,6 @@ public partial class RoomKeyProgression : Node
     }
 }
 
-/// <summary>Result used by the challenge UI. PointsAdded is backend data and must not be displayed.</summary>
 public sealed class TaskRewardResult
 {
     public int PointsAdded { get; }

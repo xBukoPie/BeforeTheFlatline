@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-/// <summary>In-memory test results shared by the separate question scenes.</summary>
 public static class DailyTestSession
 {
     private static readonly List<TaskAttemptResult> Attempts = new();
@@ -45,7 +44,6 @@ public static class DailyTestSession
         if (!_active || _finalized)
             return;
 
-        // Each slot should only contribute once, even if a button is accidentally clicked twice.
         if (Attempts.Any(attempt => attempt.ChallengeId == challengeId))
             return;
 

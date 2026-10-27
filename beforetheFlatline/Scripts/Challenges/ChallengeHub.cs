@@ -1,12 +1,10 @@
 using Godot;
 using SchoolYardGame;
 
-/// <summary>Entry point for the four-question daily programming assessment.</summary>
 public partial class ChallengeHub : Control
 {
     public override void _Ready()
     {
-        // The selection hub is not an active task; outdoor/day time remains in motion.
         if (DayClock.Instance != null)
             DayClock.Instance.Running = true;
 

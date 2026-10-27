@@ -1,6 +1,5 @@
 using Godot;
 
-/// <summary>Renders a Flowgorithm-inspired symbol and its editable block definition.</summary>
 public partial class FlowchartSymbolControl : Control
 {
     [Export] public string BlockType { get; set; } = "Process";

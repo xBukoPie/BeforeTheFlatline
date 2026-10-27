@@ -2,7 +2,6 @@ using Godot;
 using System.Linq;
 using SchoolYardGame;
 
-/// <summary>Displays the overall assessment only after the four question scenes are complete.</summary>
 public partial class TestResults : Control
 {
     private bool _passed;
@@ -13,7 +12,6 @@ public partial class TestResults : Control
 
     public override void _Ready()
     {
-        // The timed task segment ended; time resumes on the results/conversation screens.
         if (DayClock.Instance != null)
             DayClock.Instance.Running = true;
 
@@ -42,8 +40,6 @@ public partial class TestResults : Control
         foreach (string notification in DailyTestSession.PendingNotifications)
             lines.Add(notification);
 
-        // Read the persistent autoload, not the retryable session, so acquired keys remain
-        // visible even when Retry Assessment clears the previous session's notifications.
         var keyProgression = RoomKeyProgression.Instance;
         if (keyProgression != null)
         {
