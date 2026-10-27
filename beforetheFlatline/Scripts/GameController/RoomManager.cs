@@ -115,7 +115,11 @@ public partial class RoomManager : Node2D
     public void SetNight(bool night)
     {
         IsNight = night;
-        _ambient.Color = night ? NightColor : DayColor;
+        bool schoolHandlesItsOwnDayTint = _room != null &&
+            string.Equals(_room.RoomName, "School", System.StringComparison.OrdinalIgnoreCase);
+        // The School room has its own CanvasModulate time cycle. Do not multiply two
+        // separate night tints there, which would make the yard nearly black.
+        _ambient.Color = schoolHandlesItsOwnDayTint ? Colors.White : (night ? NightColor : DayColor);
         _sun.Energy = (!night && _room != null && _room.Outdoor) ? DaySunEnergy : 0f;
         _room?.ApplyTime(night);
     }
