@@ -71,6 +71,18 @@ public partial class RoomKeyProgression : Node
         return index >= 0 && TotalKeysEarned > index;
     }
 
+    /// <summary>Grant the next room key when a full assessment is passed. Day and score above the pass threshold do not affect the reward.</summary>
+    public string AwardAssessmentCompletion()
+    {
+        if (TotalKeysEarned >= LockedRooms.Length)
+            return string.Empty;
+
+        string roomName = LockedRooms[TotalKeysEarned].Name;
+        TotalKeysEarned++;
+        EmitSignal(SignalName.RoomKeyEarned, 1, roomName);
+        return roomName;
+    }
+
     /// <summary>Grant hidden points for a correctly completed task and unlock any reached quotas.</summary>
     public TaskRewardResult AwardTaskCompletion(int difficulty)
     {
