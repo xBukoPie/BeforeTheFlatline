@@ -6,9 +6,9 @@ using System.Collections.Generic;
 public partial class HomeMap : Node2D
 {
 	[Export] public bool IsNight { get; set; } = true;
-	[Export] public Color DayColor { get; set; } = new Color(0.86f, 0.88f, 0.92f);
-	[Export] public Color NightColor { get; set; } = new Color(0.22f, 0.24f, 0.38f);
-	[Export] public float DaySunEnergy { get; set; } = 0.30f;
+	[Export] public Color DayColor { get; set; } = new Color(0.77f, 0.77f, 0.81f);
+	[Export] public Color NightColor { get; set; } = new Color(0.18f, 0.19f, 0.29f);
+	[Export] public float DaySunEnergy { get; set; } = 0.12f;
 	[Export] public float IndoorSunFactor { get; set; } = 0.25f;
 
 	private CanvasModulate _ambient; private DirectionalLight2D _sun;

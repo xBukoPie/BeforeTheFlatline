@@ -6,8 +6,9 @@ public partial class ChallengeHub : Control
 {
     public override void _Ready()
     {
+        // The selection hub is not an active task; outdoor/day time remains in motion.
         if (DayClock.Instance != null)
-            DayClock.Instance.Running = false;
+            DayClock.Instance.Running = true;
 
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         var background = new ColorRect { Color = new Color("101522"), MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -58,12 +59,21 @@ public partial class ChallengeHub : Control
         start.Pressed += () =>
         {
             DailyTestSession.Reset();
-            GetTree().ChangeSceneToFile("res://Scenes/Challenges/SequenceChallenge.tscn");
+            if (SceneTransition.Instance != null)
+                SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Challenges/SequenceChallenge.tscn");
+            else
+                GetTree().ChangeSceneToFile("res://Scenes/Challenges/SequenceChallenge.tscn");
         };
         stack.AddChild(start);
 
         var back = new Button { Text = "Return to Main Menu", CustomMinimumSize = new Vector2(0, 42) };
-        back.Pressed += () => GetTree().ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+        back.Pressed += () =>
+        {
+            if (SceneTransition.Instance != null)
+                SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+            else
+                GetTree().ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+        };
         stack.AddChild(back);
     }
 }

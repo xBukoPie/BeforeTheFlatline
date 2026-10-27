@@ -16,12 +16,16 @@ config/features=PackedStringArray("4.7", "C#", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [autoload]
+SceneTransition="*res://Scripts/GameController/SceneTransition.cs"
 
 DayClock="*res://Scripts/GameController/DayClock.cs"
 RoomKeyProgression="*res://Scripts/GameController/RoomKeyProgression.cs"
 SanityManager="*res://Scripts/GameController/SanityManager.cs"
 SettingsManager="*res://Scripts/GameController/SettingsManager.cs"
 StatusEffectsOverlay="*res://Scripts/UI/StatusEffectsOverlay.cs"
+
+[display]
+
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/size/mode=1

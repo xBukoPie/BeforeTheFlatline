@@ -106,7 +106,13 @@ public partial class SettingsMenu : Control
         footer.AddThemeConstantOverride("separation", 10);
         stack.AddChild(footer);
         var back = new Button { Text = "Back to Main Menu", CustomMinimumSize = new Vector2(0, 48), SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        back.Pressed += () => GetTree().ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+        back.Pressed += () =>
+        {
+            if (SceneTransition.Instance != null)
+                SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+            else
+                GetTree().ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+        };
         footer.AddChild(back);
         var defaults = new Button { Text = "Defaults", CustomMinimumSize = new Vector2(130, 48) };
         defaults.Pressed += () =>
