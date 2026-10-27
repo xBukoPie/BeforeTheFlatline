@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/School/FirstDayMysteryIntro.cs" id="1_mystery"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/VisualNovelScene.tscn" id="2_dialogue"]
+
+[node name="FirstDayMysteryIntro" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_mystery")
+
+[node name="MysteryDialogue" parent="." instance=ExtResource("2_dialogue")]
+unique_name_in_owner = true
+layout_mode = 1
+ShowBackground = false
+ShowPlaceholders = false
+PlayDemoOnReady = false
+LoopDemo = false
