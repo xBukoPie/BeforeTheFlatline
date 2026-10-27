@@ -4,6 +4,9 @@ using SchoolYardGame;
 /// <summary>Runtime-built settings panel. Each control applies changes immediately and persists them.</summary>
 public partial class SettingsMenu : Control
 {
+    /// <summary>When true, this settings panel is a submenu of the gameplay pause overlay.</summary>
+    public bool EmbeddedInPauseMenu { get; set; }
+
     private Label _volumeValue;
     private Label _brightnessValue;
     private HSlider _volume;
@@ -105,9 +108,20 @@ public partial class SettingsMenu : Control
         var footer = new HBoxContainer();
         footer.AddThemeConstantOverride("separation", 10);
         stack.AddChild(footer);
-        var back = new Button { Text = "Back to Main Menu", CustomMinimumSize = new Vector2(0, 48), SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        var back = new Button
+        {
+            Text = EmbeddedInPauseMenu ? "Back to Pause Menu" : "Back to Main Menu",
+            CustomMinimumSize = new Vector2(0, 48),
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
         back.Pressed += () =>
         {
+            if (EmbeddedInPauseMenu)
+            {
+                PauseMenuController.Instance?.CloseEmbeddedSettings();
+                return;
+            }
+
             if (SceneTransition.Instance != null)
                 SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
             else

@@ -36,15 +36,24 @@ public partial class MainMenu : Control
         DailyTestSession.Reset();
         ChallengeProgress.Reset();
 
+        // Keep the clock stopped during loading. RoomManager starts it only once the
+        // world scene has initialized, so the player does not lose in-game time on the loader.
         if (DayClock.Instance != null)
-            DayClock.Instance.Running = true;
+            DayClock.Instance.Running = false;
+
         if (SceneTransition.Instance != null)
-            SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Home/Rooms/World.tscn");
+        {
+            bool loaded = await SceneTransition.Instance.LoadSceneWithLoadingScreen("res://Scenes/Home/Rooms/World.tscn");
+            if (!loaded)
+                _isStarting = false;
+        }
         else
         {
             await FadeScreen(1f);
             if (GetTree() != null)
             {
+                if (DayClock.Instance != null)
+                    DayClock.Instance.Running = true;
                 await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
                 GetTree().ChangeSceneToFile("res://Scenes/Home/Rooms/World.tscn");
             }
