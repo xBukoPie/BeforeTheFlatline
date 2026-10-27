@@ -87,6 +87,7 @@ public partial class MainMenu : Control
         StatusEffectsOverlay.Instance?.ResetForNewRun();
         DailyTestSession.Reset();
         ChallengeProgress.Reset();
+        RoomKeyProgression.Instance?.ResetForNewRun();
 
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
