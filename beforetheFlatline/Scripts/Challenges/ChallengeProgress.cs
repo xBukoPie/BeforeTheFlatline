@@ -43,4 +43,7 @@ public static class ChallengeProgress
         IsCompleted(ConditionId) &&
         IsCompleted(FlowchartId) &&
         IsCompleted(FinalId);
+
+    /// <summary>Clear cached day completions when a new run starts from the title screen.</summary>
+    public static void Reset() => CompletedByDay.Clear();
 }

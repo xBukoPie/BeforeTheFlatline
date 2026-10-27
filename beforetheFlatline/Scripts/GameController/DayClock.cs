@@ -96,6 +96,18 @@ public partial class DayClock : Node
         EmitSignal(SignalName.TimeChanged, Hour);
     }
 
+    /// <summary>Reset the clock and daily school flags when starting a new run from the title screen.</summary>
+    public void ResetForNewRun()
+    {
+        Hour = Mathf.PosMod(StartHour, 24f);
+        DayNumber = 1;
+        SchoolChallengeStartedToday = false;
+        SchoolChallengeCompletedToday = false;
+        _skipSchoolGreetingOnNextLoad = false;
+        EmitSignal(SignalName.DayChanged, DayNumber);
+        EmitSignal(SignalName.TimeChanged, Hour);
+    }
+
     public void MarkSchoolChallengeStartedToday()
     {
         SchoolChallengeStartedToday = true;
