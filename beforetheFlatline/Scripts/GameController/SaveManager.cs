@@ -392,9 +392,22 @@ public partial class SaveManager : Node
         if (value.VariantType == Variant.Type.Int)
             return value.AsInt32();
 
+        // JSON parsers may represent a version written as 1.0 as a floating-point
+        // value instead of an integer. Accept it only when it is a whole number.
+        if (value.VariantType == Variant.Type.Float)
+        {
+            double numericVersion = value.AsDouble();
+            if (numericVersion >= int.MinValue && numericVersion <= int.MaxValue &&
+                Math.Abs(numericVersion - Math.Round(numericVersion)) < 0.000001)
+                return (int)Math.Round(numericVersion);
+            return 0;
+        }
+
         if (value.VariantType == Variant.Type.String &&
-            int.TryParse(value.AsString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed))
-            return parsed;
+            double.TryParse(value.AsString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double parsedVersion) &&
+            parsedVersion >= int.MinValue && parsedVersion <= int.MaxValue &&
+            Math.Abs(parsedVersion - Math.Round(parsedVersion)) < 0.000001)
+            return (int)Math.Round(parsedVersion);
 
         return 0;
     }
