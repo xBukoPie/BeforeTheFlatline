@@ -44,6 +44,43 @@ public static class ChallengeProgress
         IsCompleted(FlowchartId) &&
         IsCompleted(FinalId);
 
+    /// <summary>Serialize all daily completions using string day keys for JSON compatibility.</summary>
+    public static Godot.Collections.Dictionary CreateSaveData()
+    {
+        var data = new Godot.Collections.Dictionary();
+        foreach (var entry in CompletedByDay)
+        {
+            var completed = new Godot.Collections.Array();
+            foreach (string id in entry.Value)
+                completed.Add(id);
+            data[entry.Key.ToString()] = completed;
+        }
+        return data;
+    }
+
+    public static void RestoreFromSaveData(Godot.Collections.Dictionary data)
+    {
+        CompletedByDay.Clear();
+        foreach (Variant key in data.Keys)
+        {
+            if (!int.TryParse(key.AsString(), out int day) || day < 1)
+                continue;
+
+            Variant value = data[key];
+            if (value.VariantType != Variant.Type.Array)
+                continue;
+
+            var completed = new HashSet<string>();
+            foreach (Variant item in value.AsGodotArray())
+            {
+                string id = item.AsString();
+                if (!string.IsNullOrWhiteSpace(id))
+                    completed.Add(id.ToLowerInvariant());
+            }
+            CompletedByDay[day] = completed;
+        }
+    }
+
     /// <summary>Clear cached day completions when a new run starts from the title screen.</summary>
     public static void Reset() => CompletedByDay.Clear();
 }
