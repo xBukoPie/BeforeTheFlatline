@@ -1,4 +1,5 @@
 using Godot;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Autoloaded scene transition controller. Supports short fades and threaded scene loading
@@ -53,7 +54,7 @@ public partial class SceneTransition : CanvasLayer
     public async void ChangeSceneToFile(string path)
     {
         if (_busy || string.IsNullOrWhiteSpace(path))
-            return;
+            return false;
 
         if (!ResourceLoader.Exists(path))
         {
@@ -90,7 +91,7 @@ public partial class SceneTransition : CanvasLayer
     /// Shows a progress screen while the scene is loaded on worker threads, then swaps scenes
     /// only after the resource is ready. Intended for starting a new run from the title screen.
     /// </summary>
-    public async void LoadSceneWithLoadingScreen(string path)
+    public async Task<bool> LoadSceneWithLoadingScreen(string path)
     {
         if (_busy || string.IsNullOrWhiteSpace(path))
             return;
@@ -98,14 +99,14 @@ public partial class SceneTransition : CanvasLayer
         if (!ResourceLoader.Exists(path))
         {
             GD.PushError($"SceneTransition: scene was not found at '{path}'.");
-            return;
+            return false;
         }
 
         Error request = ResourceLoader.LoadThreadedRequest(path, "", true);
         if (request != Error.Ok)
         {
             GD.PushError($"SceneTransition: could not start loading '{path}' ({request}).");
-            return;
+            return false;
         }
 
         _busy = true;
@@ -146,7 +147,7 @@ public partial class SceneTransition : CanvasLayer
                 GD.PushError($"SceneTransition: threaded loading failed for '{path}' ({status}).");
                 await HideLoadingScreen();
                 _busy = false;
-                return;
+                return false;
             }
 
             // Prevent a flash when the scene is already cached or loads nearly instantly.
@@ -163,7 +164,7 @@ public partial class SceneTransition : CanvasLayer
             GD.PushError($"SceneTransition: '{path}' did not load as a PackedScene.");
             await HideLoadingScreen();
             _busy = false;
-            return;
+            return false;
         }
 
         _loadingProgress.Value = 100;
@@ -174,7 +175,7 @@ public partial class SceneTransition : CanvasLayer
             GD.PushError($"SceneTransition: failed to activate '{path}' ({changeResult}).");
             await HideLoadingScreen();
             _busy = false;
-            return;
+            return false;
         }
 
         // Keep the loading screen up while the new scene's _Ready methods initialize.
@@ -182,6 +183,7 @@ public partial class SceneTransition : CanvasLayer
         await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         await HideLoadingScreen();
         _busy = false;
+        return true;
     }
 
     private void BuildLoadingOverlay()
