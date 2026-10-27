@@ -13,6 +13,10 @@ public partial class TestResults : Control
 
     public override void _Ready()
     {
+        // The timed task segment ended; time resumes on the results/conversation screens.
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = true;
+
         BuildUi();
 
         bool alreadyFinalized = DailyTestSession.IsFinalized;
