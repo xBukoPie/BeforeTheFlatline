@@ -16,6 +16,7 @@ config/features=PackedStringArray("4.7", "C#", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [autoload]
+SceneTransition="*res://Scripts/GameController/SceneTransition.cs"
 
 DayClock="*res://Scripts/GameController/DayClock.cs"
 RoomKeyProgression="*res://Scripts/GameController/RoomKeyProgression.cs"
