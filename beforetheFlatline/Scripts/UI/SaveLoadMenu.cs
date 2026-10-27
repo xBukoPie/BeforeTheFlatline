@@ -196,7 +196,7 @@ public partial class SaveLoadMenu : Control
         _slotList.AddChild(row);
     }
 
-    private async void OnLoadSlotPressed(int slot)
+    private async System.Threading.Tasks.Task OnLoadSlotPressed(int slot)
     {
         if (_busy || SaveManager.Instance == null)
             return;
@@ -250,11 +250,19 @@ public partial class SaveLoadMenu : Control
 
     private static HBoxContainer MakeSlotRow()
     {
+        // Keep rows visually distinct from the menu background while preserving an HBox API.
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 12);
         row.Alignment = BoxContainer.AlignmentMode.Center;
         row.CustomMinimumSize = new Vector2(0, 70);
-        row.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+
+        var background = new Panel
+        {
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            ZIndex = -1
+        };
+        background.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        background.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color("1d2538"),
             BorderColor = new Color("39435f"),
@@ -271,6 +279,8 @@ public partial class SaveLoadMenu : Control
             ContentMarginTop = 8,
             ContentMarginBottom = 8
         });
+        row.AddChild(background);
+        row.MoveChild(background, 0);
         return row;
     }
 
