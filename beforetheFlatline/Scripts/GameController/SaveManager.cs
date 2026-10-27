@@ -13,7 +13,8 @@ public partial class SaveManager : Node
 
     public const int ManualSlotCount = 3;
     public const string WorldScenePath = "res://Scenes/Home/Rooms/World.tscn";
-    private const string AutoSavePath = "user://autosave.json";
+    private const string SaveDirectory = "user://Saves";
+    private const string AutoSaveFileName = "autosave.json";
     private const double AutoSaveIntervalSeconds = 60.0;
 
     private double _autosaveElapsed;
@@ -29,6 +30,7 @@ public partial class SaveManager : Node
 
         Instance = this;
         ProcessMode = ProcessModeEnum.Always;
+        EnsureSaveDirectory();
     }
 
     public override void _ExitTree()
@@ -69,11 +71,11 @@ public partial class SaveManager : Node
     public bool HasSlot(int slot) =>
         IsValidSlot(slot) && FileAccess.FileExists(GetSlotPath(slot));
 
-    public bool HasAutoSave => FileAccess.FileExists(AutoSavePath);
+    public bool HasAutoSave => FileAccess.FileExists(GetAutoSavePath());
 
     public string GetSlotTimestamp(int slot) => GetTimestamp(GetSlotPath(slot));
 
-    public string GetAutoSaveTimestamp() => GetTimestamp(AutoSavePath);
+    public string GetAutoSaveTimestamp() => GetTimestamp(GetAutoSavePath());
 
     public string GetSlotDescription(int slot)
     {
@@ -92,6 +94,22 @@ public partial class SaveManager : Node
         return WriteSave(GetSlotPath(slot), slot, false);
     }
 
+    public bool DeleteSlot(int slot)
+    {
+        if (!IsValidSlot(slot))
+            return false;
+        string path = GetSlotPath(slot);
+        if (!FileAccess.FileExists(path))
+            return true;
+        Error error = DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(path));
+        if (error != Error.Ok)
+        {
+            GD.PushError($"SaveManager: could not delete slot {slot} ({error}).");
+            return false;
+        }
+        return true;
+    }
+
     public bool SaveAutoSave()
     {
         if (_writingAutosave)
@@ -100,7 +118,7 @@ public partial class SaveManager : Node
         _writingAutosave = true;
         try
         {
-            bool saved = WriteSave(AutoSavePath, 0, true);
+            bool saved = WriteSave(GetAutoSavePath(), 0, true);
             if (saved)
                 _autosaveElapsed = 0;
             return saved;
@@ -131,7 +149,7 @@ public partial class SaveManager : Node
 
     public async System.Threading.Tasks.Task<bool> LoadAutoSaveAsync()
     {
-        if (!TryReadSave(AutoSavePath, out var data))
+        if (!TryReadSave(GetAutoSavePath(), out var data))
             return false;
 
         return await LoadSnapshotAsync(data);
@@ -294,7 +312,33 @@ public partial class SaveManager : Node
         return ReadString(data, "saved_at", string.Empty);
     }
 
-    private string GetSlotPath(int slot) => $"user://save_slot_{slot}.json";
+    private static void EnsureSaveDirectory()
+    {
+        Error error = DirAccess.MakeDirRecursiveAbsolute(ProjectSettings.GlobalizePath(SaveDirectory));
+        if (error != Error.Ok && error != Error.AlreadyExists)
+            GD.PushError($"SaveManager: could not create save directory '{SaveDirectory}' ({error}).");
+    }
+
+    private string GetAutoSavePath()
+    {
+        EnsureSaveDirectory();
+        return $"{SaveDirectory}/{AutoSaveFileName}";
+    }
+
+    private string GetSlotPath(int slot)
+    {
+        EnsureSaveDirectory();
+        string path = $"{SaveDirectory}/save_slot_{slot}.json";
+        string legacyPath = $"user://save_slot_{slot}.json";
+        if (!FileAccess.FileExists(path) && FileAccess.FileExists(legacyPath))
+        {
+            using var source = FileAccess.Open(legacyPath, FileAccess.ModeFlags.Read);
+            using var destination = FileAccess.Open(path, FileAccess.ModeFlags.Write);
+            if (source != null && destination != null)
+                destination.StoreString(source.GetAsText());
+        }
+        return path;
+    }
 
     private static bool IsValidSlot(int slot) => slot >= 1 && slot <= ManualSlotCount;
 
