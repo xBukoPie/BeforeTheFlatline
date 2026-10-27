@@ -105,7 +105,6 @@ public partial class SaveManager : Node
             $"user://save_slot_{slot}.json"
         };
 
-        bool deleted = false;
         foreach (string path in paths)
         {
             if (!FileAccess.FileExists(path))
@@ -118,7 +117,6 @@ public partial class SaveManager : Node
                 return false;
             }
 
-            deleted = true;
         }
 
         return true;
