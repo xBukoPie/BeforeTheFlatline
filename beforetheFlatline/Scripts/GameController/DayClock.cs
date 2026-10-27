@@ -30,6 +30,32 @@ public partial class DayClock : Node
 
     private bool _skipSchoolGreetingOnNextLoad;
     private bool _initialized;
+    public bool FirstDayMysteryEncounterSeen { get; private set; }
+    private bool _firstDaySpecialGreetingPending;
+    public bool FirstDayMysteryGreetingPending => _firstDaySpecialGreetingPending;
+
+    /// <summary>Whether the one-time mysterious encounter should play before classroom entry.</summary>
+    public bool ShouldShowFirstDayMysteryEncounter => !FirstDayMysteryEncounterSeen;
+
+    /// <summary>Set after the mysterious person exits; the next classroom greeting gets unique choices.</summary>
+    public void MarkFirstDayMysteryEncounterCompleted()
+    {
+        FirstDayMysteryEncounterSeen = true;
+        _firstDaySpecialGreetingPending = true;
+    }
+
+    public bool ConsumeFirstDaySpecialGreetingPending()
+    {
+        bool pending = _firstDaySpecialGreetingPending;
+        _firstDaySpecialGreetingPending = false;
+        return pending;
+    }
+
+    public void RestoreFirstDayMysteryState(bool encounterSeen, bool specialGreetingPending)
+    {
+        FirstDayMysteryEncounterSeen = encounterSeen;
+        _firstDaySpecialGreetingPending = specialGreetingPending;
+    }
 
     public bool IsSchoolOpen => Hour >= SchoolOpenHour && Hour < SchoolClosingHour;
     public bool IsNight => Hour < SchoolOpenHour || Hour >= NightBeginsHour;
@@ -117,6 +143,8 @@ public partial class DayClock : Node
         SchoolChallengeStartedToday = false;
         SchoolChallengeCompletedToday = false;
         _skipSchoolGreetingOnNextLoad = false;
+        FirstDayMysteryEncounterSeen = false;
+        _firstDaySpecialGreetingPending = false;
         EmitSignal(SignalName.DayChanged, DayNumber);
         EmitSignal(SignalName.TimeChanged, Hour);
     }

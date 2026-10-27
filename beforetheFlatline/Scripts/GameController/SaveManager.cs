@@ -166,6 +166,8 @@ public partial class SaveManager : Node
             ["clock_running"] = true,
             ["school_started"] = DayClock.Instance.SchoolChallengeStartedToday,
             ["school_completed"] = DayClock.Instance.SchoolChallengeCompletedToday,
+            ["mystery_encounter_seen"] = DayClock.Instance.FirstDayMysteryEncounterSeen,
+            ["first_day_special_greeting_pending"] = DayClock.Instance.FirstDayMysteryGreetingPending,
             ["sanity_state"] = SanityManager.Instance.CreateSaveData(),
             ["room_keys"] = new Godot.Collections.Dictionary
             {
@@ -216,6 +218,9 @@ public partial class SaveManager : Node
         // Apply saved autoload state before World.tscn _Ready runs so rooms/UI see the
         // restored day, sanity, key ownership and daily progress from their first frame.
         DayClock.Instance?.RestoreState(day, hour, true, schoolStarted, schoolCompleted);
+        DayClock.Instance?.RestoreFirstDayMysteryState(
+            ReadBool(data, "mystery_encounter_seen", false),
+            ReadBool(data, "first_day_special_greeting_pending", false));
         if (SanityManager.Instance != null && sanityState.Count > 0)
             SanityManager.Instance.RestoreFromSaveData(sanityState);
         RoomKeyProgression.Instance?.RestoreProgress(
