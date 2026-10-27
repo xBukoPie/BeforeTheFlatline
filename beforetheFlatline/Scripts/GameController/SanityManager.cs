@@ -2,12 +2,12 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
+namespace SchoolYardGame;
+
 /// <summary>
 /// Run-wide sanity and per-type debuff stacks. Debuffs clear only after enough sanity is
 /// recovered; elapsed in-game time never removes a debuff.
 /// </summary>
-namespace SchoolYardGame;
-
 public partial class SanityManager : Node
 {
     public static SanityManager Instance { get; private set; }
