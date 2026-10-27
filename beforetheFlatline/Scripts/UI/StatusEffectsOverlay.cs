@@ -30,7 +30,6 @@ public partial class StatusEffectsOverlay : CanvasLayer
     private float _elapsed;
     private float _sanity = 100f;
     private SanityManager.DebuffType _dominantDebuff = SanityManager.DebuffType.Dizziness;
-    private int _dominantLevel;
     private Color _flashColor = new Color("e34d5b");
 
     public override void _Ready()
@@ -427,7 +426,6 @@ public partial class StatusEffectsOverlay : CanvasLayer
             }
         }
 
-        _dominantLevel = strongestLevel;
         if (intensity > 0)
             _flashColor = DebuffColor(type);
 
