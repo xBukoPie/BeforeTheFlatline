@@ -59,6 +59,10 @@ public partial class PauseMenuController : CanvasLayer
 
     private bool CanPauseCurrentScene()
     {
+        // Ignore Escape while the global transition/loading overlay owns the screen.
+        if (SceneTransition.Instance?.IsBusy == true)
+            return false;
+
         var currentScene = GetTree()?.CurrentScene;
         if (currentScene == null)
             return false;
