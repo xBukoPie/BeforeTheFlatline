@@ -30,7 +30,7 @@ public partial class TestResults : Control
             string roomName = RoomKeyProgression.Instance?.AwardAssessmentCompletion() ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(roomName))
                 DailyTestSession.QueueNotification($"ROOM KEY ACQUIRED: {roomName}. Its locked door should now open.");
-            else if (RoomKeyProgression.Instance?.TotalKeysEarned >= 4)
+            else if (RoomKeyProgression.Instance != null && RoomKeyProgression.Instance.TotalKeysEarned >= 4)
                 DailyTestSession.QueueNotification("All currently key-locked rooms have already been unlocked.");
         }
 
