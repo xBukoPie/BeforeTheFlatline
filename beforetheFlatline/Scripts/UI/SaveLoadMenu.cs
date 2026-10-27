@@ -154,7 +154,11 @@ public partial class SaveLoadMenu : Control
 
     private void AddManualSlotRow(int slot, SaveManager saves)
     {
-        var row = MakeSlotRow();
+        var rowPanel = MakeSlotRow();
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 12);
+        row.Alignment = BoxContainer.AlignmentMode.Center;
+        rowPanel.AddChild(row);
         var textStack = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         textStack.AddChild(MakeSlotTitle($"SAVE SLOT {slot}"));
         string timestamp = saves?.GetSlotTimestamp(slot) ?? "";
@@ -175,12 +179,16 @@ public partial class SaveLoadMenu : Control
         load.Pressed += async () => await OnLoadSlotPressed(loadSlot);
         row.AddChild(load);
 
-        _slotList.AddChild(row);
+        _slotList.AddChild(rowPanel);
     }
 
     private void AddAutoSaveRow(SaveManager saves)
     {
-        var row = MakeSlotRow();
+        var rowPanel = MakeSlotRow();
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 12);
+        row.Alignment = BoxContainer.AlignmentMode.Center;
+        rowPanel.AddChild(row);
         var textStack = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         textStack.AddChild(MakeSlotTitle("AUTO SAVE"));
         string timestamp = saves?.GetAutoSaveTimestamp() ?? "";
@@ -193,7 +201,7 @@ public partial class SaveLoadMenu : Control
         autoLoad.Pressed += async () => await OnLoadAutoSavePressed();
         row.AddChild(autoLoad);
 
-        _slotList.AddChild(row);
+        _slotList.AddChild(rowPanel);
     }
 
     private async System.Threading.Tasks.Task OnLoadSlotPressed(int slot)
@@ -248,21 +256,14 @@ public partial class SaveLoadMenu : Control
             QueueFree();
     }
 
-    private static HBoxContainer MakeSlotRow()
+    private static PanelContainer MakeSlotRow()
     {
-        // Keep rows visually distinct from the menu background while preserving an HBox API.
-        var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 12);
-        row.Alignment = BoxContainer.AlignmentMode.Center;
-        row.CustomMinimumSize = new Vector2(0, 70);
-
-        var background = new Panel
+        var row = new PanelContainer
         {
-            MouseFilter = Control.MouseFilterEnum.Ignore,
-            ZIndex = -1
+            CustomMinimumSize = new Vector2(0, 70),
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
         };
-        background.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        background.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        row.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color("1d2538"),
             BorderColor = new Color("39435f"),
@@ -279,8 +280,6 @@ public partial class SaveLoadMenu : Control
             ContentMarginTop = 8,
             ContentMarginBottom = 8
         });
-        row.AddChild(background);
-        row.MoveChild(background, 0);
         return row;
     }
 
