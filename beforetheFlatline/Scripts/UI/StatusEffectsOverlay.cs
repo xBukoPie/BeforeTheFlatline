@@ -94,20 +94,20 @@ public partial class StatusEffectsOverlay : CanvasLayer
 
         _noticeLabel.Text = message;
         _noticeLabel.Visible = true;
-        _noticeTime = 4.2f;
+        _noticeTime = 3.0f;
     }
 
     public void TriggerTaskFailure(int sanityLoss, string debuffName)
     {
         _flashColor = new Color("ee465b");
-        _flashTime = 1.25f;
+        _flashTime = 0.9f;
         Notify($"DEBUFF APPLIED: {debuffName.ToUpperInvariant()}  •  SANITY -{sanityLoss}");
     }
 
     public void TriggerTaskPass()
     {
         _flashColor = new Color("65d6a5");
-        _flashTime = 0.35f;
+        _flashTime = 0.25f;
         Notify("ASSESSMENT PASSED");
     }
 
@@ -167,19 +167,19 @@ uniform float time_seconds = 0.0;
 void fragment() {
     vec2 uv = SCREEN_UV;
     float wobble = dizziness_strength;
-    uv.x += sin(uv.y * 24.0 + time_seconds * 2.3) * 0.009 * wobble;
-    uv.x += sin(uv.y * 9.0 - time_seconds * 1.1) * 0.004 * wobble;
-    uv.y += sin(uv.x * 15.0 + time_seconds * 1.7) * 0.004 * wobble;
+    uv.x += sin(uv.y * 24.0 + time_seconds * 2.3) * 0.005 * wobble;
+    uv.x += sin(uv.y * 9.0 - time_seconds * 1.1) * 0.0025 * wobble;
+    uv.y += sin(uv.x * 15.0 + time_seconds * 1.7) * 0.0025 * wobble;
 
     vec4 image = texture(screen_texture, uv);
     float grain = fract(sin(dot(FRAGCOORD.xy + floor(time_seconds * 30.0), vec2(12.9898, 78.233))) * 43758.5453);
     float lineNoise = step(0.985, fract(FRAGCOORD.y * 0.5 + floor(time_seconds * 18.0) * 0.37));
-    image.rgb += (grain - 0.5) * anxiety_strength * 0.20;
-    image.rgb -= lineNoise * anxiety_strength * 0.11;
+    image.rgb += (grain - 0.5) * anxiety_strength * 0.12;
+    image.rgb -= lineNoise * anxiety_strength * 0.06;
 
     float pulse = (sin(time_seconds * 10.0) + 1.0) * 0.5;
     float vignette = smoothstep(0.48, 1.0, length(SCREEN_UV - vec2(0.5)) * 1.5);
-    image.rgb *= 1.0 - vignette * pressure_strength * (0.08 + pulse * 0.12);
+    image.rgb *= 1.0 - vignette * pressure_strength * (0.04 + pulse * 0.06);
     COLOR = vec4(image.rgb, 1.0);
 }"
             }
@@ -261,7 +261,7 @@ void fragment() {
             Visible = false,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        _heart.AddThemeFontSizeOverride("font_size", 48);
+        _heart.AddThemeFontSizeOverride("font_size", 36);
         _heart.AddThemeColorOverride("font_color", new Color("df3a52"));
         _heart.AddThemeColorOverride("font_outline_color", new Color("130910"));
         _heart.AddThemeConstantOverride("outline_size", 5);
@@ -290,7 +290,7 @@ void fragment() {
             Visible = false,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        label.AddThemeFontSizeOverride("font_size", 19);
+        label.AddThemeFontSizeOverride("font_size", 16);
         label.AddThemeColorOverride("font_color", new Color("f0d38a"));
         label.AddThemeColorOverride("font_outline_color", new Color("100d0a"));
         label.AddThemeConstantOverride("outline_size", 4);
@@ -340,17 +340,17 @@ void fragment() {
             bool active = confusion > 0 && wave > 0.25f && _endingFade > 0.02f;
             _confusionWords[i].Visible = active;
             _confusionWords[i].Modulate = new Color(1f, 1f, 1f,
-                active ? Mathf.Clamp((0.12f + wave * 0.45f) * confusion / 30f, 0f, 0.7f) * fade : 0f);
+                active ? Mathf.Clamp((0.08f + wave * 0.25f) * confusion / 36f, 0f, 0.38f) * fade : 0f);
         }
 
         float pulse = (Mathf.Sin(_elapsed * (8f + pressure / 22f)) + 1f) * 0.5f;
         _heart.Visible = pressure > 0 && _endingFade > 0.02f;
-        _heart.Scale = Vector2.One * (0.82f + pulse * (0.22f + pressureStrength * 0.22f));
+        _heart.Scale = Vector2.One * (0.93f + pulse * (0.09f + pressureStrength * 0.08f));
         _heart.Modulate = new Color(1f, 1f, 1f,
-            _heart.Visible ? (0.38f + pulse * 0.52f) * fade : 0f);
+            _heart.Visible ? (0.22f + pulse * 0.28f) * fade : 0f);
 
-        float squeeze = pressure > 0 ? 8f + pressureStrength * 38f + pulse * 10f : 0f;
-        float pressureAlpha = Mathf.Clamp(pressureStrength * (0.12f + pulse * 0.10f) * fade, 0f, 0.28f);
+        float squeeze = pressure > 0 ? 4f + pressureStrength * 20f + pulse * 5f : 0f;
+        float pressureAlpha = Mathf.Clamp(pressureStrength * (0.08f + pulse * 0.06f) * fade, 0f, 0.16f);
         _pressureTop.OffsetBottom = squeeze;
         _pressureBottom.OffsetTop = -squeeze;
         _pressureTop.Color = new Color(0.72f, 0.08f, 0.18f, pressureAlpha);
@@ -360,13 +360,13 @@ void fragment() {
             (float)SanityManager.StableSanityThreshold, 0f, 1f);
         Color tint = GetStackTint(dizziness, confusion, anxiety, pressure);
         if (_flashTime > 0f)
-            tint = tint.Lerp(_flashColor, 0.62f);
-        float washAlpha = Mathf.Clamp(lowSanity * 0.12f + total / 900f, 0f, 0.19f) * fade;
+            tint = tint.Lerp(_flashColor, 0.35f);
+        float washAlpha = Mathf.Clamp(lowSanity * 0.07f + total / 1300f, 0f, 0.12f) * fade;
         if (_flashTime > 0f)
-            washAlpha = Mathf.Max(washAlpha, (_flashTime / 1.25f) * 0.14f * fade);
+            washAlpha = Mathf.Max(washAlpha, (_flashTime / 0.9f) * 0.08f * fade);
         _statusLabel.Visible = total > 0 || _sanity < SanityManager.StableSanityThreshold;
         _statusLabel.Text = total > 0 ? "DISTRESS" : (_sanity < 25 ? "CRITICAL" : "UNSTEADY");
-        _statusLabel.Modulate = new Color(1f, 1f, 1f, 0.55f * fade);
+        _statusLabel.Modulate = new Color(1f, 1f, 1f, 0.38f * fade);
 
         // The tint remains low-alpha; the recognizable debuff-specific cues do the main work.
         _effectWash.Color = new Color(tint.R, tint.G, tint.B, washAlpha);
