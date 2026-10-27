@@ -58,12 +58,21 @@ public partial class ChallengeHub : Control
         start.Pressed += () =>
         {
             DailyTestSession.Reset();
-            GetTree().ChangeSceneToFile("res://Scenes/Challenges/SequenceChallenge.tscn");
+            if (SceneTransition.Instance != null)
+                SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Challenges/SequenceChallenge.tscn");
+            else
+                GetTree().ChangeSceneToFile("res://Scenes/Challenges/SequenceChallenge.tscn");
         };
         stack.AddChild(start);
 
         var back = new Button { Text = "Return to Main Menu", CustomMinimumSize = new Vector2(0, 42) };
-        back.Pressed += () => GetTree().ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+        back.Pressed += () =>
+        {
+            if (SceneTransition.Instance != null)
+                SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+            else
+                GetTree().ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+        };
         stack.AddChild(back);
     }
 }
