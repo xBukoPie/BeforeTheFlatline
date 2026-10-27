@@ -13,6 +13,7 @@ public partial class SaveManager : Node
 
     public const int ManualSlotCount = 3;
     public const string WorldScenePath = "res://Scenes/Home/Rooms/World.tscn";
+    private const string DefaultRoomPath = "res://Scenes/Home/Rooms/Kwarto.tscn";
     private const string SaveDirectory = "user://Saves";
     private const string AutoSaveFileName = "autosave.json";
     private const double AutoSaveIntervalSeconds = 60.0;
@@ -216,10 +217,19 @@ public partial class SaveManager : Node
         }
 
         string roomPath = ReadString(data, "room_path", "");
-        if (string.IsNullOrWhiteSpace(roomPath) || !ResourceLoader.Exists(roomPath))
+        bool savedRoomExists = !string.IsNullOrWhiteSpace(roomPath) && ResourceLoader.Exists(roomPath);
+        if (!savedRoomExists)
         {
-            GD.PushError($"SaveManager: the saved room could not be found: '{roomPath}'.");
-            return false;
+            // A save remains useful if a room was renamed or removed in a project update.
+            // Restore the saved run into the default home room instead of rejecting its JSON.
+            if (!ResourceLoader.Exists(DefaultRoomPath))
+            {
+                GD.PushError($"SaveManager: saved room '{roomPath}' is missing, and fallback room '{DefaultRoomPath}' is unavailable.");
+                return false;
+            }
+
+            GD.PushWarning($"SaveManager: saved room '{roomPath}' is missing. Loading the save into '{DefaultRoomPath}' instead.");
+            roomPath = DefaultRoomPath;
         }
 
         float x = ReadFloat(data, "player_x", 0f);
@@ -247,7 +257,8 @@ public partial class SaveManager : Node
         ChallengeProgress.RestoreFromSaveData(challengeState);
 
         RoomManager.RequestStartRoomOnNextLoad(roomPath, "startSpawn");
-        RoomManager.RequestPlayerPositionOnNextLoad(new Vector2(x, y));
+        if (savedRoomExists)
+            RoomManager.RequestPlayerPositionOnNextLoad(new Vector2(x, y));
 
         PauseMenuController.Instance?.PrepareForExternalLoad();
         if (DayClock.Instance != null)
@@ -322,7 +333,18 @@ public partial class SaveManager : Node
     private string GetAutoSavePath()
     {
         EnsureSaveDirectory();
-        return $"{SaveDirectory}/{AutoSaveFileName}";
+        string path = $"{SaveDirectory}/{AutoSaveFileName}";
+        const string legacyPath = "user://autosave.json";
+
+        if (!FileAccess.FileExists(path) && FileAccess.FileExists(legacyPath))
+        {
+            using var source = FileAccess.Open(legacyPath, FileAccess.ModeFlags.Read);
+            using var destination = FileAccess.Open(path, FileAccess.ModeFlags.Write);
+            if (source != null && destination != null)
+                destination.StoreString(source.GetAsText());
+        }
+
+        return path;
     }
 
     private string GetSlotPath(int slot)
