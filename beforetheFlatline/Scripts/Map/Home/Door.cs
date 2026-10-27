@@ -12,6 +12,7 @@ public partial class Door : Area2D
     [Export] public bool AutoEnter { get; set; } = false;    // true = no key press needed (e.g. walk down stairs)
     [Export] public bool RequiresSchoolHours { get; set; } = false;
     [Export] public string UnlockRoomId { get; set; } = "";
+    [Export] public bool TriggersFirstDayMystery { get; set; } = false;
     [Export] public string LockedPrompt { get; set; } = "Locked. Complete tasks to earn the key.";
     [Export] public string ClosedPrompt { get; set; } = "School is closed. Come back after sunrise.";
     [Export] public float ClosedMessageDuration { get; set; } = 2.5f;
@@ -20,6 +21,7 @@ public partial class Door : Area2D
 
     private Label _hint;
     private bool _playerInside;
+    private bool _mysteryIntroOpening;
     private float _closedPromptRemaining;
 
     public override void _Ready()
@@ -121,6 +123,14 @@ public partial class Door : Area2D
         _closedPromptRemaining = Mathf.Max(0.5f, ClosedMessageDuration);
     }
 
+    /// <summary>Called after the one-time first-day encounter finishes.</summary>
+    public void ContinueAfterMysteryIntro()
+    {
+        _mysteryIntroOpening = false;
+        if (GodotObject.IsInstanceValid(this))
+            Use();
+    }
+
     private void Use()
     {
         if (!string.IsNullOrWhiteSpace(UnlockRoomId) &&
@@ -141,6 +151,36 @@ public partial class Door : Area2D
         if (manager == null)
         {
             GD.PushWarning("Door: no RoomManager (group 'room_manager') found.");
+            return;
+        }
+
+        // The first time the player enters this classroom door, show the mysterious
+        // tutorial/lore encounter first. Completion calls back into this door and reuses
+        // the normal classroom overlay path below.
+        if (TriggersFirstDayMystery &&
+            DayClock.Instance?.ShouldShowFirstDayMysteryEncounter == true)
+        {
+            if (_mysteryIntroOpening)
+                return;
+
+            var introScene = GD.Load<PackedScene>("res://Scenes/School/FirstDayMysteryIntro.tscn");
+            if (introScene == null)
+            {
+                GD.PushError("Door: missing FirstDayMysteryIntro.tscn.");
+                return;
+            }
+
+            var uiRoot = manager.GetNodeOrNull<Node>("UI");
+            if (uiRoot == null)
+            {
+                GD.PushError("Door: cannot show the first-day mystery because the RoomManager has no UI node.");
+                return;
+            }
+
+            var intro = introScene.Instantiate<FirstDayMysteryIntro>();
+            intro.DoorToContinue = this;
+            _mysteryIntroOpening = true;
+            uiRoot.AddChild(intro);
             return;
         }
 
