@@ -204,7 +204,7 @@ public partial class ChallengeScene : Control
         ClearContent();
         var guide = new Label
         {
-            Text = "TYPE YOUR OWN PSEUDOCODE. Submit or give up to continue; individual answers are not revealed yet.",
+            Text = "TYPE YOUR OWN PSEUDOCODE. Choose any valid variable names and use them consistently; the example names in the prompt are optional. Submit or give up to continue; individual answers are not revealed yet.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
         guide.AddThemeColorOverride("font_color", new Color("7dd3fc"));
@@ -231,7 +231,7 @@ public partial class ChallengeScene : Control
         ClearContent();
         var guide = new Label
         {
-            Text = "DRAG A SHAPE INTO THE CANVAS. Define each symbol and use ↑ / ↓ to order the connected blocks.",
+            Text = "DRAG A SHAPE INTO THE CANVAS. You may choose your own valid variable names; keep them consistent in Input, Process, Decision, and Output blocks. Use ↑ / ↓ to order the connected blocks.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
         guide.AddThemeColorOverride("font_color", new Color("7dd3fc"));
@@ -291,26 +291,7 @@ public partial class ChallengeScene : Control
         DailyTestSession.Record(ChallengeId, correct, gaveUp, _difficulty);
 
         if (correct)
-        {
             ChallengeProgress.MarkCompleted(ChallengeId);
-            var keyProgression = RoomKeyProgression.Instance;
-            var reward = keyProgression?.AwardTaskCompletion(_difficulty);
-            if (reward != null)
-            {
-                if (reward.KeysEarned > 0)
-                {
-                    foreach (string roomName in reward.RoomsUnlocked)
-                        DailyTestSession.QueueNotification($"ROOM KEY ACQUIRED: {roomName}. Its locked door should now open.");
-
-                    if (reward.TotalKeys >= 4)
-                        DailyTestSession.QueueNotification("All currently key-locked rooms have been unlocked.");
-                }
-                else if (!string.IsNullOrWhiteSpace(reward.NextRoomKeyName))
-                {
-                    DailyTestSession.QueueNotification($"Correct answer. Progress toward the {reward.NextRoomKeyName} room key has been saved. Keep completing tasks to unlock it.");
-                }
-            }
-        }
 
         _completed = true;
         _submitButton.Disabled = true;
