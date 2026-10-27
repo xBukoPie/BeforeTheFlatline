@@ -54,7 +54,7 @@ public partial class SceneTransition : CanvasLayer
     public async void ChangeSceneToFile(string path)
     {
         if (_busy || string.IsNullOrWhiteSpace(path))
-            return false;
+            return;
 
         if (!ResourceLoader.Exists(path))
         {
@@ -94,7 +94,7 @@ public partial class SceneTransition : CanvasLayer
     public async Task<bool> LoadSceneWithLoadingScreen(string path)
     {
         if (_busy || string.IsNullOrWhiteSpace(path))
-            return;
+            return false;
 
         if (!ResourceLoader.Exists(path))
         {
