@@ -225,6 +225,8 @@ public partial class PauseMenuController : CanvasLayer
     {
         if (_settingsOpen)
             CloseEmbeddedSettings();
+        if (_saveLoadOpen)
+            CloseSaveLoadMenu();
 
         _isPaused = false;
         _overlay.Visible = false;
