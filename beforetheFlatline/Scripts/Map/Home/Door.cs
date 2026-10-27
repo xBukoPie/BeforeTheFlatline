@@ -170,8 +170,8 @@ public partial class Door : Area2D
                 return;
             }
 
-            var uiRoot = manager.GetNodeOrNull<Node>("UI");
-            if (uiRoot == null)
+            var mysteryUiRoot = manager.GetNodeOrNull<Node>("UI");
+            if (mysteryUiRoot == null)
             {
                 GD.PushError("Door: cannot show the first-day mystery because the RoomManager has no UI node.");
                 return;
@@ -180,7 +180,7 @@ public partial class Door : Area2D
             var intro = introScene.Instantiate<FirstDayMysteryIntro>();
             intro.DoorToContinue = this;
             _mysteryIntroOpening = true;
-            uiRoot.AddChild(intro);
+            mysteryUiRoot.AddChild(intro);
             return;
         }
 
