@@ -407,6 +407,7 @@ Size = Vector2(30, 62)
 
 [node name="ToClassroom" parent="Doors" unique_id=1703222727 instance=ExtResource("5_xqy2q")]
 position = Vector2(-133, -62)
+TriggersFirstDayMystery = true
 TargetRoom = "uid://b2wmpq2d1fy4t"
 TargetSpawn = "FromSchool"
 Prompt = "Classroom"
