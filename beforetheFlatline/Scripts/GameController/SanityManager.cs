@@ -96,7 +96,11 @@ public partial class SanityManager : Node
 
         // Every debuff gets an independent recovery gate. Reapplying the same type refreshes
         // its gate, preventing a newly stacked effect from clearing immediately.
-        int recoveryNeeded = _rng.RandiRange(30, 60);
+        // Roll the recovery fraction against the sanity still missing after this debuff.
+        // This makes the gate achievable even when a small penalty is applied near full sanity.
+        int missingSanity = MaxSanity - CurrentSanity;
+        int recoveryPercent = _rng.RandiRange(30, 60);
+        int recoveryNeeded = Mathf.CeilToInt(missingSanity * recoveryPercent / 100f);
         _recoveryTargets[type] = Mathf.Min(MaxSanity, CurrentSanity + recoveryNeeded);
 
         OnDebuffChanged?.Invoke(type, _debuffs[type]);
