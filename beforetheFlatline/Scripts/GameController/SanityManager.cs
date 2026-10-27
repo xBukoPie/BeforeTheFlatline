@@ -191,8 +191,6 @@ public partial class SanityManager : Node
 
     public bool HasActiveDebuffs => GetTotalDebuffLevel() > 0;
 
-    public bool HasActiveDebuffs => GetTotalDebuffLevel() > 0;
-
     public void ResetForNewRun()
     {
         CurrentSanity = MaxSanity;
