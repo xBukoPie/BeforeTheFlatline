@@ -25,8 +25,6 @@ public partial class SanityManager : Node
 
     private readonly Dictionary<DebuffType, int> _debuffs = new();
     private readonly Dictionary<DebuffType, int> _recoveryTargets = new();
-    private readonly Dictionary<DebuffType, int> _recoveryProgress = new();
-    private readonly Dictionary<DebuffType, int> _recoveryRequirements = new();
     private readonly RandomNumberGenerator _rng = new();
     private bool _badEndingQueued;
 
@@ -51,8 +49,6 @@ public partial class SanityManager : Node
         {
             _debuffs[type] = 0;
             _recoveryTargets[type] = MaxSanity;
-            _recoveryProgress[type] = 0;
-            _recoveryRequirements[type] = 0;
         }
 
         OnSanityChanged?.Invoke(CurrentSanity);
@@ -71,8 +67,8 @@ public partial class SanityManager : Node
     }
 
     /// <summary>
-    /// Restore sanity at reduced efficiency while debuffs are active. Recovery no longer
-    /// removes a debuff quickly: each effect has its own high recovery threshold.
+    /// Restore sanity and clear each debuff independently once the player has recovered the
+    /// rolled 30-60 percent of the sanity missing when that debuff was applied.
     /// </summary>
     public void Recover(int amount)
     {
@@ -80,26 +76,11 @@ public partial class SanityManager : Node
             return;
 
         int clamped = Mathf.Clamp(amount, 1, MaxSanity);
-        int activeDebuffCount = 0;
-        foreach (int level in _debuffs.Values)
-        {
-            if (level > 0)
-                activeDebuffCount++;
-        }
+        int previous = CurrentSanity;
+        CurrentSanity = Mathf.Min(CurrentSanity + clamped, MaxSanity);
 
-        float recoveryEfficiency = Mathf.Clamp(
-            1f - activeDebuffCount * 0.12f - GetTotalDebuffLevel() / 250f,
-            0.35f,
-            1f);
-        int effectiveRecovery = Mathf.Max(1, Mathf.FloorToInt(clamped * recoveryEfficiency));
-
-        CurrentSanity = Mathf.Min(CurrentSanity + effectiveRecovery, MaxSanity);
-
-        // Count recovery effort separately from the displayed sanity value. This prevents a
-        // single recovery event from instantly cleansing a debuff when sanity is already near
-        // full; multiple recovery events are required even if sanity has reached its cap.
-        AccumulateDebuffRecovery(effectiveRecovery);
-        ClearRecoveredDebuffs();
+        if (CurrentSanity > previous)
+            ClearRecoveredDebuffs();
 
         OnSanityChanged?.Invoke(CurrentSanity);
     }
@@ -113,22 +94,85 @@ public partial class SanityManager : Node
         _debuffs[type] = Mathf.Clamp(GetDebuffLevel(type) + appliedIntensity, 0, MaxSanity);
         CurrentSanity = Mathf.Max(CurrentSanity - appliedIntensity, 0);
 
-        // Debuffs are intentionally persistent. Each effect requires recovering most of the
-        // lost sanity, with a minimum 18-point recovery so small losses cannot be cleansed by
-        // one visit indoors. Reapplying a type refreshes its independent recovery gate.
+        // Each debuff gets an independent recovery gate. Reapplying the same type refreshes
+        // its gate, preventing a newly stacked effect from clearing immediately.
         int missingSanity = MaxSanity - CurrentSanity;
-        int recoveryPercent = _rng.RandiRange(75, 90);
-        int recoveryNeeded = Mathf.Max(18,
-            Mathf.CeilToInt(missingSanity * recoveryPercent / 100f));
+        int recoveryPercent = _rng.RandiRange(30, 60);
+        int recoveryNeeded = Mathf.CeilToInt(missingSanity * recoveryPercent / 100f);
         _recoveryTargets[type] = Mathf.Min(MaxSanity, CurrentSanity + recoveryNeeded);
-        _recoveryRequirements[type] = recoveryNeeded;
-        _recoveryProgress[type] = 0;
 
         OnDebuffChanged?.Invoke(type, _debuffs[type]);
         OnSanityChanged?.Invoke(CurrentSanity);
 
         if (CurrentSanity == 0)
             QueueBadEnding();
+    }
+
+    /// <summary>Capture sanity, failure penalties, active debuffs, and their recovery gates.</summary>
+    public Godot.Collections.Dictionary CreateSaveData()
+    {
+        var debuffs = new Godot.Collections.Dictionary();
+        var targets = new Godot.Collections.Dictionary();
+
+        foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
+        {
+            debuffs[type.ToString()] = GetDebuffLevel(type);
+            targets[type.ToString()] = GetRecoveryTarget(type);
+        }
+
+        return new Godot.Collections.Dictionary
+        {
+            ["current_sanity"] = CurrentSanity,
+            ["failed_test_count"] = FailedTestCount,
+            ["difficulty_penalty"] = DifficultyPenalty,
+            ["debuffs"] = debuffs,
+            ["recovery_targets"] = targets
+        };
+    }
+
+    /// <summary>Restore saved sanity data and refresh UI subscribers.</summary>
+    public void RestoreFromSaveData(Godot.Collections.Dictionary data)
+    {
+        CurrentSanity = Mathf.Clamp(ReadInt(data, "current_sanity", MaxSanity), 1, MaxSanity);
+        FailedTestCount = Mathf.Max(0, ReadInt(data, "failed_test_count", 0));
+        DifficultyPenalty = Mathf.Clamp(ReadInt(data, "difficulty_penalty", 0), 0, 2);
+        _badEndingQueued = false;
+
+        var debuffs = ReadDictionary(data, "debuffs");
+        var targets = ReadDictionary(data, "recovery_targets");
+
+        foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
+        {
+            string key = type.ToString();
+            _debuffs[type] = Mathf.Clamp(ReadInt(debuffs, key, 0), 0, MaxSanity);
+            _recoveryTargets[type] = Mathf.Clamp(ReadInt(targets, key, MaxSanity), 0, MaxSanity);
+            OnDebuffChanged?.Invoke(type, _debuffs[type]);
+        }
+
+        OnSanityChanged?.Invoke(CurrentSanity);
+    }
+
+    private static Godot.Collections.Dictionary ReadDictionary(
+        Godot.Collections.Dictionary data, string key)
+    {
+        if (!data.ContainsKey(key))
+            return new Godot.Collections.Dictionary();
+
+        Variant value = data[key];
+        return value.VariantType == Variant.Type.Dictionary
+            ? value.AsGodotDictionary()
+            : new Godot.Collections.Dictionary();
+    }
+
+    private static int ReadInt(Godot.Collections.Dictionary data, string key, int fallback)
+    {
+        if (!data.ContainsKey(key))
+            return fallback;
+
+        Variant value = data[key];
+        return value.VariantType == Variant.Type.Int
+            ? value.AsInt32()
+            : fallback;
     }
 
     public int GetDebuffLevel(DebuffType type) =>
@@ -147,33 +191,7 @@ public partial class SanityManager : Node
 
     public bool HasActiveDebuffs => GetTotalDebuffLevel() > 0;
 
-    /// <summary>
-    /// Active debuffs have direct gameplay consequences in addition to their screen effects.
-    /// Stacks compound, while the lower sanity band adds a smaller additional slowdown.
-    /// </summary>
-    public float GetMovementSpeedMultiplier()
-    {
-        float dizziness = DebuffSeverity(DebuffType.Dizziness);
-        float confusion = DebuffSeverity(DebuffType.Confusion);
-        float anxiety = DebuffSeverity(DebuffType.Anxiety);
-        float pressure = DebuffSeverity(DebuffType.Pressure);
-        float debuffPenalty = dizziness * 0.20f
-            + confusion * 0.16f
-            + anxiety * 0.12f
-            + pressure * 0.18f;
-        float lowSanityPenalty = Mathf.Clamp(
-            (StableSanityThreshold - CurrentSanity) / (float)StableSanityThreshold,
-            0f,
-            1f) * 0.12f;
-
-        return Mathf.Clamp(1f - debuffPenalty - lowSanityPenalty, 0.35f, 1f);
-    }
-
-    public float DizzinessSeverity => DebuffSeverity(DebuffType.Dizziness);
-    public float ConfusionSeverity => DebuffSeverity(DebuffType.Confusion);
-
-    private float DebuffSeverity(DebuffType type) =>
-        Mathf.Clamp(GetDebuffLevel(type) / 16f, 0f, 1f);
+    public bool HasActiveDebuffs => GetTotalDebuffLevel() > 0;
 
     public void ResetForNewRun()
     {
@@ -186,26 +204,12 @@ public partial class SanityManager : Node
         {
             _debuffs[type] = 0;
             _recoveryTargets[type] = MaxSanity;
-            _recoveryProgress[type] = 0;
-            _recoveryRequirements[type] = 0;
             OnDebuffChanged?.Invoke(type, 0);
         }
 
         OnSanityChanged?.Invoke(CurrentSanity);
     }
 
-    private void AccumulateDebuffRecovery(int recoveryPoints)
-    {
-        foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
-        {
-            if (GetDebuffLevel(type) <= 0)
-                continue;
-
-            int required = _recoveryRequirements.TryGetValue(type, out int value) ? value : 0;
-            int progress = _recoveryProgress.TryGetValue(type, out int current) ? current : 0;
-            _recoveryProgress[type] = Mathf.Min(required, progress + recoveryPoints);
-        }
-    }
 
     private void ClearRecoveredDebuffs()
     {
@@ -215,15 +219,8 @@ public partial class SanityManager : Node
             if (level <= 0 || CurrentSanity < GetRecoveryTarget(type))
                 continue;
 
-            int required = _recoveryRequirements.TryGetValue(type, out int value) ? value : 0;
-            int progress = _recoveryProgress.TryGetValue(type, out int current) ? current : 0;
-            if (progress < required)
-                continue;
-
             _debuffs[type] = 0;
             _recoveryTargets[type] = MaxSanity;
-            _recoveryProgress[type] = 0;
-            _recoveryRequirements[type] = 0;
             OnDebuffChanged?.Invoke(type, 0);
         }
     }

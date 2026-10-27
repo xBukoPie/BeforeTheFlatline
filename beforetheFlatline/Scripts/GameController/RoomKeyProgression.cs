@@ -51,6 +51,13 @@ public partial class RoomKeyProgression : Node
             Instance = null;
     }
 
+    /// <summary>Restore the hidden point total and unlocked-key count from a save file.</summary>
+    public void RestoreProgress(int hiddenPoints, int totalKeysEarned)
+    {
+        HiddenPoints = Math.Max(0, hiddenPoints);
+        TotalKeysEarned = Math.Clamp(totalKeysEarned, 0, LockedRooms.Length);
+    }
+
     public string[] GetUnlockedRoomNames()
     {
         int count = Math.Clamp(TotalKeysEarned, 0, LockedRooms.Length);

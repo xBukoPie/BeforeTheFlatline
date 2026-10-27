@@ -12,8 +12,10 @@ public partial class PauseMenuController : CanvasLayer
     private Control _overlay;
     private Control _pauseMenuContent;
     private SettingsMenu _settingsMenu;
+    private SaveLoadMenu _saveLoadMenu;
     private bool _isPaused;
     private bool _settingsOpen;
+    private bool _saveLoadOpen;
     private bool _clockWasRunning;
 
     public override void _Ready()
@@ -48,6 +50,8 @@ public partial class PauseMenuController : CanvasLayer
             // resumes gameplay, exactly as it does when the pause menu is already visible.
             if (_settingsOpen)
                 CloseEmbeddedSettings();
+            else if (_saveLoadOpen)
+                CloseSaveLoadMenu();
             else
                 ResumeGame();
             return;
@@ -99,6 +103,8 @@ public partial class PauseMenuController : CanvasLayer
 
         if (_settingsOpen)
             CloseEmbeddedSettings();
+        if (_saveLoadOpen)
+            CloseSaveLoadMenu();
 
         _isPaused = false;
         _overlay.Visible = false;
@@ -147,6 +153,62 @@ public partial class PauseMenuController : CanvasLayer
         _pauseMenuContent.Visible = true;
     }
 
+    /// <summary>Open the three manual save slots and separate autosave while keeping gameplay paused.</summary>
+    private void OpenSaveLoadMenu()
+    {
+        if (_saveLoadOpen)
+            return;
+
+        var packedScene = GD.Load<PackedScene>("res://Scenes/Menu/SaveLoadMenu.tscn");
+        if (packedScene == null)
+        {
+            GD.PushError("PauseMenuController: Could not load res://Scenes/Menu/SaveLoadMenu.tscn.");
+            return;
+        }
+
+        _saveLoadMenu = packedScene.Instantiate<SaveLoadMenu>();
+        _saveLoadMenu.AllowSaving = true;
+        _saveLoadMenu.EmbeddedInPauseMenu = true;
+        _saveLoadMenu.ProcessMode = ProcessModeEnum.Always;
+        _saveLoadMenu.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+
+        _pauseMenuContent.Visible = false;
+        _overlay.AddChild(_saveLoadMenu);
+        _saveLoadOpen = true;
+    }
+
+    /// <summary>Close the save/load submenu without unpausing the game.</summary>
+    public void CloseSaveLoadMenu()
+    {
+        if (!_saveLoadOpen)
+            return;
+
+        _saveLoadOpen = false;
+        if (GodotObject.IsInstanceValid(_saveLoadMenu))
+        {
+            _overlay.RemoveChild(_saveLoadMenu);
+            _saveLoadMenu.QueueFree();
+        }
+
+        _saveLoadMenu = null;
+        _pauseMenuContent.Visible = true;
+    }
+
+    /// <summary>Clear pause UI before a saved World scene is loaded.</summary>
+    public void PrepareForExternalLoad()
+    {
+        if (_settingsOpen)
+            CloseEmbeddedSettings();
+        if (_saveLoadOpen)
+            CloseSaveLoadMenu();
+
+        _isPaused = false;
+        _overlay.Visible = false;
+        GetTree().Paused = false;
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = false;
+    }
+
     private void ReturnToTitle()
     {
         LeavePauseForSceneChange();
@@ -163,6 +225,8 @@ public partial class PauseMenuController : CanvasLayer
     {
         if (_settingsOpen)
             CloseEmbeddedSettings();
+        if (_saveLoadOpen)
+            CloseSaveLoadMenu();
 
         _isPaused = false;
         _overlay.Visible = false;
@@ -265,6 +329,10 @@ public partial class PauseMenuController : CanvasLayer
         var settings = CreateMenuButton("Settings", false);
         settings.Pressed += OpenSettings;
         stack.AddChild(settings);
+
+        var saveLoad = CreateMenuButton("Save / Load Game", false);
+        saveLoad.Pressed += OpenSaveLoadMenu;
+        stack.AddChild(saveLoad);
 
         var titleButton = CreateMenuButton("Return to Main Menu", false);
         titleButton.Pressed += ReturnToTitle;
