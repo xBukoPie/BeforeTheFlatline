@@ -42,7 +42,8 @@ public partial class StatusEffectsOverlay : CanvasLayer
 
         Instance = this;
         Layer = 100;
-        ProcessMode = ProcessModeEnum.Always;
+        // Sanity visuals freeze with gameplay during pause; the pause/loading UI has its own Always mode.
+        ProcessMode = ProcessModeEnum.Pausable;
         BuildOverlay();
 
         if (SanityManager.Instance != null)
