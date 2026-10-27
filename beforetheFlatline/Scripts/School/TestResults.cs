@@ -64,7 +64,7 @@ public partial class TestResults : Control
         {
             if (!alreadyFinalized && !DailyTestSession.FailurePenaltyApplied)
             {
-                int loss = Mathf.Clamp(8 + (DailyTestSession.Day - 1) * 2, 8, 16);
+                int loss = Mathf.Clamp(18 + (DailyTestSession.Day - 1) * 4, 18, 36);
                 var type = NextDebuffType();
                 SanityManager.Instance?.RegisterFailedTest();
                 SanityManager.Instance?.ApplyDebuff("failed_assessment", type, loss);
