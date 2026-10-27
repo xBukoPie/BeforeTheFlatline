@@ -13,6 +13,8 @@ public partial class RoomManager : Node2D
     {
         _requestedStartRoom = roomPath;
         _requestedStartSpawn = spawn;
+        _requestedPlayerPosition = Vector2.Zero;
+        _hasRequestedPlayerPosition = false;
     }
 
     /// <summary>Stage an exact player position for the next World scene load.</summary>
