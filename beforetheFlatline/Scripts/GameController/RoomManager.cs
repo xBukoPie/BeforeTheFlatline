@@ -177,7 +177,7 @@ public partial class RoomManager : Node2D
 
         ConfigureCamera();
         SetNight(IsNight);
-        SchoolYardGame.SaveManager.Instance?.RequestAutoSave();
+        SaveManager.Instance?.RequestAutoSave();
     }
 
     private void ConfigureCamera()
