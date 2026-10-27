@@ -14,6 +14,7 @@ public partial class StatusEffectsOverlay : CanvasLayer
     private Control _root;
     private ColorRect _brightnessWash;
     private ColorRect _screenFx;
+    private ColorRect _effectWash;
     private ColorRect _pressureTop;
     private ColorRect _pressureBottom;
     private Label _noticeLabel;
@@ -173,6 +174,7 @@ void fragment() {
             }
         };
         _screenFx.Material = _fxMaterial;
+        _effectWash = MakeRect("SanityTint");
 
         _pressureTop = MakeRect("PressureTop");
         _pressureTop.AnchorLeft = 0f;
@@ -328,7 +330,6 @@ void fragment() {
             _confusionWords[i].Visible = active;
             _confusionWords[i].Modulate = new Color(1f, 1f, 1f,
                 active ? Mathf.Clamp((0.12f + wave * 0.45f) * confusion / 30f, 0f, 0.7f) * fade : 0f);
-            _confusionWords[i].Position += new Vector2(0f, Mathf.Sin(_elapsed + i) * 0.03f);
         }
 
         float pulse = (Mathf.Sin(_elapsed * (8f + pressure / 22f)) + 1f) * 0.5f;
@@ -356,12 +357,9 @@ void fragment() {
         _statusLabel.Text = total > 0 ? "DISTRESS" : (_sanity < 25 ? "CRITICAL" : "UNSTEADY");
         _statusLabel.Modulate = new Color(1f, 1f, 1f, 0.55f * fade);
 
-        // A subtle tint is supplemental; each debuff has its own distinctive motion cue.
-        _brightnessWash.Color = _brightnessWash.Color; // brightness wash is controlled by settings
-        if (washAlpha > 0f)
-            _screenFx.Modulate = new Color(1f, 1f, 1f, fade);
-        else
-            _screenFx.Modulate = new Color(1f, 1f, 1f, fade);
+        // The tint remains low-alpha; the recognizable debuff-specific cues do the main work.
+        _effectWash.Color = new Color(tint.R, tint.G, tint.B, washAlpha);
+        _screenFx.Modulate = new Color(1f, 1f, 1f, fade);
 
         _pressureTop.Visible = pressure > 0;
         _pressureBottom.Visible = pressure > 0;
