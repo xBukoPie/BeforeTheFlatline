@@ -32,6 +32,7 @@ public partial class MainMenu : Control
         // sanity would remain at zero and the bad ending would immediately trigger again.
         DayClock.Instance?.ResetForNewRun();
         SanityManager.Instance?.ResetForNewRun();
+        StatusEffectsOverlay.Instance?.ResetForNewRun();
         DailyTestSession.Reset();
         ChallengeProgress.Reset();
 
