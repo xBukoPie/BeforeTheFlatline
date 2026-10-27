@@ -167,17 +167,17 @@ uniform float time_seconds = 0.0;
 void fragment() {
     vec2 uv = SCREEN_UV;
     float wobble = dizziness_strength;
-    uv.x += sin(uv.y * 24.0 + time_seconds * 2.3) * 0.005 * wobble;
-    uv.x += sin(uv.y * 9.0 - time_seconds * 1.1) * 0.0025 * wobble;
-    uv.y += sin(uv.x * 15.0 + time_seconds * 1.7) * 0.0025 * wobble;
+    uv.x += sin(uv.y * 24.0 + time_seconds * 1.5) * 0.005 * wobble;
+    uv.x += sin(uv.y * 9.0 - time_seconds * 0.7) * 0.0025 * wobble;
+    uv.y += sin(uv.x * 15.0 + time_seconds * 1.0) * 0.0025 * wobble;
 
     vec4 image = texture(screen_texture, uv);
-    float grain = fract(sin(dot(FRAGCOORD.xy + floor(time_seconds * 30.0), vec2(12.9898, 78.233))) * 43758.5453);
-    float lineNoise = step(0.985, fract(FRAGCOORD.y * 0.5 + floor(time_seconds * 18.0) * 0.37));
+    float grain = fract(sin(dot(FRAGCOORD.xy + floor(time_seconds * 16.0), vec2(12.9898, 78.233))) * 43758.5453);
+    float lineNoise = step(0.985, fract(FRAGCOORD.y * 0.5 + floor(time_seconds * 10.0) * 0.37));
     image.rgb += (grain - 0.5) * anxiety_strength * 0.12;
     image.rgb -= lineNoise * anxiety_strength * 0.06;
 
-    float pulse = (sin(time_seconds * 10.0) + 1.0) * 0.5;
+    float pulse = (sin(time_seconds * 6.0) + 1.0) * 0.5;
     float vignette = smoothstep(0.48, 1.0, length(SCREEN_UV - vec2(0.5)) * 1.5);
     image.rgb *= 1.0 - vignette * pressure_strength * (0.04 + pulse * 0.06);
     COLOR = vec4(image.rgb, 1.0);
@@ -343,7 +343,7 @@ void fragment() {
                 active ? Mathf.Clamp((0.08f + wave * 0.25f) * confusion / 36f, 0f, 0.38f) * fade : 0f);
         }
 
-        float pulse = (Mathf.Sin(_elapsed * (8f + pressure / 22f)) + 1f) * 0.5f;
+        float pulse = (Mathf.Sin(_elapsed * (5.5f + pressure / 30f)) + 1f) * 0.5f;
         _heart.Visible = pressure > 0 && _endingFade > 0.02f;
         _heart.Scale = Vector2.One * (0.93f + pulse * (0.09f + pressureStrength * 0.08f));
         _heart.Modulate = new Color(1f, 1f, 1f,
