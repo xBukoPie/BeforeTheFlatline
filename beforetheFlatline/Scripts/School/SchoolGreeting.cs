@@ -24,8 +24,6 @@ public partial class SchoolGreeting : Node2D
 
     public override void _Ready()
     {
-        // On return from the post-challenge conversation, stay in the school room
-        // without restarting the greeting and challenge chain.
         if (DayClock.Instance != null &&
             (DayClock.Instance.ConsumeSkipSchoolGreetingOnNextLoad() ||
              DayClock.Instance.SchoolChallengeCompletedToday))
@@ -62,7 +60,6 @@ public partial class SchoolGreeting : Node2D
 
         var panelInstance = _dialoguePanelScene.Instantiate<Control>();
         _activeGreetingPanel = panelInstance;
-        // The greeting occurs in the school yard, where the day clock keeps moving.
         AddChild(panelInstance);
 
         if (panelInstance is DialoguePanel dialoguePanel)
@@ -96,7 +93,6 @@ public partial class SchoolGreeting : Node2D
             _activeGreetingPanel.QueueFree();
 
         DayClock.Instance?.MarkSchoolChallengeStartedToday();
-        // Pause only at the moment the player enters an assessment task.
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
         EmitSignal(SignalName.SchoolGreetingFinished);

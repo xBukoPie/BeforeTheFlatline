@@ -1,10 +1,6 @@
 using Godot;
 using SchoolYardGame;
 
-/// <summary>
-/// Global pause overlay. Escape toggles pause during gameplay. Settings are embedded in the
-/// pause overlay, so the active gameplay scene remains loaded and paused while options are changed.
-/// </summary>
 public partial class PauseMenuController : CanvasLayer
 {
     public static PauseMenuController Instance { get; private set; }
@@ -46,8 +42,6 @@ public partial class PauseMenuController : CanvasLayer
 
         if (_isPaused)
         {
-            // First Escape closes Settings and returns to the pause menu. A second Escape
-            // resumes gameplay, exactly as it does when the pause menu is already visible.
             if (_settingsOpen)
                 CloseEmbeddedSettings();
             else if (_saveLoadOpen)
@@ -63,7 +57,6 @@ public partial class PauseMenuController : CanvasLayer
 
     private bool CanPauseCurrentScene()
     {
-        // Ignore Escape while the global transition/loading overlay owns the screen.
         if (SceneTransition.Instance?.IsBusy == true)
             return false;
 
@@ -73,7 +66,6 @@ public partial class PauseMenuController : CanvasLayer
 
         string path = currentScene.SceneFilePath ?? string.Empty;
 
-        // Do not show the gameplay pause menu on title/settings/ending screens.
         if (path.Contains("/Scenes/Menu/") || path.Contains("/Scenes/Ending/"))
             return false;
 
@@ -136,7 +128,7 @@ public partial class PauseMenuController : CanvasLayer
         _settingsOpen = true;
     }
 
-    /// <summary>Close the embedded settings screen without unpausing the game.</summary>
+    // Close the embedded settings screen without unpausing the game.
     public void CloseEmbeddedSettings()
     {
         if (!_settingsOpen)
@@ -153,7 +145,7 @@ public partial class PauseMenuController : CanvasLayer
         _pauseMenuContent.Visible = true;
     }
 
-    /// <summary>Open the three manual save slots and separate autosave while keeping gameplay paused.</summary>
+    // Open the three manual save slots and separate autosave while keeping gameplay paused.
     private void OpenSaveLoadMenu()
     {
         if (_saveLoadOpen)
@@ -177,7 +169,7 @@ public partial class PauseMenuController : CanvasLayer
         _saveLoadOpen = true;
     }
 
-    /// <summary>Close the save/load submenu without unpausing the game.</summary>
+    // Close the save/load submenu without unpausing the game.
     public void CloseSaveLoadMenu()
     {
         if (!_saveLoadOpen)
@@ -194,7 +186,7 @@ public partial class PauseMenuController : CanvasLayer
         _pauseMenuContent.Visible = true;
     }
 
-    /// <summary>Clear pause UI before a saved World scene is loaded.</summary>
+    // Clear pause UI before a saved World scene is loaded.
     public void PrepareForExternalLoad()
     {
         if (_settingsOpen)

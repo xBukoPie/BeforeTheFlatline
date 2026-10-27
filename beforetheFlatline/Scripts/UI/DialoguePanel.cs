@@ -5,7 +5,6 @@ namespace SchoolYardGame;
 
 public partial class DialoguePanel : Control
 {
-    // UI nodes
     private Label _nameLabel;
     private TextureRect _portrait;
     private RichTextLabel _textLabel;
@@ -13,7 +12,6 @@ public partial class DialoguePanel : Control
 
     public override void _Ready()
     {
-        // Grab child nodes by name (they exist in the .tscn)
         _nameLabel = GetNode<Label>("PanelBackground/NameLabel");
         _portrait = GetNode<TextureRect>("PanelBackground/Portrait");
         _textLabel = GetNode<RichTextLabel>("PanelBackground/TextLabel");
@@ -21,27 +19,21 @@ public partial class DialoguePanel : Control
         _advanceButton.Pressed += OnAdvancePressed;
     }
 
-    /// <summary>
-    /// Set the speaker's name.
-    /// </summary>
+    // /// Set the speaker's name.
     public void SetSpeaker(string name)
     {
         if (_nameLabel != null)
             _nameLabel.Text = name;
     }
 
-    /// <summary>
-    /// Set the speaker's portrait texture.
-    /// </summary>
+    // /// Set the speaker's portrait texture.
     public void SetPortrait(Texture2D texture)
     {
         if (_portrait != null)
             _portrait.Texture = texture;
     }
 
-    /// <summary>
-    /// Set the dialogue text (BBCode allowed).
-    /// </summary>
+    // /// Set the dialogue text (BBCode allowed).
     public void SetDialogue(string bbcode)
     {
         if (_textLabel != null)
@@ -53,11 +45,9 @@ public partial class DialoguePanel : Control
 
     private void OnAdvancePressed()
     {
-        // Simple placeholder – emit a signal so the game can handle it.
         EmitSignal(nameof(DialogueAdvanced));
     }
 
-    // Declare a custom signal for external listeners.
     [Signal]
     public delegate void DialogueAdvancedEventHandler();
 

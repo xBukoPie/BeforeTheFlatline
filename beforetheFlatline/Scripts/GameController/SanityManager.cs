@@ -4,10 +4,6 @@ using System.Collections.Generic;
 
 namespace SchoolYardGame;
 
-/// <summary>
-/// Run-wide sanity and per-type debuff stacks. Debuffs clear only after enough sanity is
-/// recovered; elapsed in-game time never removes a debuff.
-/// </summary>
 public partial class SanityManager : Node
 {
     public static SanityManager Instance { get; private set; }
@@ -33,7 +29,6 @@ public partial class SanityManager : Node
 
     public override void _Ready()
     {
-        // Legacy room children may still reference this script. Only the Autoload owns state.
         if (GetParent() != GetTree().Root)
             return;
 
@@ -66,10 +61,7 @@ public partial class SanityManager : Node
         DifficultyPenalty = Mathf.Clamp(DifficultyPenalty + 1, 0, 2);
     }
 
-    /// <summary>
-    /// Restore sanity and clear each debuff independently once the player has recovered the
-    /// rolled 30-60 percent of the sanity missing when that debuff was applied.
-    /// </summary>
+    // Restores sanity and its debuff recovery thresholds.
     public void Recover(int amount)
     {
         if (_badEndingQueued || CurrentSanity <= 0 || amount <= 0)
@@ -94,8 +86,6 @@ public partial class SanityManager : Node
         _debuffs[type] = Mathf.Clamp(GetDebuffLevel(type) + appliedIntensity, 0, MaxSanity);
         CurrentSanity = Mathf.Max(CurrentSanity - appliedIntensity, 0);
 
-        // Each debuff gets an independent recovery gate. Reapplying the same type refreshes
-        // its gate, preventing a newly stacked effect from clearing immediately.
         int missingSanity = MaxSanity - CurrentSanity;
         int recoveryPercent = _rng.RandiRange(30, 60);
         int recoveryNeeded = Mathf.CeilToInt(missingSanity * recoveryPercent / 100f);
@@ -108,7 +98,7 @@ public partial class SanityManager : Node
             QueueBadEnding();
     }
 
-    /// <summary>Capture sanity, failure penalties, active debuffs, and their recovery gates.</summary>
+    // Capture sanity, failure penalties, active debuffs, and their recovery gates.
     public Godot.Collections.Dictionary CreateSaveData()
     {
         var debuffs = new Godot.Collections.Dictionary();
@@ -130,7 +120,7 @@ public partial class SanityManager : Node
         };
     }
 
-    /// <summary>Restore saved sanity data and refresh UI subscribers.</summary>
+    // Restore saved sanity data and refresh UI subscribers.
     public void RestoreFromSaveData(Godot.Collections.Dictionary data)
     {
         CurrentSanity = Mathf.Clamp(ReadInt(data, "current_sanity", MaxSanity), 1, MaxSanity);
@@ -173,7 +163,6 @@ public partial class SanityManager : Node
         if (value.VariantType == Variant.Type.Int)
             return value.AsInt32();
 
-        // Keep sanity/debuff state compatible with JSON values written as 25.0 or "25".
         if (value.VariantType == Variant.Type.Float)
         {
             double number = value.AsDouble();
@@ -226,7 +215,6 @@ public partial class SanityManager : Node
         OnSanityChanged?.Invoke(CurrentSanity);
     }
 
-
     private void ClearRecoveredDebuffs()
     {
         foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
@@ -250,7 +238,6 @@ public partial class SanityManager : Node
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
-        // The persistent effect overlay gets a short fade before the transition takes over.
         if (StatusEffectsOverlay.Instance != null)
         {
             StatusEffectsOverlay.Instance.FadeForBadEnding(BadEndingScenePath);

@@ -3,10 +3,6 @@ using System;
 using System.Collections.Generic;
 using SchoolYardGame;
 
-/// <summary>
-/// One question in a four-question assessment. Answer correctness is recorded silently;
-/// the player always proceeds, either by submitting or giving up.
-/// </summary>
 public partial class ChallengeScene : Control
 {
     [Export] public string ChallengeId { get; set; } = "sequence";
@@ -302,7 +298,6 @@ public partial class ChallengeScene : Control
         _giveUpButton.Disabled = true;
         _clearButton.Disabled = true;
 
-        // Do not reveal the answer result between questions. Every submit/skip advances the test.
         _feedback.Text = gaveUp
             ? "Question skipped. Moving to the next question; the overall result appears at the end."
             : "Response recorded. Moving to the next question; the overall result appears at the end.";

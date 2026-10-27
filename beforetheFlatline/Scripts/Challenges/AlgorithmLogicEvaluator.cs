@@ -48,8 +48,6 @@ public static class AlgorithmLogicEvaluator
         if (string.IsNullOrWhiteSpace(candidate) || string.IsNullOrWhiteSpace(reference))
             return false;
 
-        // The canvas is an ordered block builder rather than a free-connection graph. Execute
-        // both ordered algorithms instead of comparing every label to an exact template.
         return ProgramsHaveSameResults(candidate, reference);
     }
 
@@ -146,7 +144,6 @@ public static class AlgorithmLogicEvaluator
             line = line.Replace("←", "=").Replace("≤", "<=").Replace("≥", ">=")
                        .Replace("≠", "!=").Trim().TrimEnd(';').Trim();
 
-            // Accept common natural-language comparison and I/O aliases.
             line = Regex.Replace(line, @"\bis\s+greater\s+than\s+or\s+equal\s+to\b|\bat\s+least\b", ">=", RegexOptions.IgnoreCase);
             line = Regex.Replace(line, @"\bis\s+less\s+than\s+or\s+equal\s+to\b|\bat\s+most\b", "<=", RegexOptions.IgnoreCase);
             line = Regex.Replace(line, @"\bis\s+greater\s+than\b|\bgreater\s+than\b", ">", RegexOptions.IgnoreCase);
@@ -286,7 +283,6 @@ public static class AlgorithmLogicEvaluator
                 if (text.Length > 0 && !Regex.IsMatch(text, @"^(OUTPUT|PRINT|DISPLAY|WRITE)\b", RegexOptions.IgnoreCase))
                     text = "OUTPUT " + text;
                 if (text.Length > 0) lines.Add(text);
-                // A conventional true/false pair closes after the false output.
                 if (inElse && openDecision > 0)
                 {
                     lines.Add("END IF");
@@ -298,8 +294,6 @@ public static class AlgorithmLogicEvaluator
             {
                 string condition = text.Trim().TrimEnd('?');
 
-                // When a decision is followed by its two labelled branch outputs, compile the
-                // branches by meaning, not by their visual order on the canvas.
                 if (i + 2 < blocks.Count - 1 &&
                     blocks[i + 1].Type.Equals("Output", StringComparison.OrdinalIgnoreCase) &&
                     blocks[i + 2].Type.Equals("Output", StringComparison.OrdinalIgnoreCase))
@@ -393,8 +387,6 @@ public static class AlgorithmLogicEvaluator
                 if (expression.StartsWith("TO ", StringComparison.OrdinalIgnoreCase))
                     expression = expression.Substring(3).Trim();
 
-                // Multi-word, unquoted labels (for example OUTPUT NOT ELIGIBLE) are common in
-                // pseudocode. Treat them as a literal only when none of the words is a variable.
                 var labelWords = Regex.Matches(expression, @"[A-Za-z_]\w*").Select(m => m.Value).ToArray();
                 if (labelWords.Length > 1 &&
                     Regex.IsMatch(expression, @"^[A-Za-z_]\w*(?:\s+[A-Za-z_]\w*)+$") &&
@@ -422,7 +414,6 @@ public static class AlgorithmLogicEvaluator
                 return;
             }
 
-            // Accept a harmless standalone END marker and reject unknown executable syntax.
             if (line.Equals("END", StringComparison.OrdinalIgnoreCase) ||
                 line.Equals("STOP", StringComparison.OrdinalIgnoreCase) ||
                 line.StartsWith("COMMENT ", StringComparison.OrdinalIgnoreCase))

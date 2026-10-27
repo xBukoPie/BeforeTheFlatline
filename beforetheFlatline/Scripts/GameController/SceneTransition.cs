@@ -1,10 +1,6 @@
 using Godot;
 using System.Threading.Tasks;
 
-/// <summary>
-/// Autoloaded scene transition controller. Supports short fades and threaded scene loading
-/// behind a progress screen so large gameplay scenes do not freeze the main menu.
-/// </summary>
 public partial class SceneTransition : CanvasLayer
 {
     public static SceneTransition Instance { get; private set; }
@@ -87,10 +83,7 @@ public partial class SceneTransition : CanvasLayer
         _busy = false;
     }
 
-    /// <summary>
-    /// Shows a progress screen while the scene is loaded on worker threads, then swaps scenes
-    /// only after the resource is ready. Intended for starting a new run from the title screen.
-    /// </summary>
+    // Loads a scene while showing progress..
     public async Task<bool> LoadSceneWithLoadingScreen(string path)
     {
         if (_busy || string.IsNullOrWhiteSpace(path))
@@ -150,7 +143,6 @@ public partial class SceneTransition : CanvasLayer
                 return false;
             }
 
-            // Prevent a flash when the scene is already cached or loads nearly instantly.
             bool minimumDisplayTimePassed = Time.GetTicksMsec() - loadingStartedAt >= 650;
             if (status == ResourceLoader.ThreadLoadStatus.Loaded && minimumDisplayTimePassed)
                 break;
@@ -178,7 +170,6 @@ public partial class SceneTransition : CanvasLayer
             return false;
         }
 
-        // Keep the loading screen up while the new scene's _Ready methods initialize.
         await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         await HideLoadingScreen();

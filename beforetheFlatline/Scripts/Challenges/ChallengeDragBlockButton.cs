@@ -1,6 +1,5 @@
 using Godot;
 
-/// <summary>Draggable palette item; drag data contains both block type and default definition.</summary>
 public partial class ChallengeDragBlockButton : Button
 {
     [Export] public string BlockType { get; set; } = "Process";
