@@ -22,6 +22,18 @@ public partial class TestResults : Control
         bool alreadyFinalized = DailyTestSession.IsFinalized;
         _passed = DailyTestSession.FinalizeTest();
 
+        // A passed assessment grants the next room key once, regardless of in-game day
+        // or whether the player got the minimum passing score or a perfect score.
+        // A failed assessment grants no key; repeated result rendering cannot duplicate it.
+        if (_passed && !alreadyFinalized)
+        {
+            string roomName = RoomKeyProgression.Instance?.AwardAssessmentCompletion() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(roomName))
+                DailyTestSession.QueueNotification($"ROOM KEY ACQUIRED: {roomName}. Its locked door should now open.");
+            else if (RoomKeyProgression.Instance != null && RoomKeyProgression.Instance.TotalKeysEarned >= 4)
+                DailyTestSession.QueueNotification("All currently key-locked rooms have already been unlocked.");
+        }
+
         int correct = DailyTestSession.CorrectCount;
         int attempted = DailyTestSession.AnsweredCount;
         _title.Text = _passed ? "ASSESSMENT PASSED" : "ASSESSMENT FAILED";
@@ -41,6 +53,17 @@ public partial class TestResults : Control
 
         foreach (string notification in DailyTestSession.PendingNotifications)
             lines.Add(notification);
+
+        // Read the persistent autoload, not the retryable session, so acquired keys remain
+        // visible even when Retry Assessment clears the previous session's notifications.
+        var keyProgression = RoomKeyProgression.Instance;
+        if (keyProgression != null)
+        {
+            string[] unlockedKeys = keyProgression.GetUnlockedRoomNames();
+            lines.Add(unlockedKeys.Length > 0
+                ? $"ROOM KEYS OWNED: {string.Join(", ", unlockedKeys)}."
+                : $"No room keys acquired yet. Pass an assessment to earn the {keyProgression.NextRoomKeyName} key.");
+        }
 
         if (_passed)
         {

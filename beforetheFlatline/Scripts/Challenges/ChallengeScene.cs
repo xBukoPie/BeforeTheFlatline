@@ -295,16 +295,7 @@ public partial class ChallengeScene : Control
         DailyTestSession.Record(ChallengeId, correct, gaveUp, _difficulty);
 
         if (correct)
-        {
             ChallengeProgress.MarkCompleted(ChallengeId);
-            var reward = RoomKeyProgression.Instance?.AwardTaskCompletion(_difficulty);
-            if (reward != null && reward.KeysEarned > 0)
-            {
-                string keyWord = reward.KeysEarned == 1 ? "key" : "keys";
-                string unlocked = string.Join(", ", reward.RoomsUnlocked);
-                DailyTestSession.QueueNotification($"Key notification: you received {reward.KeysEarned} {keyWord}; unlocked {unlocked}.");
-            }
-        }
 
         _completed = true;
         _submitButton.Disabled = true;

@@ -18,6 +18,13 @@ public partial class RoomKeyProgression : Node
     public const int PointsPerKeyQuota = 100;
     public int HiddenPoints { get; private set; }
     public int TotalKeysEarned { get; private set; }
+    public int PointsUntilNextKey => TotalKeysEarned >= LockedRooms.Length
+        ? 0
+        : Math.Max(0, (TotalKeysEarned + 1) * PointsPerKeyQuota - HiddenPoints);
+
+    public string NextRoomKeyName => TotalKeysEarned >= LockedRooms.Length
+        ? string.Empty
+        : LockedRooms[TotalKeysEarned].Name;
 
     private static readonly (string Id, string Name)[] LockedRooms =
     {
@@ -44,6 +51,15 @@ public partial class RoomKeyProgression : Node
             Instance = null;
     }
 
+    public string[] GetUnlockedRoomNames()
+    {
+        int count = Math.Clamp(TotalKeysEarned, 0, LockedRooms.Length);
+        var names = new string[count];
+        for (int i = 0; i < count; i++)
+            names[i] = LockedRooms[i].Name;
+        return names;
+    }
+
     public bool IsRoomUnlocked(string roomId)
     {
         string id = (roomId ?? "").Trim().ToLowerInvariant();
@@ -55,11 +71,26 @@ public partial class RoomKeyProgression : Node
         return index >= 0 && TotalKeysEarned > index;
     }
 
+    /// <summary>Grant the next room key when a full assessment is passed. Day and score above the pass threshold do not affect the reward.</summary>
+    public string AwardAssessmentCompletion()
+    {
+        if (TotalKeysEarned >= LockedRooms.Length)
+            return string.Empty;
+
+        string roomName = LockedRooms[TotalKeysEarned].Name;
+        TotalKeysEarned++;
+        EmitSignal(SignalName.RoomKeyEarned, 1, roomName);
+        return roomName;
+    }
+
     /// <summary>Grant hidden points for a correctly completed task and unlock any reached quotas.</summary>
     public TaskRewardResult AwardTaskCompletion(int difficulty)
     {
         int tier = Mathf.Clamp(difficulty, 1, 5);
         int earnedPoints = 20 + tier * 5;
+
+        // Keep progression owned by this autoload. Resetting DailyTestSession for a retry
+        // must never reset the accumulated points or keys already earned.
         HiddenPoints += earnedPoints;
 
         var newlyUnlocked = new List<string>();
@@ -72,7 +103,13 @@ public partial class RoomKeyProgression : Node
             EmitSignal(SignalName.RoomKeyEarned, 1, roomName);
         }
 
-        return new TaskRewardResult(earnedPoints, newlyUnlocked.ToArray());
+        return new TaskRewardResult(
+            earnedPoints,
+            newlyUnlocked.ToArray(),
+            HiddenPoints,
+            TotalKeysEarned,
+            PointsUntilNextKey,
+            NextRoomKeyName);
     }
 }
 
@@ -82,10 +119,24 @@ public sealed class TaskRewardResult
     public int PointsAdded { get; }
     public string[] RoomsUnlocked { get; }
     public int KeysEarned => RoomsUnlocked.Length;
+    public int TotalPoints { get; }
+    public int TotalKeys { get; }
+    public int PointsUntilNextKey { get; }
+    public string NextRoomKeyName { get; }
 
-    public TaskRewardResult(int pointsAdded, string[] roomsUnlocked)
+    public TaskRewardResult(
+        int pointsAdded,
+        string[] roomsUnlocked,
+        int totalPoints,
+        int totalKeys,
+        int pointsUntilNextKey,
+        string nextRoomKeyName)
     {
         PointsAdded = pointsAdded;
         RoomsUnlocked = roomsUnlocked ?? Array.Empty<string>();
+        TotalPoints = totalPoints;
+        TotalKeys = totalKeys;
+        PointsUntilNextKey = pointsUntilNextKey;
+        NextRoomKeyName = nextRoomKeyName ?? string.Empty;
     }
 }
