@@ -4,33 +4,32 @@ using System.Collections.Generic;
 using SchoolYardGame;
 
 /// <summary>
-/// Persistent screen tint/status notice. Uses low-alpha color washes and edge strips so effects
-/// remain visible without blocking game input or making the scene difficult to read.
+/// Screen-space sanity presentation: subtle UV wobble for dizziness, animated grain for anxiety,
+/// slowly surfacing words for confusion, and a pulsing heart/edge squeeze for pressure.
 /// </summary>
 public partial class StatusEffectsOverlay : CanvasLayer
 {
     public static StatusEffectsOverlay Instance { get; private set; }
 
+    private Control _root;
     private ColorRect _brightnessWash;
-    private ColorRect _effectWash;
-    private ColorRect _topEdge;
-    private ColorRect _bottomEdge;
-    private ColorRect _leftEdge;
-    private ColorRect _rightEdge;
-    private Label _statusLabel;
-    private Label _noticeLabel;
-    private Label _fxGlyph;
-    private Label _fxLeftGlyph;
-    private Label _fxRightGlyph;
+    private ColorRect _screenFx;
     private ColorRect _pressureTop;
     private ColorRect _pressureBottom;
+    private Label _noticeLabel;
+    private Label _statusLabel;
+    private Label _heart;
+    private readonly List<Label> _confusionWords = new();
 
     private float _flashTime;
     private float _noticeTime;
     private float _elapsed;
-    private float _sanity = 100f;
+    private float _sanity = SanityManager.MaxSanity;
+    private float _endingFade = 1f;
+    private bool _endingTransitionStarted;
     private SanityManager.DebuffType _dominantDebuff = SanityManager.DebuffType.Dizziness;
-    private Color _flashColor = new Color("e34d5b");
+    private Color _flashColor = new("e34d5b");
+    private ShaderMaterial _fxMaterial;
 
     public override void _Ready()
     {
@@ -42,6 +41,7 @@ public partial class StatusEffectsOverlay : CanvasLayer
 
         Instance = this;
         Layer = 100;
+        ProcessMode = ProcessModeEnum.Always;
         BuildOverlay();
 
         if (SanityManager.Instance != null)
@@ -79,7 +79,6 @@ public partial class StatusEffectsOverlay : CanvasLayer
         _elapsed += dt;
         _flashTime = Mathf.Max(0f, _flashTime - dt);
         _noticeTime = Mathf.Max(0f, _noticeTime - dt);
-
         if (_noticeLabel != null)
             _noticeLabel.Visible = _noticeTime > 0f;
 
@@ -101,7 +100,6 @@ public partial class StatusEffectsOverlay : CanvasLayer
         _flashColor = new Color("ee465b");
         _flashTime = 1.25f;
         Notify($"DEBUFF APPLIED: {debuffName.ToUpperInvariant()}  •  SANITY -{sanityLoss}");
-        UpdateDebuffCue();
     }
 
     public void TriggerTaskPass()
@@ -111,285 +109,180 @@ public partial class StatusEffectsOverlay : CanvasLayer
         Notify("ASSESSMENT PASSED");
     }
 
+    /// <summary>Fade the active effects away before loading the bad ending.</summary>
+    public async void FadeForBadEnding(string scenePath)
+    {
+        if (_endingTransitionStarted)
+            return;
+
+        _endingTransitionStarted = true;
+        var tween = CreateTween();
+        tween.TweenProperty(_root, "modulate:a", 0f, 1.6f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(tween, Tween.SignalName.Finished);
+
+        if (SceneTransition.Instance != null)
+            SceneTransition.Instance.ChangeSceneToFile(scenePath);
+        else
+            GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, scenePath);
+    }
+
     private void BuildOverlay()
     {
-        _brightnessWash = MakeRect("BrightnessWash");
-        _effectWash = MakeRect("DebuffWash");
-
-        _topEdge = MakeRect("TopEdge");
-        _topEdge.AnchorLeft = 0f;
-        _topEdge.AnchorTop = 0f;
-        _topEdge.AnchorRight = 1f;
-        _topEdge.AnchorBottom = 0f;
-        _topEdge.OffsetLeft = 0f;
-        _topEdge.OffsetTop = 0f;
-        _topEdge.OffsetRight = 0f;
-        _topEdge.OffsetBottom = 14f;
-
-        _bottomEdge = MakeRect("BottomEdge");
-        _bottomEdge.AnchorLeft = 0f;
-        _bottomEdge.AnchorTop = 1f;
-        _bottomEdge.AnchorRight = 1f;
-        _bottomEdge.AnchorBottom = 1f;
-        _bottomEdge.OffsetLeft = 0f;
-        _bottomEdge.OffsetTop = -18f;
-        _bottomEdge.OffsetRight = 0f;
-        _bottomEdge.OffsetBottom = 0f;
-
-        _leftEdge = MakeRect("LeftEdge");
-        _leftEdge.AnchorLeft = 0f;
-        _leftEdge.AnchorTop = 0f;
-        _leftEdge.AnchorRight = 0f;
-        _leftEdge.AnchorBottom = 1f;
-        _leftEdge.OffsetLeft = 0f;
-        _leftEdge.OffsetTop = 0f;
-        _leftEdge.OffsetRight = 16f;
-        _leftEdge.OffsetBottom = 0f;
-
-        _rightEdge = MakeRect("RightEdge");
-        _rightEdge.AnchorLeft = 1f;
-        _rightEdge.AnchorTop = 0f;
-        _rightEdge.AnchorRight = 1f;
-        _rightEdge.AnchorBottom = 1f;
-        _rightEdge.OffsetLeft = -16f;
-        _rightEdge.OffsetTop = 0f;
-        _rightEdge.OffsetRight = 0f;
-        _rightEdge.OffsetBottom = 0f;
-
-        _statusLabel = new Label
+        _root = new Control
         {
-            Name = "StatusLabel",
-            Position = new Vector2(18, 72),
-            Size = new Vector2(760, 42),
-            Visible = false,
+            Name = "StatusEffectsRoot",
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        _statusLabel.AddThemeFontSizeOverride("font_size", 14);
-        _statusLabel.AddThemeColorOverride("font_color", new Color("e8eaf0"));
-        _statusLabel.AddThemeColorOverride("font_outline_color", new Color("10131c"));
-        _statusLabel.AddThemeConstantOverride("outline_size", 4);
-        AddChild(_statusLabel);
+        _root.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        AddChild(_root);
+
+        _brightnessWash = MakeRect("BrightnessWash");
+        _screenFx = MakeRect("SanityScreenShader");
+        _fxMaterial = new ShaderMaterial
+        {
+            Shader = new Shader
+            {
+                Code = @"
+shader_type canvas_item;
+uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_linear_mipmap;
+uniform float dizziness_strength = 0.0;
+uniform float anxiety_strength = 0.0;
+uniform float pressure_strength = 0.0;
+uniform float time_seconds = 0.0;
+
+void fragment() {
+    vec2 uv = SCREEN_UV;
+    float wobble = dizziness_strength;
+    uv.x += sin(uv.y * 24.0 + time_seconds * 2.3) * 0.009 * wobble;
+    uv.x += sin(uv.y * 9.0 - time_seconds * 1.1) * 0.004 * wobble;
+    uv.y += sin(uv.x * 15.0 + time_seconds * 1.7) * 0.004 * wobble;
+
+    vec4 image = texture(screen_texture, uv);
+    float grain = fract(sin(dot(FRAGCOORD.xy + floor(time_seconds * 30.0), vec2(12.9898, 78.233))) * 43758.5453);
+    float lineNoise = step(0.985, fract(FRAGCOORD.y * 0.5 + floor(time_seconds * 18.0) * 0.37));
+    image.rgb += (grain - 0.5) * anxiety_strength * 0.20;
+    image.rgb -= lineNoise * anxiety_strength * 0.11;
+
+    float pulse = (sin(time_seconds * 10.0) + 1.0) * 0.5;
+    float vignette = smoothstep(0.48, 1.0, length(SCREEN_UV - vec2(0.5)) * 1.5);
+    image.rgb *= 1.0 - vignette * pressure_strength * (0.08 + pulse * 0.12);
+    COLOR = vec4(image.rgb, 1.0);
+}"
+            }
+        };
+        _screenFx.Material = _fxMaterial;
+
+        _pressureTop = MakeRect("PressureTop");
+        _pressureTop.AnchorLeft = 0f;
+        _pressureTop.AnchorRight = 1f;
+        _pressureTop.AnchorTop = 0f;
+        _pressureTop.AnchorBottom = 0f;
+        _pressureTop.OffsetBottom = 0f;
+
+        _pressureBottom = MakeRect("PressureBottom");
+        _pressureBottom.AnchorLeft = 0f;
+        _pressureBottom.AnchorRight = 1f;
+        _pressureBottom.AnchorTop = 1f;
+        _pressureBottom.AnchorBottom = 1f;
+        _pressureBottom.OffsetTop = 0f;
 
         _noticeLabel = new Label
         {
             Name = "NoticeLabel",
             AnchorLeft = 0.5f,
             AnchorRight = 0.5f,
-            OffsetLeft = -330,
-            OffsetRight = 330,
             AnchorTop = 0f,
-            OffsetTop = 20,
-            OffsetBottom = 64,
+            AnchorBottom = 0f,
+            OffsetLeft = -360,
+            OffsetRight = 360,
+            OffsetTop = 18,
+            OffsetBottom = 54,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             Visible = false,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        _noticeLabel.AddThemeFontSizeOverride("font_size", 18);
+        _noticeLabel.AddThemeFontSizeOverride("font_size", 17);
         _noticeLabel.AddThemeColorOverride("font_color", Colors.White);
-        _noticeLabel.AddThemeColorOverride("font_outline_color", Colors.Black);
+        _noticeLabel.AddThemeColorOverride("font_outline_color", new Color("07070d"));
         _noticeLabel.AddThemeConstantOverride("outline_size", 5);
-        AddChild(_noticeLabel);
+        _root.AddChild(_noticeLabel);
 
-        // A large, animated center cue makes the particular debuff readable at the moment it
-        // is applied, instead of relying only on the persistent low-alpha screen tint.
-        _fxGlyph = CreateCueLabel("DebuffFxGlyph", "", 52, new Vector2(-410, -52), new Vector2(410, 28));
-        _fxLeftGlyph = CreateCueLabel("DebuffFxLeft", "", 34, new Vector2(-560, -45), new Vector2(-470, 35));
-        _fxRightGlyph = CreateCueLabel("DebuffFxRight", "", 34, new Vector2(470, -45), new Vector2(560, 35));
-
-        _pressureTop = new ColorRect
+        _statusLabel = new Label
         {
-            Name = "PressureTopBar",
-            Color = Colors.Transparent,
-            MouseFilter = Control.MouseFilterEnum.Ignore,
-            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0f, AnchorBottom = 0f,
-            OffsetLeft = 0f, OffsetTop = 0f, OffsetRight = 0f, OffsetBottom = 0f,
-            Visible = false
+            Name = "StatusLabel",
+            AnchorLeft = 0f,
+            AnchorRight = 0f,
+            AnchorTop = 0.5f,
+            AnchorBottom = 0.5f,
+            OffsetLeft = 20,
+            OffsetRight = 220,
+            OffsetTop = -14,
+            OffsetBottom = 14,
+            Visible = false,
+            MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        AddChild(_pressureTop);
-        _pressureBottom = new ColorRect
-        {
-            Name = "PressureBottomBar",
-            Color = Colors.Transparent,
-            MouseFilter = Control.MouseFilterEnum.Ignore,
-            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 1f, AnchorBottom = 1f,
-            OffsetLeft = 0f, OffsetTop = 0f, OffsetRight = 0f, OffsetBottom = 0f,
-            Visible = false
-        };
-        AddChild(_pressureBottom);
+        _statusLabel.AddThemeFontSizeOverride("font_size", 13);
+        _statusLabel.AddThemeColorOverride("font_color", new Color("ebe6f1"));
+        _statusLabel.AddThemeColorOverride("font_outline_color", new Color("090912"));
+        _statusLabel.AddThemeConstantOverride("outline_size", 4);
+        _root.AddChild(_statusLabel);
 
-        // Keep the sliding pressure bars below the status/notice labels so they never obscure
-        // the textual cue while still overlaying the world and the persistent color tint.
-        int statusIndex = _statusLabel.GetIndex();
-        MoveChild(_pressureTop, statusIndex);
-        MoveChild(_pressureBottom, _statusLabel.GetIndex());
-    }
-
-    private Label CreateCueLabel(string nodeName, string text, int fontSize, Vector2 offsetMin, Vector2 offsetMax)
-    {
-        var label = new Label
+        _heart = new Label
         {
-            Name = nodeName,
-            Text = text,
-            AnchorLeft = 0.5f, AnchorRight = 0.5f,
-            AnchorTop = 0.5f, AnchorBottom = 0.5f,
-            OffsetLeft = offsetMin.X, OffsetTop = offsetMin.Y,
-            OffsetRight = offsetMax.X, OffsetBottom = offsetMax.Y,
+            Name = "PressureHeartbeat",
+            Text = "♥",
+            AnchorLeft = 1f,
+            AnchorRight = 1f,
+            AnchorTop = 1f,
+            AnchorBottom = 1f,
+            OffsetLeft = -104,
+            OffsetRight = -38,
+            OffsetTop = -110,
+            OffsetBottom = -42,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             Visible = false,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        label.AddThemeFontSizeOverride("font_size", fontSize);
-        label.AddThemeColorOverride("font_color", Colors.White);
-        label.AddThemeColorOverride("font_outline_color", new Color("090b14"));
-        label.AddThemeConstantOverride("outline_size", 7);
-        AddChild(label);
-        return label;
+        _heart.AddThemeFontSizeOverride("font_size", 48);
+        _heart.AddThemeColorOverride("font_color", new Color("df3a52"));
+        _heart.AddThemeColorOverride("font_outline_color", new Color("130910"));
+        _heart.AddThemeConstantOverride("outline_size", 5);
+        _root.AddChild(_heart);
+
+        _confusionWords.Add(CreateConfusionWord("why...", 0.04f, 0.36f, -1f));
+        _confusionWords.Add(CreateConfusionWord("wait", 0.92f, 0.43f, 1f));
+        _confusionWords.Add(CreateConfusionWord("what?", 0.05f, 0.64f, -1f));
+        _confusionWords.Add(CreateConfusionWord("I KNOW...", 0.89f, 0.61f, 1f));
     }
 
-    private void UpdateDebuffCue()
+    private Label CreateConfusionWord(string text, float anchorX, float anchorY, float side)
     {
-        if (_fxGlyph == null)
-            return;
-
-        var manager = SanityManager.Instance;
-        int dizziness = manager?.GetDebuffLevel(SanityManager.DebuffType.Dizziness) ?? 0;
-        int confusion = manager?.GetDebuffLevel(SanityManager.DebuffType.Confusion) ?? 0;
-        int anxiety = manager?.GetDebuffLevel(SanityManager.DebuffType.Anxiety) ?? 0;
-        int pressure = manager?.GetDebuffLevel(SanityManager.DebuffType.Pressure) ?? 0;
-        int total = dizziness + confusion + anxiety + pressure;
-        bool unstableSanity = _sanity < SanityManager.StableSanityThreshold;
-        bool active = total > 0 || unstableSanity;
-        float pulse = (Mathf.Sin(_elapsed * 7f) + 1f) * 0.5f;
-
-        // The cue is state-driven, not timer-driven. Each symbol disappears only when that
-        // debuff's stack decays to zero; the generic sanity cue remains until sanity stabilizes.
-        _fxGlyph.Visible = active;
-        _fxLeftGlyph.Visible = active && (dizziness > 0 || confusion > 0 || anxiety > 0 || unstableSanity);
-        _fxRightGlyph.Visible = active && (dizziness > 0 || confusion > 0 || anxiety > 0 || unstableSanity);
-        _pressureTop.Visible = pressure > 0;
-        _pressureBottom.Visible = pressure > 0;
-
-        var symbols = new List<string>();
-        if (dizziness > 0) symbols.Add("◎");
-        if (confusion > 0) symbols.Add("?!");
-        if (anxiety > 0) symbols.Add("!");
-        if (pressure > 0) symbols.Add("PRESSURE");
-        if (symbols.Count == 0 && unstableSanity) symbols.Add("...");
-        _fxGlyph.Text = string.Join("   ", symbols);
-
-        _fxLeftGlyph.Text = dizziness > 0 ? "◌" : confusion > 0 ? "?" : anxiety > 0 ? "!" : "...";
-        _fxRightGlyph.Text = confusion > 0 ? "??" : dizziness > 0 ? "◌" : anxiety > 0 ? "!" : "...";
-
-        Color tint = GetStackTint(dizziness, confusion, anxiety, pressure);
-        float alpha = Mathf.Clamp(0.58f + total / 250f, 0.58f, 1f);
-        _fxGlyph.Modulate = new Color(1f, 1f, 1f, alpha);
-        _fxLeftGlyph.Modulate = new Color(1f, 1f, 1f, alpha);
-        _fxRightGlyph.Modulate = new Color(1f, 1f, 1f, alpha);
-        _fxGlyph.AddThemeColorOverride("font_color", tint);
-        _fxLeftGlyph.AddThemeColorOverride("font_color", tint);
-        _fxRightGlyph.AddThemeColorOverride("font_color", tint);
-
-        // Every active debuff contributes its own motion cue, allowing multiple types to
-        // remain visible at once instead of replacing the previous effect.
-        _fxGlyph.Rotation = dizziness > 0 ? _elapsed * 1.8f : confusion > 0 ? Mathf.Sin(_elapsed * 11f) * 0.08f : 0f;
-        _fxGlyph.Scale = Vector2.One * (0.92f + pulse * (anxiety > 0 ? 0.24f : 0.08f));
-        _fxLeftGlyph.Rotation = dizziness > 0 ? -_elapsed * 1.4f : confusion > 0 ? Mathf.Sin(_elapsed * 17f) * 0.12f : 0f;
-        _fxRightGlyph.Rotation = dizziness > 0 ? _elapsed * 1.2f : confusion > 0 ? Mathf.Cos(_elapsed * 15f) * 0.12f : 0f;
-        _fxLeftGlyph.Position = confusion > 0
-            ? new Vector2(-520f + Mathf.Sin(_elapsed * 19f) * 12f, -30f)
-            : new Vector2(-520f + (dizziness > 0 ? Mathf.Sin(_elapsed * 3f) * 24f : 0f), -30f);
-        _fxRightGlyph.Position = confusion > 0
-            ? new Vector2(470f + Mathf.Cos(_elapsed * 17f) * 14f, -30f)
-            : new Vector2(470f + (dizziness > 0 ? Mathf.Cos(_elapsed * 2.7f) * 24f : 0f), -30f);
-
-        float pressureProgress = Mathf.Clamp(pressure / 100f, 0f, 1f);
-        float barSize = pressure > 0 ? 8f + pressureProgress * 24f + pulse * 8f : 0f;
-        _pressureTop.OffsetBottom = barSize;
-        _pressureBottom.OffsetTop = -barSize;
-        float pressureAlpha = pressureProgress * (0.12f + pulse * 0.14f);
-        _pressureTop.Color = new Color(DebuffColor(SanityManager.DebuffType.Pressure).R,
-            DebuffColor(SanityManager.DebuffType.Pressure).G, DebuffColor(SanityManager.DebuffType.Pressure).B, pressureAlpha);
-        _pressureBottom.Color = _pressureTop.Color;
-    }
-
-    private Color GetStackTint(int dizziness, int confusion, int anxiety, int pressure)
-    {
-        float weight = dizziness + confusion + anxiety + pressure;
-        if (weight <= 0f)
-            return _sanity < SanityManager.StableSanityThreshold ? new Color("d9233e") : DebuffColor(_dominantDebuff);
-
-        Color d = DebuffColor(SanityManager.DebuffType.Dizziness);
-        Color c = DebuffColor(SanityManager.DebuffType.Confusion);
-        Color a = DebuffColor(SanityManager.DebuffType.Anxiety);
-        Color p = DebuffColor(SanityManager.DebuffType.Pressure);
-        return new Color(
-            (d.R * dizziness + c.R * confusion + a.R * anxiety + p.R * pressure) / weight,
-            (d.G * dizziness + c.G * confusion + a.G * anxiety + p.G * pressure) / weight,
-            (d.B * dizziness + c.B * confusion + a.B * anxiety + p.B * pressure) / weight);
-    }
-
-    private void RefreshEffects()
-    {
-        if (_effectWash == null)
-            return;
-
-        var manager = SanityManager.Instance;
-        int dizziness = manager?.GetDebuffLevel(SanityManager.DebuffType.Dizziness) ?? 0;
-        int confusion = manager?.GetDebuffLevel(SanityManager.DebuffType.Confusion) ?? 0;
-        int anxiety = manager?.GetDebuffLevel(SanityManager.DebuffType.Anxiety) ?? 0;
-        int pressure = manager?.GetDebuffLevel(SanityManager.DebuffType.Pressure) ?? 0;
-        int total = dizziness + confusion + anxiety + pressure;
-
-        float lowSanity = Mathf.Clamp((SanityManager.StableSanityThreshold - _sanity) /
-            (float)SanityManager.StableSanityThreshold, 0f, 1f);
-        float pulse = (Mathf.Sin(_elapsed * 2.3f) + 1f) * 0.5f;
-        int activeTypes = (dizziness > 0 ? 1 : 0) + (confusion > 0 ? 1 : 0) +
-                          (anxiety > 0 ? 1 : 0) + (pressure > 0 ? 1 : 0);
-        float stackAlpha = Mathf.Clamp(activeTypes * 0.025f + total / 400f, 0f, 0.16f);
-        float baseAlpha = Mathf.Clamp(lowSanity * 0.13f + stackAlpha, 0f, 0.20f);
-
-        Color tint = GetStackTint(dizziness, confusion, anxiety, pressure);
-        if (_flashTime > 0f)
-            tint = tint.Lerp(_flashColor, 0.62f);
-        if (_sanity < 25f)
-            tint = tint.Lerp(new Color("d9233e"), 0.35f);
-
-        if (_flashTime > 0f)
-            baseAlpha = Mathf.Max(baseAlpha, (_flashTime / 1.25f) * 0.17f);
-
-        _effectWash.Color = new Color(tint.R, tint.G, tint.B,
-            Mathf.Clamp(baseAlpha + pulse * lowSanity * 0.018f, 0f, 0.24f));
-
-        float edgeAlpha = Mathf.Clamp(baseAlpha * 0.75f + (_flashTime > 0f ? 0.10f : 0f) +
-            (anxiety > 0 ? 0.07f + pulse * 0.06f : 0f), 0f, 0.30f);
-        Color edge = new Color(tint.R, tint.G, tint.B, edgeAlpha);
-        _topEdge.Color = edge;
-        _bottomEdge.Color = edge;
-        _leftEdge.Color = edge;
-        _rightEdge.Color = edge;
-
-        bool active = total > 0 || _sanity < SanityManager.StableSanityThreshold;
-        _statusLabel.Visible = active;
-        if (active)
+        var label = new Label
         {
-            string low = _sanity < 25 ? "CRITICAL SANITY" :
-                         _sanity < 50 ? "LOW SANITY" :
-                         _sanity < SanityManager.StableSanityThreshold ? "SANITY UNSTEADY" : "DEBUFFS ACTIVE";
-            var statusParts = new List<string>();
-            if (dizziness > 0) statusParts.Add($"DIZZINESS {dizziness}%");
-            if (confusion > 0) statusParts.Add($"CONFUSION {confusion}%");
-            if (anxiety > 0) statusParts.Add($"ANXIETY {anxiety}%");
-            if (pressure > 0) statusParts.Add($"PRESSURE {pressure}%");
-            _statusLabel.Text = statusParts.Count > 0
-                ? $"{low}  •  {string.Join("  •  ", statusParts)}"
-                : low;
-            _statusLabel.Modulate = Colors.White;
-        }
-
-        UpdateDebuffCue();
+            Text = text,
+            AnchorLeft = anchorX,
+            AnchorRight = anchorX,
+            AnchorTop = anchorY,
+            AnchorBottom = anchorY,
+            OffsetLeft = side < 0 ? 0 : -148,
+            OffsetRight = side < 0 ? 148 : 0,
+            OffsetTop = -12,
+            OffsetBottom = 18,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Visible = false,
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
+        label.AddThemeFontSizeOverride("font_size", 19);
+        label.AddThemeColorOverride("font_color", new Color("f0d38a"));
+        label.AddThemeColorOverride("font_outline_color", new Color("100d0a"));
+        label.AddThemeConstantOverride("outline_size", 4);
+        _root.AddChild(label);
+        return label;
     }
 
     private ColorRect MakeRect(string nodeName)
@@ -401,8 +294,103 @@ public partial class StatusEffectsOverlay : CanvasLayer
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
         rect.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        AddChild(rect);
+        _root.AddChild(rect);
         return rect;
+    }
+
+    private void RefreshEffects()
+    {
+        if (_fxMaterial == null || _root == null)
+            return;
+
+        var manager = SanityManager.Instance;
+        int dizziness = manager?.GetDebuffLevel(SanityManager.DebuffType.Dizziness) ?? 0;
+        int confusion = manager?.GetDebuffLevel(SanityManager.DebuffType.Confusion) ?? 0;
+        int anxiety = manager?.GetDebuffLevel(SanityManager.DebuffType.Anxiety) ?? 0;
+        int pressure = manager?.GetDebuffLevel(SanityManager.DebuffType.Pressure) ?? 0;
+        int total = dizziness + confusion + anxiety + pressure;
+
+        float fade = _endingFade;
+        float wobble = Mathf.Clamp(dizziness / 45f, 0f, 1f) * fade;
+        float staticStrength = Mathf.Clamp(anxiety / 38f, 0f, 1f) * fade;
+        float pressureStrength = Mathf.Clamp(pressure / 50f, 0f, 1f) * fade;
+        _fxMaterial.SetShaderParameter("dizziness_strength", wobble);
+        _fxMaterial.SetShaderParameter("anxiety_strength", staticStrength);
+        _fxMaterial.SetShaderParameter("pressure_strength", pressureStrength);
+        _fxMaterial.SetShaderParameter("time_seconds", _elapsed);
+
+        // Confusion appears at the screen edges in separate, slow pulses rather than a full-screen
+        // text wash. The effect gets stronger with additional confusion intensity.
+        for (int i = 0; i < _confusionWords.Count; i++)
+        {
+            float wave = (Mathf.Sin(_elapsed * 0.8f + i * 1.9f) + 1f) * 0.5f;
+            bool active = confusion > 0 && wave > 0.25f && _endingFade > 0.02f;
+            _confusionWords[i].Visible = active;
+            _confusionWords[i].Modulate = new Color(1f, 1f, 1f,
+                active ? Mathf.Clamp((0.12f + wave * 0.45f) * confusion / 30f, 0f, 0.7f) * fade : 0f);
+            _confusionWords[i].Position += new Vector2(0f, Mathf.Sin(_elapsed + i) * 0.03f);
+        }
+
+        float pulse = (Mathf.Sin(_elapsed * (8f + pressure / 22f)) + 1f) * 0.5f;
+        _heart.Visible = pressure > 0 && _endingFade > 0.02f;
+        _heart.Scale = Vector2.One * (0.82f + pulse * (0.22f + pressureStrength * 0.22f));
+        _heart.Modulate = new Color(1f, 1f, 1f,
+            _heart.Visible ? (0.38f + pulse * 0.52f) * fade : 0f);
+
+        float squeeze = pressure > 0 ? 8f + pressureStrength * 38f + pulse * 10f : 0f;
+        float pressureAlpha = Mathf.Clamp(pressureStrength * (0.12f + pulse * 0.10f) * fade, 0f, 0.28f);
+        _pressureTop.OffsetBottom = squeeze;
+        _pressureBottom.OffsetTop = -squeeze;
+        _pressureTop.Color = new Color(0.72f, 0.08f, 0.18f, pressureAlpha);
+        _pressureBottom.Color = _pressureTop.Color;
+
+        float lowSanity = Mathf.Clamp((SanityManager.StableSanityThreshold - _sanity) /
+            (float)SanityManager.StableSanityThreshold, 0f, 1f);
+        Color tint = GetStackTint(dizziness, confusion, anxiety, pressure);
+        if (_flashTime > 0f)
+            tint = tint.Lerp(_flashColor, 0.62f);
+        float washAlpha = Mathf.Clamp(lowSanity * 0.12f + total / 900f, 0f, 0.19f) * fade;
+        if (_flashTime > 0f)
+            washAlpha = Mathf.Max(washAlpha, (_flashTime / 1.25f) * 0.14f * fade);
+        _statusLabel.Visible = total > 0 || _sanity < SanityManager.StableSanityThreshold;
+        _statusLabel.Text = total > 0 ? "DISTRESS" : (_sanity < 25 ? "CRITICAL" : "UNSTEADY");
+        _statusLabel.Modulate = new Color(1f, 1f, 1f, 0.55f * fade);
+
+        // A subtle tint is supplemental; each debuff has its own distinctive motion cue.
+        _brightnessWash.Color = _brightnessWash.Color; // brightness wash is controlled by settings
+        if (washAlpha > 0f)
+            _screenFx.Modulate = new Color(1f, 1f, 1f, fade);
+        else
+            _screenFx.Modulate = new Color(1f, 1f, 1f, fade);
+
+        _pressureTop.Visible = pressure > 0;
+        _pressureBottom.Visible = pressure > 0;
+        _dominantDebuff = FindDominant(dizziness, confusion, anxiety, pressure);
+    }
+
+    private static SanityManager.DebuffType FindDominant(int d, int c, int a, int p)
+    {
+        int max = Math.Max(Math.Max(d, c), Math.Max(a, p));
+        if (max == c) return SanityManager.DebuffType.Confusion;
+        if (max == a) return SanityManager.DebuffType.Anxiety;
+        if (max == p) return SanityManager.DebuffType.Pressure;
+        return SanityManager.DebuffType.Dizziness;
+    }
+
+    private Color GetStackTint(int d, int c, int a, int p)
+    {
+        if (d + c + a + p == 0)
+            return _sanity < SanityManager.StableSanityThreshold ? new Color("d9233e") : DebuffColor(_dominantDebuff);
+
+        Color cd = DebuffColor(SanityManager.DebuffType.Dizziness);
+        Color cc = DebuffColor(SanityManager.DebuffType.Confusion);
+        Color ca = DebuffColor(SanityManager.DebuffType.Anxiety);
+        Color cp = DebuffColor(SanityManager.DebuffType.Pressure);
+        float sum = d + c + a + p;
+        return new Color(
+            (cd.R * d + cc.R * c + ca.R * a + cp.R * p) / sum,
+            (cd.G * d + cc.G * c + ca.G * a + cp.G * p) / sum,
+            (cd.B * d + cc.B * c + ca.B * a + cp.B * p) / sum);
     }
 
     private void OnSanityChanged(int current)
@@ -413,23 +401,8 @@ public partial class StatusEffectsOverlay : CanvasLayer
 
     private void OnDebuffChanged(SanityManager.DebuffType type, int intensity)
     {
-        // Decay also raises this event. Only use it to refresh the current stack display;
-        // the temporary "applied" notice is shown by TriggerTaskFailure, not every decay tick.
-        int strongestLevel = 0;
-        foreach (SanityManager.DebuffType candidate in Enum.GetValues(typeof(SanityManager.DebuffType)))
-        {
-            int level = SanityManager.Instance?.GetDebuffLevel(candidate) ?? 0;
-            if (level > strongestLevel)
-            {
-                strongestLevel = level;
-                _dominantDebuff = candidate;
-            }
-        }
-
         if (intensity > 0)
             _flashColor = DebuffColor(type);
-
-        UpdateDebuffCue();
         RefreshEffects();
     }
 
@@ -439,10 +412,12 @@ public partial class StatusEffectsOverlay : CanvasLayer
             return;
 
         float brightness = SettingsManager.Instance?.Brightness ?? 0.88f;
-        if (brightness < 1f)
-            _brightnessWash.Color = new Color(0f, 0f, 0f, (1f - brightness) * 0.62f);
-        else
-            _brightnessWash.Color = new Color(1f, 1f, 1f, (brightness - 1f) * 0.18f);
+        float alpha = brightness < 1f
+            ? (1f - brightness) * 0.62f
+            : -(brightness - 1f) * 0.18f;
+        _brightnessWash.Color = alpha >= 0f
+            ? new Color(0f, 0f, 0f, alpha)
+            : new Color(1f, 1f, 1f, -alpha);
     }
 
     private static Color DebuffColor(SanityManager.DebuffType type) => type switch
