@@ -6,12 +6,28 @@ public partial class RoomManager : Node2D
 {
     private static string _requestedStartRoom;
     private static string _requestedStartSpawn;
+    private static Vector2 _requestedPlayerPosition;
+    private static bool _hasRequestedPlayerPosition;
 
     public static void RequestStartRoomOnNextLoad(string roomPath, string spawn)
     {
         _requestedStartRoom = roomPath;
         _requestedStartSpawn = spawn;
     }
+
+    /// <summary>Stage an exact player position for the next World scene load.</summary>
+    public static void RequestPlayerPositionOnNextLoad(Vector2 position)
+    {
+        _requestedPlayerPosition = position;
+        _hasRequestedPlayerPosition = true;
+    }
+
+    /// <summary>Current loaded room resource path and player position for saves.</summary>
+    public string CurrentRoomPath => _room != null && !string.IsNullOrWhiteSpace(_room.SceneFilePath)
+        ? _room.SceneFilePath
+        : StartRoom;
+
+    public Vector2 CurrentPlayerPosition => _player?.GlobalPosition ?? Vector2.Zero;
 
     [Export(PropertyHint.File, "*.tscn")] public string StartRoom { get; set; } = "res://Scenes/Home/Rooms/Kwarto.tscn";
     [Export] public string StartSpawn { get; set; } = "startSpawn";
@@ -147,11 +163,19 @@ public partial class RoomManager : Node2D
 
         _holder.AddChild(_room);
         _player.GlobalPosition = _room.GetSpawnPosition(spawn);
+        if (_hasRequestedPlayerPosition)
+        {
+            _player.GlobalPosition = _requestedPlayerPosition;
+            _requestedPlayerPosition = Vector2.Zero;
+            _hasRequestedPlayerPosition = false;
+        }
+
         if (_player is CharacterBody2D body)
             body.Velocity = Vector2.Zero;
 
         ConfigureCamera();
         SetNight(IsNight);
+        SchoolYardGame.SaveManager.Instance?.RequestAutoSave();
     }
 
     private void ConfigureCamera()
