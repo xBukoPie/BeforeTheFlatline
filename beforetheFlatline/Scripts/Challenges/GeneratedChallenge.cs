@@ -314,11 +314,14 @@ public static class GeneratedChallengeFactory
             });
     }
 
+    private const string VariableNamingGuidance =
+        " You may choose your own variable names; the names in the examples are not required. Use valid identifiers (letters, digits, and underscores; do not start with a digit) and use each name consistently throughout your algorithm.";
+
     private static GeneratedChallenge Code(string title, string prompt, string concept, string[] lines) =>
         new GeneratedChallenge
         {
             Title = title,
-            Prompt = prompt,
+            Prompt = prompt + VariableNamingGuidance,
             Concept = concept,
             IsFlowchart = false,
             PseudocodeSolution = lines
@@ -328,7 +331,7 @@ public static class GeneratedChallengeFactory
         new GeneratedChallenge
         {
             Title = title,
-            Prompt = prompt,
+            Prompt = prompt + VariableNamingGuidance,
             Concept = concept,
             IsFlowchart = true,
             FlowchartSolution = blocks
