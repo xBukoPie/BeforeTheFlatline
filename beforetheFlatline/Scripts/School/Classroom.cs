@@ -27,6 +27,10 @@ public partial class Classroom : Control
 
     public override void _Ready()
     {
+        // Time pauses only once the player is inside the classroom/task sequence.
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = false;
+
         _dialogue = GetNode<VisualNovelScene>("%GreetingDialogue");
         _leaveHint = GetNode<Label>("%LeaveHint");
         _leaveHint.Visible = false;
@@ -48,6 +52,8 @@ public partial class Classroom : Control
         if (AllowEscapeToLeave && !_greetingActive && @event.IsActionPressed("ui_cancel"))
         {
             GetViewport().SetInputAsHandled();
+            if (DayClock.Instance != null)
+                DayClock.Instance.Running = true;
             QueueFree();
         }
     }
