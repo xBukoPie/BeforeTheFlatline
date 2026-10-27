@@ -208,7 +208,7 @@ public partial class ChallengeScene : Control
         ClearContent();
         var guide = new Label
         {
-            Text = "TYPE YOUR OWN PSEUDOCODE. Submit or give up to continue; individual answers are not revealed yet.",
+            Text = "TYPE YOUR OWN PSEUDOCODE. Choose any valid variable names and use them consistently; the example names in the prompt are optional. Submit or give up to continue; individual answers are not revealed yet.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
         guide.AddThemeColorOverride("font_color", new Color("7dd3fc"));
@@ -235,7 +235,7 @@ public partial class ChallengeScene : Control
         ClearContent();
         var guide = new Label
         {
-            Text = "DRAG A SHAPE INTO THE CANVAS. Define each symbol and use ↑ / ↓ to order the connected blocks.",
+            Text = "DRAG A SHAPE INTO THE CANVAS. You may choose your own valid variable names; keep them consistent in Input, Process, Decision, and Output blocks. Use ↑ / ↓ to order the connected blocks.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
         guide.AddThemeColorOverride("font_color", new Color("7dd3fc"));
