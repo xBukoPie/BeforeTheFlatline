@@ -167,19 +167,19 @@ uniform float time_seconds = 0.0;
 void fragment() {
     vec2 uv = SCREEN_UV;
     float wobble = dizziness_strength;
-    uv.x += sin(uv.y * 24.0 + time_seconds * 2.3) * 0.016 * wobble;
-    uv.x += sin(uv.y * 9.0 - time_seconds * 1.1) * 0.007 * wobble;
+    uv.x += sin(uv.y * 24.0 + time_seconds * 2.3) * 0.009 * wobble;
+    uv.x += sin(uv.y * 9.0 - time_seconds * 1.1) * 0.004 * wobble;
     uv.y += sin(uv.x * 15.0 + time_seconds * 1.7) * 0.004 * wobble;
 
     vec4 image = texture(screen_texture, uv);
     float grain = fract(sin(dot(FRAGCOORD.xy + floor(time_seconds * 30.0), vec2(12.9898, 78.233))) * 43758.5453);
     float lineNoise = step(0.985, fract(FRAGCOORD.y * 0.5 + floor(time_seconds * 18.0) * 0.37));
-    image.rgb += (grain - 0.5) * anxiety_strength * 0.30;
-    image.rgb -= lineNoise * anxiety_strength * 0.17;
+    image.rgb += (grain - 0.5) * anxiety_strength * 0.20;
+    image.rgb -= lineNoise * anxiety_strength * 0.11;
 
     float pulse = (sin(time_seconds * 10.0) + 1.0) * 0.5;
     float vignette = smoothstep(0.48, 1.0, length(SCREEN_UV - vec2(0.5)) * 1.5);
-    image.rgb *= 1.0 - vignette * pressure_strength * (0.12 + pulse * 0.20);
+    image.rgb *= 1.0 - vignette * pressure_strength * (0.08 + pulse * 0.12);
     COLOR = vec4(image.rgb, 1.0);
 }"
             }
@@ -324,9 +324,9 @@ void fragment() {
         int total = dizziness + confusion + anxiety + pressure;
 
         float fade = _endingFade;
-        float wobble = Mathf.Clamp(dizziness / 22f, 0f, 1f) * fade;
-        float staticStrength = Mathf.Clamp(anxiety / 20f, 0f, 1f) * fade;
-        float pressureStrength = Mathf.Clamp(pressure / 25f, 0f, 1f) * fade;
+        float wobble = Mathf.Clamp(dizziness / 45f, 0f, 1f) * fade;
+        float staticStrength = Mathf.Clamp(anxiety / 38f, 0f, 1f) * fade;
+        float pressureStrength = Mathf.Clamp(pressure / 50f, 0f, 1f) * fade;
         _fxMaterial.SetShaderParameter("dizziness_strength", wobble);
         _fxMaterial.SetShaderParameter("anxiety_strength", staticStrength);
         _fxMaterial.SetShaderParameter("pressure_strength", pressureStrength);
@@ -340,7 +340,7 @@ void fragment() {
             bool active = confusion > 0 && wave > 0.25f && _endingFade > 0.02f;
             _confusionWords[i].Visible = active;
             _confusionWords[i].Modulate = new Color(1f, 1f, 1f,
-                active ? Mathf.Clamp((0.12f + wave * 0.45f) * confusion / 18f, 0f, 0.7f) * fade : 0f);
+                active ? Mathf.Clamp((0.12f + wave * 0.45f) * confusion / 30f, 0f, 0.7f) * fade : 0f);
         }
 
         float pulse = (Mathf.Sin(_elapsed * (8f + pressure / 22f)) + 1f) * 0.5f;
@@ -350,7 +350,7 @@ void fragment() {
             _heart.Visible ? (0.38f + pulse * 0.52f) * fade : 0f);
 
         float squeeze = pressure > 0 ? 8f + pressureStrength * 38f + pulse * 10f : 0f;
-        float pressureAlpha = Mathf.Clamp(pressureStrength * (0.18f + pulse * 0.16f) * fade, 0f, 0.38f);
+        float pressureAlpha = Mathf.Clamp(pressureStrength * (0.12f + pulse * 0.10f) * fade, 0f, 0.28f);
         _pressureTop.OffsetBottom = squeeze;
         _pressureBottom.OffsetTop = -squeeze;
         _pressureTop.Color = new Color(0.72f, 0.08f, 0.18f, pressureAlpha);
@@ -361,7 +361,7 @@ void fragment() {
         Color tint = GetStackTint(dizziness, confusion, anxiety, pressure);
         if (_flashTime > 0f)
             tint = tint.Lerp(_flashColor, 0.62f);
-        float washAlpha = Mathf.Clamp(lowSanity * 0.17f + total / 420f, 0f, 0.30f) * fade;
+        float washAlpha = Mathf.Clamp(lowSanity * 0.12f + total / 900f, 0f, 0.19f) * fade;
         if (_flashTime > 0f)
             washAlpha = Mathf.Max(washAlpha, (_flashTime / 1.25f) * 0.14f * fade);
         _statusLabel.Visible = total > 0 || _sanity < SanityManager.StableSanityThreshold;
