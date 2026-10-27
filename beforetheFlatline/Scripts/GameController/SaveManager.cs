@@ -418,7 +418,26 @@ public partial class SaveManager : Node
             return fallback;
 
         Variant value = data[key];
-        return value.VariantType == Variant.Type.Int ? value.AsInt32() : fallback;
+        if (value.VariantType == Variant.Type.Int)
+            return value.AsInt32();
+
+        // JSON numeric fields may be represented as floats (for example 3.0).
+        if (value.VariantType == Variant.Type.Float)
+        {
+            double number = value.AsDouble();
+            if (number >= int.MinValue && number <= int.MaxValue &&
+                Math.Abs(number - Math.Round(number)) < 0.000001)
+                return (int)Math.Round(number);
+            return fallback;
+        }
+
+        if (value.VariantType == Variant.Type.String &&
+            double.TryParse(value.AsString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed) &&
+            parsed >= int.MinValue && parsed <= int.MaxValue &&
+            Math.Abs(parsed - Math.Round(parsed)) < 0.000001)
+            return (int)Math.Round(parsed);
+
+        return fallback;
     }
 
     private static float ReadFloat(Godot.Collections.Dictionary data, string key, float fallback)
@@ -427,12 +446,15 @@ public partial class SaveManager : Node
             return fallback;
 
         Variant value = data[key];
-        return value.VariantType switch
-        {
-            Variant.Type.Float => (float)value.AsDouble(),
-            Variant.Type.Int => value.AsInt32(),
-            _ => fallback
-        };
+        if (value.VariantType == Variant.Type.Float)
+            return (float)value.AsDouble();
+        if (value.VariantType == Variant.Type.Int)
+            return value.AsInt32();
+        if (value.VariantType == Variant.Type.String &&
+            float.TryParse(value.AsString(), NumberStyles.Float, CultureInfo.InvariantCulture, out float parsed))
+            return parsed;
+
+        return fallback;
     }
 
     private static bool ReadBool(Godot.Collections.Dictionary data, string key, bool fallback)
