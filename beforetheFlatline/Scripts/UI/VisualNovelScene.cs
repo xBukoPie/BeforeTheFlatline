@@ -3,55 +3,34 @@ using System.Collections.Generic;
 
 namespace SchoolYardGame;
 
-/// <summary>
-/// Visual-novel style dialogue screen: typewriter text, speaker name tag that follows the
-/// active character, dim/highlight on portraits, branching choices, and Auto / Skip / Log / Menu
-/// side buttons.
-///
-/// Scene: res://Scenes/UI/VisualNovelScene.tscn
-/// Feed it lines with <see cref="StartDialogue"/>. With PlayDemoOnReady on, it plays a small demo.
-/// </summary>
 public partial class VisualNovelScene : Control
 {
-    // ───────────────────────── Signals ─────────────────────────
 
     [Signal] public delegate void DialogueFinishedEventHandler();
     [Signal] public delegate void ChoiceSelectedEventHandler(int choiceIndex);
     [Signal] public delegate void MenuRequestedEventHandler();
 
-    // ───────────────────────── Inspector settings ─────────────────────────
-
     [ExportGroup("Text")]
     [Export] public float CharsPerSecond { get; set; } = 45f;
-    /// <summary>Seconds to wait after a line is fully shown before Auto advances.</summary>
     [Export] public float AutoDelay { get; set; } = 1.4f;
-    /// <summary>Seconds between lines while Skip is on.</summary>
     [Export] public float SkipDelay { get; set; } = 0.08f;
 
     [ExportGroup("Characters")]
-    /// <summary>Leave empty to show the placeholder box.</summary>
     [Export] public Texture2D LeftPortrait { get; set; }
     [Export] public Texture2D RightPortrait { get; set; }
 
     [ExportGroup("Display")]
-    /// <summary>Turn off when this scene is overlaid on another base scene (e.g. the Classroom).</summary>
     [Export] public bool ShowBackground { get; set; } = true;
-    /// <summary>Show the grey placeholder box for a side that has no portrait texture.</summary>
     [Export] public bool ShowPlaceholders { get; set; } = true;
 
     [ExportGroup("Demo")]
     [Export] public bool PlayDemoOnReady { get; set; } = true;
-    /// <summary>After the last line, pressing Space/click replays the demo.</summary>
     [Export] public bool LoopDemo { get; set; } = true;
-
-    // ───────────────────────── Constants ─────────────────────────
 
     private const string HintInteract = "Press [Space] to interact";
     private const string HintReplay = "Press [Space] to replay";
     private const float NameTagInset = 40f;
     private static readonly Color DimColor = new(0.55f, 0.55f, 0.6f, 1f);
-
-    // ───────────────────────── Node references ─────────────────────────
 
     private Control _leftSlot, _rightSlot;
     private TextureRect _leftPortraitRect, _rightPortraitRect;
@@ -62,8 +41,6 @@ public partial class VisualNovelScene : Control
     private RichTextLabel _text, _logText;
     private VBoxContainer _choiceBox;
     private Button _autoButton, _skipButton, _logButton, _optionsButton, _closeLogButton;
-
-    // ───────────────────────── State ─────────────────────────
 
     private IReadOnlyList<DialogueLine> _lines;
     private int _index;
@@ -79,8 +56,6 @@ public partial class VisualNovelScene : Control
     private Tween _typeTween, _nameTagTween;
     private Control _pauseMenu;
     private bool _clockWasRunningBeforePause;
-
-    // ───────────────────────── Lifecycle ─────────────────────────
 
     public override void _Ready()
     {
@@ -120,7 +95,6 @@ public partial class VisualNovelScene : Control
         SetPortrait(DialogueSide.Left, LeftPortrait);
         SetPortrait(DialogueSide.Right, RightPortrait);
 
-        // The scene shows the choices/log/hint in the editor for layout preview; hide them at runtime.
         _choiceBox.Visible = false;
         _logPanel.Visible = false;
         _hint.Visible = false;
@@ -140,8 +114,6 @@ public partial class VisualNovelScene : Control
 
         if (_choicesShowing)
         {
-            // Auto-play makes a deterministic choice after the same delay used between lines.
-            // A player can still take over by clicking a choice before the timer expires.
             if (_auto)
             {
                 _idle += delta;
@@ -188,9 +160,7 @@ public partial class VisualNovelScene : Control
         }
     }
 
-    // ───────────────────────── Public API ─────────────────────────
-
-    /// <summary>Begin playing a list of lines from the start.</summary>
+    // Begin playing a list of lines from the start.
     public void StartDialogue(IReadOnlyList<DialogueLine> lines)
     {
         _lines = lines;
@@ -198,7 +168,7 @@ public partial class VisualNovelScene : Control
         ShowLine(0);
     }
 
-    /// <summary>Set (or clear with null) a character portrait. A null texture shows the placeholder.</summary>
+    // Set (or clear with null) a character portrait.
     public void SetPortrait(DialogueSide side, Texture2D texture)
     {
         var rect = side == DialogueSide.Left ? _leftPortraitRect : _rightPortraitRect;
@@ -206,8 +176,6 @@ public partial class VisualNovelScene : Control
         rect.Texture = texture;
         placeholder.Visible = texture == null && ShowPlaceholders;
     }
-
-    // ───────────────────────── Dialogue flow ─────────────────────────
 
     private void ShowLine(int index)
     {
@@ -235,7 +203,6 @@ public partial class VisualNovelScene : Control
 
         AppendLog($"[b]{Escape(line.Speaker)}[/b]\n{line.Text}\n\n");
 
-        // Typewriter effect.
         KillTween(ref _typeTween);
         _text.Text = line.Text;
         _text.VisibleCharacters = 0;
@@ -254,7 +221,7 @@ public partial class VisualNovelScene : Control
         _typeTween.Finished += FinishTyping;
     }
 
-    /// <summary>Called when the text has fully appeared (naturally or after being completed early).</summary>
+    // Called when the text has fully appeared (naturally or after being completed early).
     private void FinishTyping()
     {
         _typing = false;
@@ -295,7 +262,7 @@ public partial class VisualNovelScene : Control
         EmitSignal(SignalName.DialogueFinished);
     }
 
-    /// <summary>Space / Enter / click on the dialogue panel all land here.</summary>
+    // Space / Enter / click on the dialogue panel all land here.
     private void HandleAdvanceInput()
     {
         if (_logOpen) return;
@@ -310,8 +277,6 @@ public partial class VisualNovelScene : Control
         if (_choicesShowing) return;               // choices must be picked
         Advance();                                 // second press goes to the next line
     }
-
-    // ───────────────────────── Choices ─────────────────────────
 
     private void ShowChoices(DialogueChoice[] choices)
     {
@@ -358,9 +323,7 @@ public partial class VisualNovelScene : Control
         ShowLine(choice.Goto >= 0 ? choice.Goto : _index + 1);
     }
 
-    // ───────────────────────── Name tag & portraits ─────────────────────────
-
-    /// <summary>Slides the name tag above the left or right end of the dialogue panel.</summary>
+    // Slides the name tag above the left or right end of the dialogue panel.
     private void PlaceNameTag(DialogueSide side, bool animate)
     {
         var panelPos = _dialoguePanel.Position;
@@ -388,7 +351,7 @@ public partial class VisualNovelScene : Control
 
     private void OnDialoguePanelResized() => PlaceNameTag(_currentSide, animate: false);
 
-    /// <summary>Speaker is full brightness, the listener is dimmed.</summary>
+    // Speaker is full brightness, the listener is dimmed.
     private void HighlightSpeaker(DialogueSide side)
     {
         var tween = CreateTween().SetParallel();
@@ -402,8 +365,6 @@ public partial class VisualNovelScene : Control
         pulse.TweenProperty(_hint, "modulate:a", 0.65f, 0.8).From(0.2f);
         pulse.TweenProperty(_hint, "modulate:a", 0.2f, 0.8);
     }
-
-    // ───────────────────────── Side buttons ─────────────────────────
 
     private void OnAutoToggled(bool on)
     {
@@ -567,8 +528,6 @@ public partial class VisualNovelScene : Control
         if (!_lineActive || _lines == null || _lines.Count == 0)
             return;
 
-        // Follow the first option at each decision so normal DialogueFinished listeners still
-        // run and can advance to their next scene. The visited guard protects against bad loops.
         var visited = new HashSet<int>();
         int cursor = _index;
         for (int step = 0; step < _lines.Count + 1; step++)
@@ -590,8 +549,6 @@ public partial class VisualNovelScene : Control
         FinishDialogue();
     }
 
-    // ───────────────────────── Input helpers ─────────────────────────
-
     private void OnDialoguePanelGuiInput(InputEvent @event)
     {
         if (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
@@ -601,11 +558,9 @@ public partial class VisualNovelScene : Control
         }
     }
 
-    // ───────────────────────── Utilities ─────────────────────────
-
     private void AppendLog(string bbcode) => _logText.AppendText(bbcode);
 
-    /// <summary>Stops "[" in plain strings (names, choice labels) from being read as BBCode.</summary>
+    // Stops "[" in plain strings (names, choice labels) from being read as BBCode.
     private static string Escape(string s) => s.Replace("[", "[lb]");
 
     private static void KillTween(ref Tween tween)
@@ -614,13 +569,10 @@ public partial class VisualNovelScene : Control
         tween = null;
     }
 
-    // ───────────────────────── Demo content ─────────────────────────
-
     private void StartDemo() => StartDialogue(BuildDemoLines());
 
     private static List<DialogueLine> BuildDemoLines() => new()
     {
-        // 0 – Erin asks, player picks a reply.
         new DialogueLine(
             "Erin",
             "Hey, could you maybe keep my ring in your wallet for now? I don't want it to fall off just because my sister has decided that this is the day I go crazy.",
@@ -631,13 +583,10 @@ public partial class VisualNovelScene : Control
                 new DialogueChoice("If I have to", Goto: 2)
             }),
 
-        // 1 – Branch A, then jumps over branch B to line 3.
         new DialogueLine("Erin", "Thanks, you're a lifesaver!", DialogueSide.Right, Next: 3),
 
-        // 2 – Branch B (falls through to line 3).
         new DialogueLine("Erin", "Ha, very funny. Just... please don't lose it.", DialogueSide.Right),
 
-        // 3 – Both branches meet here.
         new DialogueLine("You", "Don't worry. It's safe with me.", DialogueSide.Left),
         new DialogueLine("Erin", "Okay. Let's go before my sister changes her mind.", DialogueSide.Right),
     };

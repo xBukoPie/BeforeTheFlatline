@@ -2,7 +2,6 @@ using Godot;
 using SchoolYardGame;
 using System.Collections.Generic;
 
-// Attach to the root "Main" node of House.tscn (res://Scripts/HomeMap.cs).
 public partial class HomeMap : Node2D
 {
 	[Export] public bool IsNight { get; set; } = true;
@@ -23,7 +22,6 @@ public partial class HomeMap : Node2D
         _lights = GetNode<Node2D>("Lights");
         _sanityManager = SanityManager.Instance;
 
-		// The Player is on physics layer 2, so these zones only react to it.
 		var interior = GetNode<Area2D>("Zones/InteriorZone");
 		interior.BodyEntered += _ => SetInside(true);
 		interior.BodyExited += _ => SetInside(false);
@@ -64,7 +62,6 @@ public partial class HomeMap : Node2D
 		_insideHouse = inside;
             if (inside)
             {
-                // Recover a random amount between 1 and 10 each time the player steps inside.
                 int amount = (int)Mathf.Floor(GD.Randi() % 10) + 1;
                 _sanityManager?.Recover(amount);
             }

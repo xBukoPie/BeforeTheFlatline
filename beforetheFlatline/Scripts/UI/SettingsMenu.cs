@@ -1,10 +1,8 @@
 using Godot;
 using SchoolYardGame;
 
-/// <summary>Runtime-built settings panel. Each control applies changes immediately and persists them.</summary>
 public partial class SettingsMenu : Control
 {
-    /// <summary>When true, this settings panel is a submenu of the gameplay pause overlay.</summary>
     public bool EmbeddedInPauseMenu { get; set; }
 
     private Label _volumeValue;

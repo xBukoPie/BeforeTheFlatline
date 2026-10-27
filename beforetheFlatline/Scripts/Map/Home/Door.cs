@@ -1,8 +1,6 @@
 using Godot;
 using SchoolYardGame;
 
-// Doorway trigger. Instance Door.tscn in a room, set TargetRoom / TargetSpawn.
-// The player (physics layer 2) must stand in the area and press the "interact" action (E).
 public partial class Door : Area2D
 {
     [Export(PropertyHint.File, "*.tscn")] public string TargetRoom { get; set; } = "";
@@ -100,8 +98,6 @@ public partial class Door : Area2D
         _hint.Visible = false;
     }
 
-    // Registers the "interact" action (E key, gamepad A/Cross) if the project doesn't define it yet.
-    // Safe to call from every door: it does nothing once the action exists.
     private static void EnsureInteractAction()
     {
         const string action = "interact";
@@ -123,7 +119,7 @@ public partial class Door : Area2D
         _closedPromptRemaining = Mathf.Max(0.5f, ClosedMessageDuration);
     }
 
-    /// <summary>Called after the one-time first-day encounter finishes.</summary>
+    // Called after the one-time first-day encounter finishes.
     public void ContinueAfterMysteryIntro()
     {
         _mysteryIntroOpening = false;
@@ -146,7 +142,6 @@ public partial class Door : Area2D
             return;
         }
 
-        // Find the RoomManager (grouped as "room_manager")
         var manager = GetTree().GetFirstNodeInGroup("room_manager") as RoomManager;
         if (manager == null)
         {
@@ -154,9 +149,6 @@ public partial class Door : Area2D
             return;
         }
 
-        // The first time the player enters this classroom door, show the mysterious
-        // tutorial/lore encounter first. Completion calls back into this door and reuses
-        // the normal classroom overlay path below.
         if (TriggersFirstDayMystery &&
             DayClock.Instance?.ShouldShowFirstDayMysteryEncounter == true)
         {
@@ -184,7 +176,6 @@ public partial class Door : Area2D
             return;
         }
 
-        // Load the target scene
         var packed = GD.Load<PackedScene>(TargetRoom);
         if (packed == null)
         {
@@ -193,18 +184,14 @@ public partial class Door : Area2D
         }
         var instance = packed.Instantiate();
 
-        // If the target scene is a Room (Node2D), use RoomManager's transition logic.
         if (instance is Node2D && instance is not Control)
         {
-            // Classic room transition – respects fades, camera, etc.
             manager.GoTo(TargetRoom, TargetSpawn);
             return;
         }
 
-        // Otherwise, treat it as a UI overlay (Control) and add it to the manager's UI layer.
         var uiRoot = manager.GetNodeOrNull<Node>("UI");
 
-        // Don't stack a second copy of the same overlay (e.g. E pressed again while it is open).
         foreach (var child in (uiRoot ?? manager).GetChildren())
         {
             if (child.SceneFilePath == instance.SceneFilePath)
@@ -219,12 +206,9 @@ public partial class Door : Area2D
         else
             manager.AddChild(instance); // fallback
 
-        // Ensure any lingering fade overlay is cleared.
         var fade = manager.GetNodeOrNull<ColorRect>("UI/Fade");
         if (fade != null)
             fade.Modulate = new Color(0, 0, 0, 0);
 
-        // No greeting is attached here any more: the overlay scene (e.g. Classroom.tscn)
-        // starts its own dialogue event in its _Ready.
     }
 }
