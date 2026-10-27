@@ -2,49 +2,37 @@ using Godot;
 
 namespace SchoolYardGame;
 
-/// <summary>
-/// Applies the global clock's time-of-day colors to the room this node belongs to.
-/// Actual timekeeping lives in the DayClock Autoload and survives scene changes.
-/// </summary>
+/// <summary>Applies a restrained day/night tint to the scene using the persistent DayClock.</summary>
 public partial class GameController : CanvasModulate
 {
     public static GameController Instance { get; private set; }
     public static float Darkness { get; private set; }
 
-    // Kept as an exported setting for the School scene's existing configuration.
     [Export] public float DayLengthSeconds { get; set; } = 180f;
-
     public float Hour { get; private set; }
 
     private static readonly (float hour, Color color)[] Keys =
     {
-        (0f,  new Color("1a2144")),
-        (5f,  new Color("232b57")),
-        (6.5f,new Color("cf9674")),   // Sunrise
-        (8f,  new Color("e3e0da")),
-        (15f, new Color("e3e0da")),
-        (17f, new Color("d5b18a")),   // Golden hour
-        (18.5f,new Color("a96e77")),  // Sunset
-        (20f, new Color("2c3463")),
-        (24f, new Color("1a2144")),
+        (0f, new Color("202644")),
+        (5f, new Color("303454")),
+        (6.5f, new Color("ad8779")),
+        (8f, new Color("c5c2bb")),
+        (15f, new Color("c5c2bb")),
+        (17f, new Color("bba184")),
+        (18.5f, new Color("956a79")),
+        (20f, new Color("333957")),
+        (24f, new Color("202644")),
     };
 
     public override void _Ready()
     {
         Instance = this;
-
-        // The scene previously owned the clock. Keep its configured day length, but do not
-        // reset the hour when the player re-enters school.
         if (DayClock.Instance != null && DayLengthSeconds > 0f)
             DayClock.Instance.DayLengthSeconds = DayLengthSeconds;
-
         Apply();
     }
 
-    public override void _Process(double delta)
-    {
-        Apply();
-    }
+    public override void _Process(double delta) => Apply();
 
     public override void _ExitTree()
     {
@@ -70,7 +58,6 @@ public partial class GameController : CanvasModulate
                 return Keys[i].color.Lerp(Keys[i + 1].color, t);
             }
         }
-
-        return Colors.White;
+        return Keys[0].color;
     }
 }

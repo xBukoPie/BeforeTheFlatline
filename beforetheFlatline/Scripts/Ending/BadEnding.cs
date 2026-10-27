@@ -99,7 +99,12 @@ public partial class BadEnding : Control
             SizeFlagsHorizontal = SizeFlags.ExpandFill
         };
         returnButton.Pressed += () =>
-            GetTree().ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+        {
+            if (SceneTransition.Instance != null)
+                SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+            else
+                GetTree().ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+        };
         stack.AddChild(returnButton);
     }
 }
