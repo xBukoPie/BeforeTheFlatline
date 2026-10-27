@@ -445,42 +445,6 @@ public partial class StatusEffectsOverlay : CanvasLayer
             _brightnessWash.Color = new Color(1f, 1f, 1f, (brightness - 1f) * 0.18f);
     }
 
-    private void RefreshEffects()
-    {
-        if (_effectWash == null)
-            return;
-
-        float lowSanity = Mathf.Clamp((70f - _sanity) / 70f, 0f, 1f);
-        float debuff = Mathf.Clamp(_dominantLevel / 100f, 0f, 1f);
-        float pulse = (Mathf.Sin(_elapsed * 2.3f) + 1f) * 0.5f;
-        float baseAlpha = lowSanity * 0.13f + (_dominantLevel > 0 ? 0.025f + debuff * 0.10f : 0f);
-
-        Color tint = DebuffColor(_dominantDebuff);
-        if (_flashTime > 0f)
-            tint = tint.Lerp(_flashColor, 0.62f);
-        if (_sanity < 25f)
-            tint = tint.Lerp(new Color("d9233e"), 0.35f);
-
-        if (_flashTime > 0f)
-            baseAlpha = Mathf.Max(baseAlpha, (_flashTime / 1.25f) * 0.17f);
-
-        _effectWash.Color = new Color(tint.R, tint.G, tint.B, Mathf.Clamp(baseAlpha + pulse * lowSanity * 0.018f, 0f, 0.22f));
-        Color edge = new Color(tint.R, tint.G, tint.B, Mathf.Clamp(baseAlpha * 0.75f + (_flashTime > 0f ? 0.10f : 0f), 0f, 0.25f));
-        _topEdge.Color = edge;
-        _bottomEdge.Color = edge;
-        _leftEdge.Color = edge;
-        _rightEdge.Color = edge;
-
-        bool active = _dominantLevel > 0 || _sanity < 70f;
-        _statusLabel.Visible = active;
-        if (active)
-        {
-            string low = _sanity < 25 ? "CRITICAL SANITY" : _sanity < 50 ? "LOW SANITY" : _sanity < 70 ? "SANITY UNSTEADY" : "DEBUFF ACTIVE";
-            _statusLabel.Text = $"{low}   •   {_dominantDebuff.ToString().ToUpperInvariant()} {_dominantLevel}%";
-            _statusLabel.Modulate = Colors.White;
-        }
-    }
-
     private static Color DebuffColor(SanityManager.DebuffType type) => type switch
     {
         SanityManager.DebuffType.Dizziness => new Color("9876dc"),
