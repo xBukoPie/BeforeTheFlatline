@@ -2,22 +2,39 @@ using Godot;
 using SchoolYardGame;
 
 /// <summary>
-/// Global pause overlay. Escape toggles the menu while gameplay is active.
-/// The SceneTree pause freezes gameplay processing; DayClock.Running is also
-/// saved/restored so the in-game clock cannot advance while the menu is open.
+/// Global pause overlay. Escape toggles pause during gameplay. Settings are embedded in the
+/// pause overlay, so the active gameplay scene remains loaded and paused while options are changed.
 /// </summary>
 public partial class PauseMenuController : CanvasLayer
 {
+    public static PauseMenuController Instance { get; private set; }
+
     private Control _overlay;
+    private Control _pauseMenuContent;
+    private SettingsMenu _settingsMenu;
     private bool _isPaused;
+    private bool _settingsOpen;
     private bool _clockWasRunning;
 
     public override void _Ready()
     {
+        if (Instance != null && Instance != this)
+        {
+            QueueFree();
+            return;
+        }
+
+        Instance = this;
         ProcessMode = ProcessModeEnum.Always;
         Layer = 126;
         BuildMenu();
         _overlay.Visible = false;
+    }
+
+    public override void _ExitTree()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 
     public override void _Process(double delta)
@@ -27,7 +44,12 @@ public partial class PauseMenuController : CanvasLayer
 
         if (_isPaused)
         {
-            ResumeGame();
+            // First Escape closes Settings and returns to the pause menu. A second Escape
+            // resumes gameplay, exactly as it does when the pause menu is already visible.
+            if (_settingsOpen)
+                CloseEmbeddedSettings();
+            else
+                ResumeGame();
             return;
         }
 
@@ -43,7 +65,7 @@ public partial class PauseMenuController : CanvasLayer
 
         string path = currentScene.SceneFilePath ?? string.Empty;
 
-        // The pause overlay is for active play, not title/settings/ending screens.
+        // Do not show the gameplay pause menu on title/settings/ending screens.
         if (path.Contains("/Scenes/Menu/") || path.Contains("/Scenes/Ending/"))
             return false;
 
@@ -60,6 +82,8 @@ public partial class PauseMenuController : CanvasLayer
             DayClock.Instance.Running = false;
 
         _isPaused = true;
+        _settingsOpen = false;
+        _pauseMenuContent.Visible = true;
         _overlay.Visible = true;
         GetTree().Paused = true;
     }
@@ -68,6 +92,9 @@ public partial class PauseMenuController : CanvasLayer
     {
         if (!_isPaused)
             return;
+
+        if (_settingsOpen)
+            CloseEmbeddedSettings();
 
         _isPaused = false;
         _overlay.Visible = false;
@@ -79,14 +106,41 @@ public partial class PauseMenuController : CanvasLayer
 
     private void OpenSettings()
     {
-        LeavePauseForSceneChange();
-        if (DayClock.Instance != null)
-            DayClock.Instance.Running = false;
+        if (_settingsOpen)
+            return;
 
-        if (SceneTransition.Instance != null)
-            SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Menu/SettingsMenu.tscn");
-        else
-            GetTree().ChangeSceneToFile("res://Scenes/Menu/SettingsMenu.tscn");
+        var packedScene = GD.Load<PackedScene>("res://Scenes/Menu/SettingsMenu.tscn");
+        if (packedScene == null)
+        {
+            GD.PushError("PauseMenuController: Could not load res://Scenes/Menu/SettingsMenu.tscn.");
+            return;
+        }
+
+        _settingsMenu = packedScene.Instantiate<SettingsMenu>();
+        _settingsMenu.EmbeddedInPauseMenu = true;
+        _settingsMenu.ProcessMode = ProcessModeEnum.Always;
+        _settingsMenu.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+
+        _pauseMenuContent.Visible = false;
+        _overlay.AddChild(_settingsMenu);
+        _settingsOpen = true;
+    }
+
+    /// <summary>Close the embedded settings screen without unpausing the game.</summary>
+    public void CloseEmbeddedSettings()
+    {
+        if (!_settingsOpen)
+            return;
+
+        _settingsOpen = false;
+        if (GodotObject.IsInstanceValid(_settingsMenu))
+        {
+            _overlay.RemoveChild(_settingsMenu);
+            _settingsMenu.QueueFree();
+        }
+
+        _settingsMenu = null;
+        _pauseMenuContent.Visible = true;
     }
 
     private void ReturnToTitle()
@@ -103,6 +157,9 @@ public partial class PauseMenuController : CanvasLayer
 
     private void LeavePauseForSceneChange()
     {
+        if (_settingsOpen)
+            CloseEmbeddedSettings();
+
         _isPaused = false;
         _overlay.Visible = false;
         GetTree().Paused = false;
@@ -119,6 +176,15 @@ public partial class PauseMenuController : CanvasLayer
         _overlay.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         AddChild(_overlay);
 
+        _pauseMenuContent = new Control
+        {
+            Name = "PauseMenuContent",
+            MouseFilter = Control.MouseFilterEnum.Stop,
+            ProcessMode = ProcessModeEnum.Always
+        };
+        _pauseMenuContent.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        _overlay.AddChild(_pauseMenuContent);
+
         var dimmer = new ColorRect
         {
             Name = "BackgroundDimmer",
@@ -126,7 +192,7 @@ public partial class PauseMenuController : CanvasLayer
             MouseFilter = Control.MouseFilterEnum.Stop
         };
         dimmer.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        _overlay.AddChild(dimmer);
+        _pauseMenuContent.AddChild(dimmer);
 
         var center = new CenterContainer
         {
@@ -134,7 +200,7 @@ public partial class PauseMenuController : CanvasLayer
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
         center.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        _overlay.AddChild(center);
+        _pauseMenuContent.AddChild(center);
 
         var panel = new PanelContainer
         {
