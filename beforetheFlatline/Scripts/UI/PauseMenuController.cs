@@ -224,10 +224,10 @@ public partial class PauseMenuController : CanvasLayer
         Color hover = primary ? new Color("8973bb") : new Color("343e59");
         Color pressed = primary ? new Color("5b477f") : new Color("1c2335");
 
-        button.AddThemeStyleboxOverride("normal", MakeButtonStyle(normal, "8272a7"));
-        button.AddThemeStyleboxOverride("hover", MakeButtonStyle(hover, "b9a6e8"));
-        button.AddThemeStyleboxOverride("pressed", MakeButtonStyle(pressed, "b9a6e8"));
-        button.AddThemeStyleboxOverride("focus", MakeButtonStyle(normal, "d8c6ff"));
+        button.AddThemeStyleboxOverride("normal", MakeButtonStyle(normal, new Color("8272a7")));
+        button.AddThemeStyleboxOverride("hover", MakeButtonStyle(hover, new Color("b9a6e8")));
+        button.AddThemeStyleboxOverride("pressed", MakeButtonStyle(pressed, new Color("b9a6e8")));
+        button.AddThemeStyleboxOverride("focus", MakeButtonStyle(normal, new Color("d8c6ff")));
         button.AddThemeColorOverride("font_color", new Color("f5f2ff"));
         button.AddThemeFontSizeOverride("font_size", 17);
         return button;
