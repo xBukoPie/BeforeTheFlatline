@@ -68,7 +68,7 @@ public partial class SanityManager : Node
 
     /// <summary>
     /// Restore sanity and clear each debuff independently once the player has recovered the
-    /// 30-60 sanity points that were rolled for that debuff when it was applied.
+    /// rolled 30-60 percent of the sanity missing when that debuff was applied.
     /// </summary>
     public void Recover(int amount)
     {
