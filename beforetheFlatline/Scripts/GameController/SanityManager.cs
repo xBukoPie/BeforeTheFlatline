@@ -67,8 +67,8 @@ public partial class SanityManager : Node
     }
 
     /// <summary>
-    /// Restore sanity and clear each debuff independently once the player has recovered the
-    /// rolled 30-60 percent of the sanity missing when that debuff was applied.
+    /// Restore sanity at reduced efficiency while debuffs are active. Recovery no longer
+    /// removes a debuff quickly: each effect has its own high recovery threshold.
     /// </summary>
     public void Recover(int amount)
     {
@@ -76,8 +76,21 @@ public partial class SanityManager : Node
             return;
 
         int clamped = Mathf.Clamp(amount, 1, MaxSanity);
+        int activeDebuffCount = 0;
+        foreach (int level in _debuffs.Values)
+        {
+            if (level > 0)
+                activeDebuffCount++;
+        }
+
+        float recoveryEfficiency = Mathf.Clamp(
+            1f - activeDebuffCount * 0.12f - GetTotalDebuffLevel() / 250f,
+            0.35f,
+            1f);
+        int effectiveRecovery = Mathf.Max(1, Mathf.FloorToInt(clamped * recoveryEfficiency));
+
         int previous = CurrentSanity;
-        CurrentSanity = Mathf.Min(CurrentSanity + clamped, MaxSanity);
+        CurrentSanity = Mathf.Min(CurrentSanity + effectiveRecovery, MaxSanity);
 
         if (CurrentSanity > previous)
             ClearRecoveredDebuffs();
@@ -94,13 +107,13 @@ public partial class SanityManager : Node
         _debuffs[type] = Mathf.Clamp(GetDebuffLevel(type) + appliedIntensity, 0, MaxSanity);
         CurrentSanity = Mathf.Max(CurrentSanity - appliedIntensity, 0);
 
-        // Every debuff gets an independent recovery gate. Reapplying the same type refreshes
-        // its gate, preventing a newly stacked effect from clearing immediately.
-        // Roll the recovery fraction against the sanity still missing after this debuff.
-        // This makes the gate achievable even when a small penalty is applied near full sanity.
+        // Debuffs are intentionally persistent. Each effect requires recovering most of the
+        // lost sanity, with a minimum 18-point recovery so small losses cannot be cleansed by
+        // one visit indoors. Reapplying a type refreshes its independent recovery gate.
         int missingSanity = MaxSanity - CurrentSanity;
-        int recoveryPercent = _rng.RandiRange(30, 60);
-        int recoveryNeeded = Mathf.CeilToInt(missingSanity * recoveryPercent / 100f);
+        int recoveryPercent = _rng.RandiRange(75, 90);
+        int recoveryNeeded = Mathf.Max(18,
+            Mathf.CeilToInt(missingSanity * recoveryPercent / 100f));
         _recoveryTargets[type] = Mathf.Min(MaxSanity, CurrentSanity + recoveryNeeded);
 
         OnDebuffChanged?.Invoke(type, _debuffs[type]);
@@ -125,6 +138,34 @@ public partial class SanityManager : Node
     }
 
     public bool HasActiveDebuffs => GetTotalDebuffLevel() > 0;
+
+    /// <summary>
+    /// Active debuffs have direct gameplay consequences in addition to their screen effects.
+    /// Stacks compound, while the lower sanity band adds a smaller additional slowdown.
+    /// </summary>
+    public float GetMovementSpeedMultiplier()
+    {
+        float dizziness = DebuffSeverity(DebuffType.Dizziness);
+        float confusion = DebuffSeverity(DebuffType.Confusion);
+        float anxiety = DebuffSeverity(DebuffType.Anxiety);
+        float pressure = DebuffSeverity(DebuffType.Pressure);
+        float debuffPenalty = dizziness * 0.20f
+            + confusion * 0.16f
+            + anxiety * 0.12f
+            + pressure * 0.18f;
+        float lowSanityPenalty = Mathf.Clamp(
+            (StableSanityThreshold - CurrentSanity) / (float)StableSanityThreshold,
+            0f,
+            1f) * 0.12f;
+
+        return Mathf.Clamp(1f - debuffPenalty - lowSanityPenalty, 0.35f, 1f);
+    }
+
+    public float DizzinessSeverity => DebuffSeverity(DebuffType.Dizziness);
+    public float ConfusionSeverity => DebuffSeverity(DebuffType.Confusion);
+
+    private float DebuffSeverity(DebuffType type) =>
+        Mathf.Clamp(GetDebuffLevel(type) / 16f, 0f, 1f);
 
     public void ResetForNewRun()
     {
