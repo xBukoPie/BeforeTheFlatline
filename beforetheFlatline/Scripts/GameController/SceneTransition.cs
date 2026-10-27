@@ -83,7 +83,7 @@ public partial class SceneTransition : CanvasLayer
         _busy = false;
     }
 
-    // Shows a progress screen while the scene is loaded on worker threads, then swaps scenes only after the….
+    // Loads a scene while showing progress..
     public async Task<bool> LoadSceneWithLoadingScreen(string path)
     {
         if (_busy || string.IsNullOrWhiteSpace(path))

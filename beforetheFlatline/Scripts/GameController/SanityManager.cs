@@ -61,7 +61,7 @@ public partial class SanityManager : Node
         DifficultyPenalty = Mathf.Clamp(DifficultyPenalty + 1, 0, 2);
     }
 
-    // Restore sanity and clear each debuff independently once the player has recovered the rolled 30-60….
+    // Restores sanity and its debuff recovery thresholds.
     public void Recover(int amount)
     {
         if (_badEndingQueued || CurrentSanity <= 0 || amount <= 0)
