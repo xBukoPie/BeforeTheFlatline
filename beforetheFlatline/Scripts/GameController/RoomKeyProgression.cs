@@ -51,6 +51,15 @@ public partial class RoomKeyProgression : Node
             Instance = null;
     }
 
+    public string[] GetUnlockedRoomNames()
+    {
+        int count = Math.Clamp(TotalKeysEarned, 0, LockedRooms.Length);
+        var names = new string[count];
+        for (int i = 0; i < count; i++)
+            names[i] = LockedRooms[i].Name;
+        return names;
+    }
+
     public bool IsRoomUnlocked(string roomId)
     {
         string id = (roomId ?? "").Trim().ToLowerInvariant();
