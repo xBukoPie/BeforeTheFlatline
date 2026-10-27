@@ -108,7 +108,10 @@ public partial class Classroom : Control
         {
             _leaveHint.Visible = false;
             // Deferred so the dialogue cleanup completes before the scene swap.
-            GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, ChallengeScenePath);
+            if (SceneTransition.Instance != null)
+                SceneTransition.Instance.ChangeSceneToFile(ChallengeScenePath);
+            else
+                GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, ChallengeScenePath);
             return;
         }
 
