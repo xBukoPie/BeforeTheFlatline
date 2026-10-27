@@ -164,12 +164,15 @@ public partial class RoomManager : Node2D
             SchoolYardGame.DayClock.Instance.Running = true;
 
         _holder.AddChild(_room);
-        _player.GlobalPosition = _room.GetSpawnPosition(spawn);
         if (_hasRequestedPlayerPosition)
         {
             _player.GlobalPosition = _requestedPlayerPosition;
             _requestedPlayerPosition = Vector2.Zero;
             _hasRequestedPlayerPosition = false;
+        }
+        else
+        {
+            _player.GlobalPosition = _room.GetSpawnPosition(spawn);
         }
 
         if (_player is CharacterBody2D body)
