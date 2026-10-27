@@ -2,7 +2,6 @@ using Godot;
 
 namespace SchoolYardGame;
 
-/// <summary>Scene root: wires interaction zones to the HUD and handles what each zone does.</summary>
 public partial class SchoolYard : Node2D
 {
     private Label _prompt;
@@ -21,7 +20,6 @@ public partial class SchoolYard : Node2D
             }
         }
 
-        // Configure the Camera2D limits just like in Home rooms
         var player = GetNode<Node2D>("../Player");
         var cam = player.GetNode<Camera2D>("Camera2D");
         var ground = GetNode<Sprite2D>("Ground");
@@ -29,10 +27,8 @@ public partial class SchoolYard : Node2D
         {
             var size = ground.RegionEnabled ? ground.RegionRect.Size : ground.Texture.GetSize();
             var bounds = new Rect2(ground.GlobalPosition - size / 2f, size);
-            // Use the same zoom as in RoomManager (defaults to 2.5)
             float zoom = 2.5f;
             Vector2 view = GetViewportRect().Size / zoom;
-            // Use the larger of the view components for both dimensions to stay within bounds
             float max = Mathf.Max(view.X, view.Y);
             Vector2 limitSize = new Vector2(max, max);
             Rect2 limits = new Rect2(bounds.GetCenter() - limitSize / 2f, limitSize);
@@ -54,7 +50,6 @@ public partial class SchoolYard : Node2D
 
     private void OnInteracted(string id)
     {
-        // Replace these with scene changes, dialogue, minigames, etc.
         switch (id)
         {
             case "clinic":          Say("The clinic is closed. Come back during the day."); break;
@@ -64,8 +59,6 @@ public partial class SchoolYard : Node2D
             case "basketball":      Say("Pickup game starts soon!");                       break;
             case "gate":            Say("The gate leads to the street.");                  break;
         }
-        // Example scene change:
-        // GetTree().ChangeSceneToFile("res://Scenes/Clinic.tscn");
     }
 
     private void Say(string text)

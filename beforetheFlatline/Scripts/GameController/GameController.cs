@@ -2,7 +2,6 @@ using Godot;
 
 namespace SchoolYardGame;
 
-/// <summary>Applies a restrained day/night tint to the scene using the persistent DayClock.</summary>
 public partial class GameController : CanvasModulate
 {
     public static GameController Instance { get; private set; }

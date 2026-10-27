@@ -1,7 +1,6 @@
 using Godot;
 using SchoolYardGame;
 
-/// <summary>Ending shown when sanity reaches zero.</summary>
 public partial class BadEnding : Control
 {
     public override void _Ready()

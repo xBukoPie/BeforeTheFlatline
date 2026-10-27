@@ -2,7 +2,6 @@ using Godot;
 
 namespace SchoolYardGame;
 
-/// <summary>PointLight2D that fades in at night with an optional electric flicker.</summary>
 public partial class StreetLamp : PointLight2D
 {
     [Export] public bool Flicker = true;

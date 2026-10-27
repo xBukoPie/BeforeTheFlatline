@@ -3,10 +3,6 @@ using System;
 using System.Collections.Generic;
 using SchoolYardGame;
 
-/// <summary>
-/// Screen-space sanity presentation: subtle UV wobble for dizziness, animated grain for anxiety,
-/// slowly surfacing words for confusion, and a pulsing heart/edge squeeze for pressure.
-/// </summary>
 public partial class StatusEffectsOverlay : CanvasLayer
 {
     public static StatusEffectsOverlay Instance { get; private set; }
@@ -42,7 +38,6 @@ public partial class StatusEffectsOverlay : CanvasLayer
 
         Instance = this;
         Layer = 100;
-        // Sanity visuals freeze with gameplay during pause; the pause/loading UI has its own Always mode.
         ProcessMode = ProcessModeEnum.Pausable;
         BuildOverlay();
 
@@ -111,7 +106,7 @@ public partial class StatusEffectsOverlay : CanvasLayer
         Notify("ASSESSMENT PASSED");
     }
 
-    /// <summary>Restore the overlay after returning to the title and starting a fresh run.</summary>
+    // Restore the overlay after returning to the title and starting a fresh run.
     public void ResetForNewRun()
     {
         _endingTransitionStarted = false;
@@ -121,7 +116,7 @@ public partial class StatusEffectsOverlay : CanvasLayer
         RefreshEffects();
     }
 
-    /// <summary>Fade the active effects away before loading the bad ending.</summary>
+    // Fade the active effects away before loading the bad ending.
     public async void FadeForBadEnding(string scenePath)
     {
         if (_endingTransitionStarted)
@@ -332,8 +327,6 @@ void fragment() {
         _fxMaterial.SetShaderParameter("pressure_strength", pressureStrength);
         _fxMaterial.SetShaderParameter("time_seconds", _elapsed);
 
-        // Confusion appears at the screen edges in separate, slow pulses rather than a full-screen
-        // text wash. The effect gets stronger with additional confusion intensity.
         for (int i = 0; i < _confusionWords.Count; i++)
         {
             float wave = (Mathf.Sin(_elapsed * 0.8f + i * 1.9f) + 1f) * 0.5f;
@@ -368,7 +361,6 @@ void fragment() {
         _statusLabel.Text = total > 0 ? "DISTRESS" : (_sanity < 25 ? "CRITICAL" : "UNSTEADY");
         _statusLabel.Modulate = new Color(1f, 1f, 1f, 0.38f * fade);
 
-        // The tint remains low-alpha; the recognizable debuff-specific cues do the main work.
         _effectWash.Color = new Color(tint.R, tint.G, tint.B, washAlpha);
         _screenFx.Modulate = new Color(1f, 1f, 1f, fade);
 

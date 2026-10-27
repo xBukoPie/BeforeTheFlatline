@@ -10,7 +10,6 @@ public partial class MainMenu : Control
 
     public override void _Ready()
     {
-        // Keep the in-game clock paused while the player is on the main menu.
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
         _fade = GetNode<ColorRect>("UI/Fade");
@@ -83,16 +82,12 @@ public partial class MainMenu : Control
     {
         if (_isStarting) return;
         _isStarting = true;
-        // Starting from the title after a bad ending must create a clean run; otherwise
-        // sanity would remain at zero and the bad ending would immediately trigger again.
         DayClock.Instance?.ResetForNewRun();
         SanityManager.Instance?.ResetForNewRun();
         StatusEffectsOverlay.Instance?.ResetForNewRun();
         DailyTestSession.Reset();
         ChallengeProgress.Reset();
 
-        // Keep the clock stopped during loading. RoomManager starts it only once the
-        // world scene has initialized, so the player does not lose in-game time on the loader.
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 

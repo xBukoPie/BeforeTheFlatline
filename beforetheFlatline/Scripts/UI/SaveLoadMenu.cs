@@ -1,10 +1,6 @@
 using Godot;
 using SchoolYardGame;
 
-/// <summary>
-/// Three manual save slots and a separate autosave slot. Can be opened from the title screen
-/// (load-only) or from the paused world (save and load).
-/// </summary>
 public partial class SaveLoadMenu : Control
 {
     public bool AllowSaving { get; set; }

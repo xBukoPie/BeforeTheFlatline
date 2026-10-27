@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-/// <summary>Drop target for editable, shaped flowchart blocks with ordered connectors.</summary>
 public partial class FlowchartDropCanvas : PanelContainer
 {
     public event Action<string, string> BlockDropped;

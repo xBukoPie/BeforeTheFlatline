@@ -3,7 +3,6 @@ using System;
 
 namespace SchoolYardGame;
 
-/// <summary>Stores menu settings in user:// and applies them immediately.</summary>
 public partial class SettingsManager : Node
 {
     public static SettingsManager Instance { get; private set; }
