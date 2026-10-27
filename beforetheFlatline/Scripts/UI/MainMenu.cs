@@ -37,18 +37,25 @@ public partial class MainMenu : Control
 
         if (DayClock.Instance != null)
             DayClock.Instance.Running = true;
-        await FadeScreen(1f);
-
-        if (GetTree() != null)
+        if (SceneTransition.Instance != null)
+            SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Home/Rooms/World.tscn");
+        else
         {
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-            GetTree().ChangeSceneToFile("res://Scenes/Home/Rooms/World.tscn");
+            await FadeScreen(1f);
+            if (GetTree() != null)
+            {
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                GetTree().ChangeSceneToFile("res://Scenes/Home/Rooms/World.tscn");
+            }
         }
     }
 
     private void OnSettingsButtonPressed()
     {
-        GetTree().ChangeSceneToFile("res://Scenes/Menu/SettingsMenu.tscn");
+        if (SceneTransition.Instance != null)
+            SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Menu/SettingsMenu.tscn");
+        else
+            GetTree().ChangeSceneToFile("res://Scenes/Menu/SettingsMenu.tscn");
     }
 
     private void OnSupportButtonPressed()
