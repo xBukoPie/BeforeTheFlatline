@@ -86,7 +86,10 @@ public partial class ChallengeScene : Control
         {
             if (DayClock.Instance != null)
                 DayClock.Instance.Running = false;
-            GetTree().ChangeSceneToFile("res://Scenes/Challenges/ChallengeHub.tscn");
+            if (SceneTransition.Instance != null)
+                SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Challenges/ChallengeHub.tscn");
+            else
+                GetTree().ChangeSceneToFile("res://Scenes/Challenges/ChallengeHub.tscn");
         };
         top.AddChild(leave);
 
@@ -321,7 +324,10 @@ public partial class ChallengeScene : Control
             return;
         }
 
-        GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, _nextScene);
+        if (SceneTransition.Instance != null)
+            SceneTransition.Instance.ChangeSceneToFile(_nextScene);
+        else
+            GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, _nextScene);
     }
 
     private bool CheckPseudocodeAnswer()
