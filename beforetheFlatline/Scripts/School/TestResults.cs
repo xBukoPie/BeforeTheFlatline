@@ -131,12 +131,21 @@ public partial class TestResults : Control
         retry.Pressed += () =>
         {
             DailyTestSession.Reset();
-            GetTree().ChangeSceneToFile("res://Scenes/Challenges/SequenceChallenge.tscn");
+            if (SceneTransition.Instance != null)
+                SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Challenges/SequenceChallenge.tscn");
+            else
+                GetTree().ChangeSceneToFile("res://Scenes/Challenges/SequenceChallenge.tscn");
         };
         buttons.AddChild(retry);
 
         _continueButton = new Button { Text = "Continue", CustomMinimumSize = new Vector2(0, 48), SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        _continueButton.Pressed += () => GetTree().ChangeSceneToFile("res://Scenes/School/PostChallengeConversation.tscn");
+        _continueButton.Pressed += () =>
+        {
+            if (SceneTransition.Instance != null)
+                SceneTransition.Instance.ChangeSceneToFile("res://Scenes/School/PostChallengeConversation.tscn");
+            else
+                GetTree().ChangeSceneToFile("res://Scenes/School/PostChallengeConversation.tscn");
+        };
         buttons.AddChild(_continueButton);
     }
 }
