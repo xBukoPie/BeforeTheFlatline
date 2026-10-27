@@ -35,8 +35,7 @@ public partial class DayClock : Node
     public bool FirstDayMysteryGreetingPending => _firstDaySpecialGreetingPending;
 
     /// <summary>Whether the one-time mysterious encounter should play before classroom entry.</summary>
-    public bool ShouldShowFirstDayMysteryEncounter =>
-        !FirstDayMysteryEncounterSeen || DayNumber == 0;
+    public bool ShouldShowFirstDayMysteryEncounter => !FirstDayMysteryEncounterSeen;
 
     /// <summary>Set after the mysterious person exits; the next classroom greeting gets unique choices.</summary>
     public void MarkFirstDayMysteryEncounterCompleted()
