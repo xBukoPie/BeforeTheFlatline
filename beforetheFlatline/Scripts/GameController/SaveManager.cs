@@ -210,9 +210,16 @@ public partial class SaveManager : Node
 
     private async System.Threading.Tasks.Task<bool> LoadSnapshotAsync(Godot.Collections.Dictionary data)
     {
-        if (ReadInt(data, "version", 0) != 1)
+        // Older saves may not have a version field, and some hand-edited/exported
+        // JSON files may store it as a string. Treat those as the original v1 format
+        // only when the field is absent or explicitly says "1"; never silently load
+        // a save that declares a newer, unknown format.
+        int saveVersion = ReadSaveVersion(data);
+        if (saveVersion != 1)
         {
-            GD.PushError("SaveManager: this save file uses an unsupported format version.");
+            GD.PushError(
+                $"SaveManager: unsupported save format version '{(data.ContainsKey("version") ? data["version"].ToString() : "missing")}'. " +
+                "This game supports version 1 saves. Keep a backup of the JSON before changing it.");
             return false;
         }
 
@@ -374,6 +381,22 @@ public partial class SaveManager : Node
         return value.VariantType == Variant.Type.Dictionary
             ? value.AsGodotDictionary()
             : new Godot.Collections.Dictionary();
+    }
+
+    private static int ReadSaveVersion(Godot.Collections.Dictionary data)
+    {
+        if (!data.ContainsKey("version"))
+            return 1; // Legacy save files predate the explicit version field.
+
+        Variant value = data["version"];
+        if (value.VariantType == Variant.Type.Int)
+            return value.AsInt32();
+
+        if (value.VariantType == Variant.Type.String &&
+            int.TryParse(value.AsString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed))
+            return parsed;
+
+        return 0;
     }
 
     private static int ReadInt(Godot.Collections.Dictionary data, string key, int fallback)
