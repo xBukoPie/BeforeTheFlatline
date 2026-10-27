@@ -24,6 +24,7 @@ public partial class Classroom : Control
     private Label _leaveHint;
     private Node2D _player;
     private bool _greetingActive;
+    private bool _firstDayGreetingVariant;
 
     public override void _Ready()
     {
@@ -37,6 +38,9 @@ public partial class Classroom : Control
 
         FreezePlayer();
 
+        // The special choices are only available immediately after the one-time mysterious
+        // encounter. Later school days retain the normal randomized greeting.
+        _firstDayGreetingVariant = DayClock.Instance?.ConsumeFirstDaySpecialGreetingPending() ?? false;
         _greetingActive = true;
         _dialogue.DialogueFinished += OnGreetingFinished;
         CallDeferred(MethodName.StartGreeting);
@@ -73,8 +77,40 @@ public partial class Classroom : Control
             _ => "Good evening!",
         };
 
-        _dialogue.StartDialogue(BuildGreeting(name, timeGreeting));
+        _dialogue.StartDialogue(_firstDayGreetingVariant
+            ? BuildFirstDayGreeting(name, timeGreeting)
+            : BuildGreeting(name, timeGreeting));
     }
+
+    private static List<DialogueLine> BuildFirstDayGreeting(string speaker, string timeGreeting) => new()
+    {
+        new DialogueLine(
+            speaker,
+            $"{timeGreeting} Glad you made it to class.",
+            DialogueSide.Right,
+            Choices: new[]
+            {
+                new DialogueChoice("Morning as well... I should get ready for class.", Goto: 1),
+                new DialogueChoice("Do you know the person who just went to the next classroom?", Goto: 2),
+            }),
+
+        new DialogueLine(
+            speaker,
+            "Same here. I should get inside before the bell rings.",
+            DialogueSide.Right,
+            Next: 3),
+
+        new DialogueLine(
+            speaker,
+            "What person? I haven't seen anyone like that. Are you sure you saw someone? Come on, let's get inside before class starts.",
+            DialogueSide.Right,
+            Next: 3),
+
+        new DialogueLine(
+            speaker,
+            "Come on, we should get started.",
+            DialogueSide.Right)
+    };
 
     private static List<DialogueLine> BuildGreeting(string speaker, string timeGreeting) => new()
     {
