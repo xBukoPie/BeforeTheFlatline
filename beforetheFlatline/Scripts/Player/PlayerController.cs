@@ -14,7 +14,6 @@ private AnimatedSprite2D _animatedSprite;
 
     // Tracks the last movement direction to trigger the correct idle animation
     private string _lastDirection = "front";
-    private float _debuffElapsed;
 
     public override void _Ready()
     {
@@ -40,29 +39,24 @@ private AnimatedSprite2D _animatedSprite;
     public override void _PhysicsProcess(double delta)
     {
         Vector2 velocity = Vector2.Zero;
-        _debuffElapsed += (float)delta;
 
-        // Keep the user's requested direction for facing/animation, but apply active sanity
-        // debuffs to actual movement. Confusion bends the movement direction; dizziness adds
-        // a smaller sway. Stacked effects also reduce the player's top walking speed.
+        /* Commented out mouse movement logic
+		// Move towards the target position if the player is more than 5 pixels away
+		if (GlobalPosition.DistanceTo(_targetPosition) > 5.0f)
+		{
+			Vector2 direction = GlobalPosition.DirectionTo(_targetPosition);
+			velocity = direction * Speed;
+		}
+		*/
+
+        // New WASD / Arrow Key movement logic
         Vector2 inputDirection = Input.GetVector("ui_left", "ui_right", "ui_up", "ui_down");
-        Vector2 movementDirection = inputDirection;
-        float speedMultiplier = 1f;
+        velocity = inputDirection * Speed;
 
-        var sanity = SanityManager.Instance;
-        if (sanity != null)
-        {
-            speedMultiplier = sanity.GetMovementSpeedMultiplier();
-            float dizzinessSway = Mathf.Sin(_debuffElapsed * 2.1f) * sanity.DizzinessSeverity * 0.12f;
-            float confusionSway = Mathf.Sin(_debuffElapsed * 1.55f + 1.2f) * sanity.ConfusionSeverity * 0.38f;
-            movementDirection = inputDirection.Rotated(dizzinessSway + confusionSway);
-        }
-
-        velocity = movementDirection * Speed * speedMultiplier;
         Velocity = velocity;
         MoveAndSlide();
 
-        // Facing follows the deliberate input; walking animation follows physical movement.
+        // Pass BOTH the raw input direction (for looking) and the real movement (for walking)
         UpdateAnimation(inputDirection, GetRealVelocity());
     }
 
