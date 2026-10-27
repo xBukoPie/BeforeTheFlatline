@@ -6,8 +6,9 @@ public partial class ChallengeHub : Control
 {
     public override void _Ready()
     {
+        // The selection hub is not an active task; outdoor/day time remains in motion.
         if (DayClock.Instance != null)
-            DayClock.Instance.Running = false;
+            DayClock.Instance.Running = true;
 
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         var background = new ColorRect { Color = new Color("101522"), MouseFilter = Control.MouseFilterEnum.Ignore };
