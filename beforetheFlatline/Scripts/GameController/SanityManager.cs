@@ -184,19 +184,14 @@ public partial class SanityManager : Node
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
-        // Defer the transition so listeners and the results screen can finish processing
-        // the sanity/debuff change before the ending scene replaces the current scene.
-        CallDeferred(nameof(LoadBadEnding));
-    }
-
-    private void LoadBadEnding()
-    {
+        // Defer the scene swap so HUD and overlay listeners finish processing the
+        // sanity/debuff change before the ending replaces the current scene.
         if (!ResourceLoader.Exists(BadEndingScenePath))
         {
             GD.PushError($"SanityManager: bad-ending scene was not found at '{BadEndingScenePath}'.");
             return;
         }
 
-        GetTree().ChangeSceneToFile(BadEndingScenePath);
+        GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, BadEndingScenePath);
     }
 }
