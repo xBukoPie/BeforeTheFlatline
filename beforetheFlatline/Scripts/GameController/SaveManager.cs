@@ -234,7 +234,12 @@ public partial class SaveManager : Node
         {
             bool loaded = await SceneTransition.Instance.LoadSceneWithLoadingScreen(WorldScenePath);
             if (!loaded)
+            {
+                // If a reload fails while still in the world, keep the current session running.
+                if (DayClock.Instance != null)
+                    DayClock.Instance.Running = GetTree().CurrentScene?.SceneFilePath == WorldScenePath;
                 return false;
+            }
         }
         else
         {
