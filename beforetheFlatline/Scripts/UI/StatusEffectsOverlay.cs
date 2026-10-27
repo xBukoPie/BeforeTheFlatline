@@ -25,7 +25,6 @@ public partial class StatusEffectsOverlay : CanvasLayer
     private ColorRect _pressureTop;
     private ColorRect _pressureBottom;
 
-    private float _debuffFxTime;
     private float _flashTime;
     private float _noticeTime;
     private float _elapsed;
@@ -81,7 +80,6 @@ public partial class StatusEffectsOverlay : CanvasLayer
         _elapsed += dt;
         _flashTime = Mathf.Max(0f, _flashTime - dt);
         _noticeTime = Mathf.Max(0f, _noticeTime - dt);
-        _debuffFxTime = Mathf.Max(0f, _debuffFxTime - dt);
 
         if (_noticeLabel != null)
             _noticeLabel.Visible = _noticeTime > 0f;
@@ -104,7 +102,6 @@ public partial class StatusEffectsOverlay : CanvasLayer
     {
         _flashColor = new Color("ee465b");
         _flashTime = 1.25f;
-        _debuffFxTime = Mathf.Max(_debuffFxTime, 3.4f);
         Notify($"DEBUFF APPLIED: {debuffName.ToUpperInvariant()}  •  SANITY -{sanityLoss}");
         UpdateDebuffCue();
     }
@@ -165,7 +162,7 @@ public partial class StatusEffectsOverlay : CanvasLayer
         {
             Name = "StatusLabel",
             Position = new Vector2(18, 72),
-            Size = new Vector2(360, 28),
+            Size = new Vector2(760, 42),
             Visible = false,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
@@ -259,71 +256,142 @@ public partial class StatusEffectsOverlay : CanvasLayer
         if (_fxGlyph == null)
             return;
 
-        bool visible = _debuffFxTime > 0f;
-        float progress = Mathf.Clamp(_debuffFxTime / 3.4f, 0f, 1f);
+        var manager = SanityManager.Instance;
+        int dizziness = manager?.GetDebuffLevel(SanityManager.DebuffType.Dizziness) ?? 0;
+        int confusion = manager?.GetDebuffLevel(SanityManager.DebuffType.Confusion) ?? 0;
+        int anxiety = manager?.GetDebuffLevel(SanityManager.DebuffType.Anxiety) ?? 0;
+        int pressure = manager?.GetDebuffLevel(SanityManager.DebuffType.Pressure) ?? 0;
+        int total = dizziness + confusion + anxiety + pressure;
+        bool unstableSanity = _sanity < SanityManager.StableSanityThreshold;
+        bool active = total > 0 || unstableSanity;
         float pulse = (Mathf.Sin(_elapsed * 7f) + 1f) * 0.5f;
-        _fxGlyph.Visible = visible;
-        _fxLeftGlyph.Visible = visible && _dominantDebuff != SanityManager.DebuffType.Pressure;
-        _fxRightGlyph.Visible = visible && _dominantDebuff != SanityManager.DebuffType.Pressure;
-        _pressureTop.Visible = visible && _dominantDebuff == SanityManager.DebuffType.Pressure;
-        _pressureBottom.Visible = _pressureTop.Visible;
 
-        Color tint = DebuffColor(_dominantDebuff);
-        _fxGlyph.Modulate = new Color(1f, 1f, 1f, progress);
+        // The cue is state-driven, not timer-driven. Each symbol disappears only when that
+        // debuff's stack decays to zero; the generic sanity cue remains until sanity stabilizes.
+        _fxGlyph.Visible = active;
+        _fxLeftGlyph.Visible = active && (dizziness > 0 || confusion > 0 || anxiety > 0 || unstableSanity);
+        _fxRightGlyph.Visible = active && (dizziness > 0 || confusion > 0 || anxiety > 0 || unstableSanity);
+        _pressureTop.Visible = pressure > 0;
+        _pressureBottom.Visible = pressure > 0;
+
+        var symbols = new List<string>();
+        if (dizziness > 0) symbols.Add("◎");
+        if (confusion > 0) symbols.Add("?!");
+        if (anxiety > 0) symbols.Add("!");
+        if (pressure > 0) symbols.Add("PRESSURE");
+        if (symbols.Count == 0 && unstableSanity) symbols.Add("...");
+        _fxGlyph.Text = string.Join("   ", symbols);
+
+        _fxLeftGlyph.Text = dizziness > 0 ? "◌" : confusion > 0 ? "?" : anxiety > 0 ? "!" : "...";
+        _fxRightGlyph.Text = confusion > 0 ? "??" : dizziness > 0 ? "◌" : anxiety > 0 ? "!" : "...";
+
+        Color tint = GetStackTint(dizziness, confusion, anxiety, pressure);
+        float alpha = Mathf.Clamp(0.58f + total / 250f, 0.58f, 1f);
+        _fxGlyph.Modulate = new Color(1f, 1f, 1f, alpha);
+        _fxLeftGlyph.Modulate = new Color(1f, 1f, 1f, alpha);
+        _fxRightGlyph.Modulate = new Color(1f, 1f, 1f, alpha);
         _fxGlyph.AddThemeColorOverride("font_color", tint);
         _fxLeftGlyph.AddThemeColorOverride("font_color", tint);
         _fxRightGlyph.AddThemeColorOverride("font_color", tint);
 
-        switch (_dominantDebuff)
+        // Every active debuff contributes its own motion cue, allowing multiple types to
+        // remain visible at once instead of replacing the previous effect.
+        _fxGlyph.Rotation = dizziness > 0 ? _elapsed * 1.8f : confusion > 0 ? Mathf.Sin(_elapsed * 11f) * 0.08f : 0f;
+        _fxGlyph.Scale = Vector2.One * (0.92f + pulse * (anxiety > 0 ? 0.24f : 0.08f));
+        _fxLeftGlyph.Rotation = dizziness > 0 ? -_elapsed * 1.4f : confusion > 0 ? Mathf.Sin(_elapsed * 17f) * 0.12f : 0f;
+        _fxRightGlyph.Rotation = dizziness > 0 ? _elapsed * 1.2f : confusion > 0 ? Mathf.Cos(_elapsed * 15f) * 0.12f : 0f;
+        _fxLeftGlyph.Position = confusion > 0
+            ? new Vector2(-235f + Mathf.Sin(_elapsed * 19f) * 12f, -30f)
+            : new Vector2(-235f + (dizziness > 0 ? Mathf.Sin(_elapsed * 3f) * 24f : 0f), -30f);
+        _fxRightGlyph.Position = confusion > 0
+            ? new Vector2(145f + Mathf.Cos(_elapsed * 17f) * 14f, -30f)
+            : new Vector2(145f + (dizziness > 0 ? Mathf.Cos(_elapsed * 2.7f) * 24f : 0f), -30f);
+
+        float pressureProgress = Mathf.Clamp(pressure / 100f, 0f, 1f);
+        float barSize = pressure > 0 ? 8f + pressureProgress * 24f + pulse * 8f : 0f;
+        _pressureTop.OffsetBottom = barSize;
+        _pressureBottom.OffsetTop = -barSize;
+        float pressureAlpha = pressureProgress * (0.12f + pulse * 0.14f);
+        _pressureTop.Color = new Color(DebuffColor(SanityManager.DebuffType.Pressure).R,
+            DebuffColor(SanityManager.DebuffType.Pressure).G, DebuffColor(SanityManager.DebuffType.Pressure).B, pressureAlpha);
+        _pressureBottom.Color = _pressureTop.Color;
+    }
+
+    private Color GetStackTint(int dizziness, int confusion, int anxiety, int pressure)
+    {
+        float weight = dizziness + confusion + anxiety + pressure;
+        if (weight <= 0f)
+            return _sanity < SanityManager.StableSanityThreshold ? new Color("d9233e") : DebuffColor(_dominantDebuff);
+
+        Color d = DebuffColor(SanityManager.DebuffType.Dizziness);
+        Color c = DebuffColor(SanityManager.DebuffType.Confusion);
+        Color a = DebuffColor(SanityManager.DebuffType.Anxiety);
+        Color p = DebuffColor(SanityManager.DebuffType.Pressure);
+        return new Color(
+            (d.R * dizziness + c.R * confusion + a.R * anxiety + p.R * pressure) / weight,
+            (d.G * dizziness + c.G * confusion + a.G * anxiety + p.G * pressure) / weight,
+            (d.B * dizziness + c.B * confusion + a.B * anxiety + p.B * pressure) / weight);
+    }
+
+    private void RefreshEffects()
+    {
+        if (_effectWash == null)
+            return;
+
+        var manager = SanityManager.Instance;
+        int dizziness = manager?.GetDebuffLevel(SanityManager.DebuffType.Dizziness) ?? 0;
+        int confusion = manager?.GetDebuffLevel(SanityManager.DebuffType.Confusion) ?? 0;
+        int anxiety = manager?.GetDebuffLevel(SanityManager.DebuffType.Anxiety) ?? 0;
+        int pressure = manager?.GetDebuffLevel(SanityManager.DebuffType.Pressure) ?? 0;
+        int total = dizziness + confusion + anxiety + pressure;
+
+        float lowSanity = Mathf.Clamp((SanityManager.StableSanityThreshold - _sanity) /
+            (float)SanityManager.StableSanityThreshold, 0f, 1f);
+        float pulse = (Mathf.Sin(_elapsed * 2.3f) + 1f) * 0.5f;
+        int activeTypes = (dizziness > 0 ? 1 : 0) + (confusion > 0 ? 1 : 0) +
+                          (anxiety > 0 ? 1 : 0) + (pressure > 0 ? 1 : 0);
+        float stackAlpha = Mathf.Clamp(activeTypes * 0.025f + total / 400f, 0f, 0.16f);
+        float baseAlpha = Mathf.Clamp(lowSanity * 0.13f + stackAlpha, 0f, 0.20f);
+
+        Color tint = GetStackTint(dizziness, confusion, anxiety, pressure);
+        if (_flashTime > 0f)
+            tint = tint.Lerp(_flashColor, 0.62f);
+        if (_sanity < 25f)
+            tint = tint.Lerp(new Color("d9233e"), 0.35f);
+
+        if (_flashTime > 0f)
+            baseAlpha = Mathf.Max(baseAlpha, (_flashTime / 1.25f) * 0.17f);
+
+        _effectWash.Color = new Color(tint.R, tint.G, tint.B,
+            Mathf.Clamp(baseAlpha + pulse * lowSanity * 0.018f, 0f, 0.24f));
+
+        float edgeAlpha = Mathf.Clamp(baseAlpha * 0.75f + (_flashTime > 0f ? 0.10f : 0f) +
+            (anxiety > 0 ? 0.07f + pulse * 0.06f : 0f), 0f, 0.30f);
+        Color edge = new Color(tint.R, tint.G, tint.B, edgeAlpha);
+        _topEdge.Color = edge;
+        _bottomEdge.Color = edge;
+        _leftEdge.Color = edge;
+        _rightEdge.Color = edge;
+
+        bool active = total > 0 || _sanity < SanityManager.StableSanityThreshold;
+        _statusLabel.Visible = active;
+        if (active)
         {
-            case SanityManager.DebuffType.Dizziness:
-                _fxGlyph.Text = "◎";
-                _fxLeftGlyph.Text = "◌";
-                _fxRightGlyph.Text = "◌";
-                _fxGlyph.Rotation = _elapsed * 1.8f;
-                _fxLeftGlyph.Rotation = -_elapsed * 1.4f;
-                _fxRightGlyph.Rotation = _elapsed * 1.2f;
-                _fxGlyph.Scale = Vector2.One * (0.86f + pulse * 0.34f);
-                _fxLeftGlyph.Position = new Vector2(-235f + Mathf.Sin(_elapsed * 3f) * 24f, -30f);
-                _fxRightGlyph.Position = new Vector2(145f + Mathf.Cos(_elapsed * 2.7f) * 24f, -30f);
-                break;
-
-            case SanityManager.DebuffType.Confusion:
-                _fxGlyph.Text = "?!";
-                _fxLeftGlyph.Text = "?";
-                _fxRightGlyph.Text = "??";
-                _fxGlyph.Rotation = Mathf.Sin(_elapsed * 11f) * 0.08f;
-                _fxLeftGlyph.Rotation = -0.12f;
-                _fxRightGlyph.Rotation = 0.10f;
-                _fxGlyph.Scale = Vector2.One * (0.9f + pulse * 0.22f);
-                _fxLeftGlyph.Position = new Vector2(-245f + Mathf.Sin(_elapsed * 19f) * 12f, -28f);
-                _fxRightGlyph.Position = new Vector2(155f + Mathf.Cos(_elapsed * 17f) * 14f, -28f);
-                break;
-
-            case SanityManager.DebuffType.Anxiety:
-                _fxGlyph.Text = "!";
-                _fxLeftGlyph.Text = "!";
-                _fxRightGlyph.Text = "!";
-                _fxGlyph.Rotation = Mathf.Sin(_elapsed * 14f) * 0.04f;
-                _fxGlyph.Scale = Vector2.One * (0.9f + pulse * 0.28f);
-                _fxLeftGlyph.Position = new Vector2(-265f, -30f);
-                _fxRightGlyph.Position = new Vector2(175f, -30f);
-                _topEdge.Color = new Color(tint.R, tint.G, tint.B, Mathf.Max(_topEdge.Color.A, 0.10f + pulse * 0.16f));
-                _bottomEdge.Color = new Color(tint.R, tint.G, tint.B, Mathf.Max(_bottomEdge.Color.A, 0.10f + pulse * 0.16f));
-                break;
-
-            case SanityManager.DebuffType.Pressure:
-                _fxGlyph.Text = "PRESSURE";
-                _fxGlyph.Rotation = 0f;
-                _fxGlyph.Scale = Vector2.One * (0.96f + pulse * 0.06f);
-                float barSize = 18f + (1f - progress) * 24f + pulse * 8f;
-                _pressureTop.OffsetBottom = barSize;
-                _pressureBottom.OffsetTop = -barSize;
-                float alpha = progress * (0.16f + pulse * 0.12f);
-                _pressureTop.Color = new Color(tint.R, tint.G, tint.B, alpha);
-                _pressureBottom.Color = new Color(tint.R, tint.G, tint.B, alpha);
-                break;
+            string low = _sanity < 25 ? "CRITICAL SANITY" :
+                         _sanity < 50 ? "LOW SANITY" :
+                         _sanity < SanityManager.StableSanityThreshold ? "SANITY UNSTEADY" : "DEBUFFS ACTIVE";
+            var statusParts = new List<string>();
+            if (dizziness > 0) statusParts.Add($"DIZZINESS {dizziness}%");
+            if (confusion > 0) statusParts.Add($"CONFUSION {confusion}%");
+            if (anxiety > 0) statusParts.Add($"ANXIETY {anxiety}%");
+            if (pressure > 0) statusParts.Add($"PRESSURE {pressure}%");
+            _statusLabel.Text = statusParts.Count > 0
+                ? $"{low}  •  {string.Join("  •  ", statusParts)}"
+                : low;
+            _statusLabel.Modulate = Colors.White;
         }
+
+        UpdateDebuffCue();
     }
 
     private ColorRect MakeRect(string nodeName)
@@ -347,13 +415,23 @@ public partial class StatusEffectsOverlay : CanvasLayer
 
     private void OnDebuffChanged(SanityManager.DebuffType type, int intensity)
     {
-        _dominantDebuff = type;
-        _dominantLevel = intensity;
-        _flashColor = DebuffColor(type);
-        _flashTime = 1.15f;
-        _debuffFxTime = 3.4f;
-        string displayName = type.ToString().ToUpperInvariant();
-        Notify($"DEBUFF APPLIED: {displayName}");
+        // Decay also raises this event. Only use it to refresh the current stack display;
+        // the temporary "applied" notice is shown by TriggerTaskFailure, not every decay tick.
+        int strongestLevel = 0;
+        foreach (SanityManager.DebuffType candidate in Enum.GetValues(typeof(SanityManager.DebuffType)))
+        {
+            int level = SanityManager.Instance?.GetDebuffLevel(candidate) ?? 0;
+            if (level > strongestLevel)
+            {
+                strongestLevel = level;
+                _dominantDebuff = candidate;
+            }
+        }
+
+        _dominantLevel = strongestLevel;
+        if (intensity > 0)
+            _flashColor = DebuffColor(type);
+
         UpdateDebuffCue();
         RefreshEffects();
     }
