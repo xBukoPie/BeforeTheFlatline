@@ -447,15 +447,18 @@ public partial class VisualNovelScene : Control
 
     private void OpenPauseMenu()
     {
+        if (_pauseMenu != null && _pauseMenu.Visible)
+            return;
+
+        _clockWasRunningBeforePause = DayClock.Instance?.Running ?? false;
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = false;
+
         if (_pauseMenu != null)
         {
             _pauseMenu.Visible = true;
             return;
         }
-
-        _clockWasRunningBeforePause = DayClock.Instance?.Running ?? false;
-        if (DayClock.Instance != null)
-            DayClock.Instance.Running = false;
 
         _pauseMenu = new Control
         {
