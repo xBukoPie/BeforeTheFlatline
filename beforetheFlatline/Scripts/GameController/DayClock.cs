@@ -96,6 +96,19 @@ public partial class DayClock : Node
         EmitSignal(SignalName.TimeChanged, Hour);
     }
 
+    /// <summary>Restore the persistent in-game clock from a save slot.</summary>
+    public void RestoreState(int dayNumber, float hour, bool running, bool schoolStarted, bool schoolCompleted)
+    {
+        DayNumber = Mathf.Max(1, dayNumber);
+        Hour = Mathf.PosMod(hour, 24f);
+        Running = running;
+        SchoolChallengeStartedToday = schoolStarted;
+        SchoolChallengeCompletedToday = schoolCompleted;
+        _initialized = true;
+        EmitSignal(SignalName.DayChanged, DayNumber);
+        EmitSignal(SignalName.TimeChanged, Hour);
+    }
+
     /// <summary>Reset the clock and daily school flags when starting a new run from the title screen.</summary>
     public void ResetForNewRun()
     {
