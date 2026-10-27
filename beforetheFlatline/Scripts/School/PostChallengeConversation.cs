@@ -88,8 +88,9 @@ public partial class PostChallengeConversation : Control
 
     public override void _Ready()
     {
+        // This conversation is outside the classroom task, so the school clock continues.
         if (DayClock.Instance != null)
-            DayClock.Instance.Running = false;
+            DayClock.Instance.Running = true;
 
         _dialogue = GetNode<VisualNovelScene>("%PostChallengeDialogue");
         _dialogue.PlayDemoOnReady = false;
