@@ -32,6 +32,7 @@ public partial class DayClock : Node
     private bool _initialized;
     public bool FirstDayMysteryEncounterSeen { get; private set; }
     private bool _firstDaySpecialGreetingPending;
+    public bool FirstDayMysteryGreetingPending => _firstDaySpecialGreetingPending;
 
     /// <summary>Whether the one-time mysterious encounter should play before classroom entry.</summary>
     public bool ShouldShowFirstDayMysteryEncounter =>
