@@ -20,6 +20,7 @@ SceneTransition="*res://Scripts/GameController/SceneTransition.cs"
 
 DayClock="*res://Scripts/GameController/DayClock.cs"
 RoomKeyProgression="*res://Scripts/GameController/RoomKeyProgression.cs"
+SaveManager="*res://Scripts/GameController/SaveManager.cs"
 SanityManager="*res://Scripts/GameController/SanityManager.cs"
 SettingsManager="*res://Scripts/GameController/SettingsManager.cs"
 StatusEffectsOverlay="*res://Scripts/UI/StatusEffectsOverlay.cs"
