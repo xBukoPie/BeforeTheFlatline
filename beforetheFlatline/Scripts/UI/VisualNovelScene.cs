@@ -77,6 +77,7 @@ public partial class VisualNovelScene : Control
     private double _idle;
     private DialogueSide _currentSide = DialogueSide.Right;
     private Tween _typeTween, _nameTagTween;
+    private Control _pauseMenu;
 
     // ───────────────────────── Lifecycle ─────────────────────────
 
@@ -133,38 +134,53 @@ public partial class VisualNovelScene : Control
 
     public override void _Process(double delta)
     {
-        if (!_lineActive || _logOpen || _choicesShowing)
+        if (!_lineActive || _logOpen || (_pauseMenu != null && _pauseMenu.Visible))
             return;
+
+        if (_choicesShowing)
+        {
+            // Auto-play makes a deterministic choice after the same delay used between lines.
+            // A player can still take over by clicking a choice before the timer expires.
+            if (_auto)
+            {
+                _idle += delta;
+                if (_idle >= AutoDelay)
+                {
+                    var choices = _lines[_index].Choices;
+                    if (choices is { Length: > 0 })
+                        OnChoicePressed(0, choices[0]);
+                }
+            }
+            return;
+        }
 
         if (_typing)
-        {
-            if (_skip) CompleteTyping();
             return;
-        }
 
-        // Line is fully shown: Skip and Auto advance on a timer.
-        if (_skip)
+        if (_auto)
         {
             _idle += delta;
-            if (_idle >= SkipDelay) Advance();
-        }
-        else if (_auto)
-        {
-            _idle += delta;
-            if (_idle >= AutoDelay) Advance();
+            if (_idle >= AutoDelay)
+                Advance();
         }
     }
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (_logOpen && @event.IsActionPressed("ui_cancel"))
+        if (@event.IsActionPressed("ui_cancel"))
         {
-            CloseLog();
+            if (_pauseMenu != null && _pauseMenu.Visible)
+                _pauseMenu.Visible = false;
+            else if (_logOpen)
+                CloseLog();
+            else
+                OpenPauseMenu();
+
             GetViewport().SetInputAsHandled();
             return;
         }
 
-        if (@event.IsActionPressed("ui_accept")) // Space / Enter by default
+        if (@event.IsActionPressed("ui_accept"))
         {
             HandleAdvanceInput();
             GetViewport().SetInputAsHandled();
@@ -301,9 +317,7 @@ public partial class VisualNovelScene : Control
         _choicesShowing = true;
         _hint.Visible = false;
 
-        // Skip never runs through a decision.
-        _skip = false;
-        _skipButton.SetPressedNoSignal(false);
+        _idle = 0;
 
         foreach (var child in _choiceBox.GetChildren())
         {
@@ -398,8 +412,10 @@ public partial class VisualNovelScene : Control
 
     private void OnSkipToggled(bool on)
     {
-        _skip = on;
+        _skip = false;
         _idle = 0;
+        if (on)
+            SkipEntireDialogue();
     }
 
     private void OpenLog()
@@ -424,9 +440,137 @@ public partial class VisualNovelScene : Control
 
     private void OnOptionsPressed()
     {
-        // Placeholder: hook up your pause / settings menu by listening to MenuRequested.
+        OpenPauseMenu();
         EmitSignal(SignalName.MenuRequested);
-        GD.Print("Menu pressed - connect MenuRequested to your pause/settings menu.");
+    }
+
+    private void OpenPauseMenu()
+    {
+        if (_pauseMenu != null)
+        {
+            _pauseMenu.Visible = true;
+            return;
+        }
+
+        _pauseMenu = new Control
+        {
+            Name = "DialoguePauseMenu",
+            MouseFilter = Control.MouseFilterEnum.Stop
+        };
+        _pauseMenu.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        AddChild(_pauseMenu);
+
+        var dim = new ColorRect
+        {
+            Color = new Color(0.025f, 0.02f, 0.045f, 0.82f),
+            MouseFilter = Control.MouseFilterEnum.Stop
+        };
+        dim.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        _pauseMenu.AddChild(dim);
+
+        var center = new CenterContainer();
+        center.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        _pauseMenu.AddChild(center);
+
+        var panel = new PanelContainer { CustomMinimumSize = new Vector2(520, 470) };
+        panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color("171421"),
+            BorderColor = new Color("74638f"),
+            BorderWidthLeft = 2, BorderWidthRight = 2,
+            BorderWidthTop = 2, BorderWidthBottom = 2,
+            CornerRadiusTopLeft = 12, CornerRadiusTopRight = 12,
+            CornerRadiusBottomLeft = 12, CornerRadiusBottomRight = 12,
+            ContentMarginLeft = 30, ContentMarginRight = 30,
+            ContentMarginTop = 26, ContentMarginBottom = 26
+        });
+        center.AddChild(panel);
+
+        var stack = new VBoxContainer();
+        stack.AddThemeConstantOverride("separation", 12);
+        panel.AddChild(stack);
+
+        var heading = new Label
+        {
+            Text = "PAUSED",
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        heading.AddThemeFontSizeOverride("font_size", 28);
+        heading.AddThemeColorOverride("font_color", new Color("e6d9ff"));
+        stack.AddChild(heading);
+
+        var brightnessLabel = new Label { Text = "Brightness" };
+        brightnessLabel.AddThemeColorOverride("font_color", new Color("d4cbdc"));
+        stack.AddChild(brightnessLabel);
+        var brightness = new HSlider
+        {
+            MinValue = 0.65,
+            MaxValue = 1.05,
+            Step = 0.05,
+            Value = SettingsManager.Instance?.Brightness ?? 0.88,
+            CustomMinimumSize = new Vector2(420, 22)
+        };
+        brightness.ValueChanged += value => SettingsManager.Instance?.SetBrightness((float)value);
+        stack.AddChild(brightness);
+
+        var volumeLabel = new Label { Text = "Master volume" };
+        volumeLabel.AddThemeColorOverride("font_color", new Color("d4cbdc"));
+        stack.AddChild(volumeLabel);
+        var volume = new HSlider
+        {
+            MinValue = 0.0,
+            MaxValue = 1.0,
+            Step = 0.05,
+            Value = SettingsManager.Instance?.MasterVolume ?? 0.85,
+            CustomMinimumSize = new Vector2(420, 22)
+        };
+        volume.ValueChanged += value => SettingsManager.Instance?.SetMasterVolume((float)value);
+        stack.AddChild(volume);
+
+        var resume = new Button { Text = "Resume", CustomMinimumSize = new Vector2(0, 44) };
+        resume.Pressed += () => _pauseMenu.Visible = false;
+        stack.AddChild(resume);
+
+        var title = new Button { Text = "Return to Title", CustomMinimumSize = new Vector2(0, 44) };
+        title.Pressed += () =>
+        {
+            if (SceneTransition.Instance != null)
+                SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+            else
+                GetTree().ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+        };
+        stack.AddChild(title);
+
+        _pauseMenu.Visible = true;
+        resume.GrabFocus();
+    }
+
+    private void SkipEntireDialogue()
+    {
+        if (!_lineActive || _lines == null || _lines.Count == 0)
+            return;
+
+        // Follow the first option at each decision so normal DialogueFinished listeners still
+        // run and can advance to their next scene. The visited guard protects against bad loops.
+        var visited = new HashSet<int>();
+        int cursor = _index;
+        for (int step = 0; step < _lines.Count + 1; step++)
+        {
+            if (cursor < 0 || cursor >= _lines.Count || !visited.Add(cursor))
+                break;
+
+            var line = _lines[cursor];
+            if (line.Choices is { Length: > 0 })
+                cursor = line.Choices[0].Goto >= 0 ? line.Choices[0].Goto : cursor + 1;
+            else
+                cursor = line.Next >= 0 ? line.Next : cursor + 1;
+        }
+
+        KillTween(ref _typeTween);
+        _typing = false;
+        _text.VisibleCharacters = -1;
+        HideChoices();
+        FinishDialogue();
     }
 
     // ───────────────────────── Input helpers ─────────────────────────
