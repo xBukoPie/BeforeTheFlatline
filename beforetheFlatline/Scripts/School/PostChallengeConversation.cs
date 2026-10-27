@@ -53,6 +53,36 @@ public partial class PostChallengeConversation : Control
             "the school's unreliable Wi-Fi",
             "The Wi-Fi only works when nobody needs it. The moment I try to submit homework, the connection disappears like it has somewhere better to be.",
             "Then the page finally loads after the deadline, as if the internet is personally trying to annoy me."
+        ),
+        (
+            "the surprise quiz",
+            "Our teacher said we should review casually, then walked in with a stack of papers and called it a 'quick check'. Nobody even had time to put their notes away.",
+            "I think the phrase 'don't worry about it' has permanently lost all meaning."
+        ),
+        (
+            "the class group chat",
+            "Someone sent forty-seven messages about a meeting, but somehow nobody actually wrote down the time or the room. Now everyone is asking the same question.",
+            "We need one pinned message and a little less chaos."
+        ),
+        (
+            "the sports festival",
+            "They signed me up for an event because I was standing near the list. I don't know how that became consent, but apparently I'm on a relay team now.",
+            "I should probably train instead of hoping the day gets cancelled."
+        ),
+        (
+            "my missing school ID",
+            "I checked my bag, every pocket, the classroom desk, and the canteen. The ID vanished, and now I have to explain it at the gate tomorrow.",
+            "I can remember an entire assignment rubric but not where I put a card five minutes ago."
+        ),
+        (
+            "the classroom inspection",
+            "We had ten minutes to clean up after being told the room was fine yesterday. Everyone moved the same pile of papers from one desk to another.",
+            "At least the room looks organized from the doorway."
+        ),
+        (
+            "choosing a school club",
+            "Every club says the workload is light until you attend the orientation. Then suddenly there are committees, weekly meetings, and a full event calendar.",
+            "I want to try something new without accidentally taking on a second job."
         )
     };
 
@@ -171,6 +201,9 @@ public partial class PostChallengeConversation : Control
             return;
         }
 
-        GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, WorldScenePath);
+        if (SceneTransition.Instance != null)
+            SceneTransition.Instance.ChangeSceneToFile(WorldScenePath);
+        else
+            GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, WorldScenePath);
     }
 }
