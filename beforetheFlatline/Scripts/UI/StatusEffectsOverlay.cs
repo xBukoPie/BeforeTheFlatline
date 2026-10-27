@@ -110,6 +110,16 @@ public partial class StatusEffectsOverlay : CanvasLayer
         Notify("ASSESSMENT PASSED");
     }
 
+    /// <summary>Restore the overlay after returning to the title and starting a fresh run.</summary>
+    public void ResetForNewRun()
+    {
+        _endingTransitionStarted = false;
+        _endingFade = 1f;
+        if (_root != null)
+            _root.Modulate = Colors.White;
+        RefreshEffects();
+    }
+
     /// <summary>Fade the active effects away before loading the bad ending.</summary>
     public async void FadeForBadEnding(string scenePath)
     {
