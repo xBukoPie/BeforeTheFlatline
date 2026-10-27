@@ -13,13 +13,8 @@ public partial class MainMenu : Control
         // Keep the in-game clock paused while the player is on the main menu.
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
-        var algorithmLabBtn = GetNodeOrNull<Button>("algorithmLabButton");
         _fade = GetNode<ColorRect>("UI/Fade");
-
         // Play, Settings, and Support are already connected in Main.tscn.
-        // Do not connect them twice. Algorithm Lab is a code-only optional button.
-        if (algorithmLabBtn != null && !algorithmLabBtn.IsConnected(Button.SignalName.Pressed, new Callable(this, nameof(OnAlgorithmLabButtonPressed))))
-            algorithmLabBtn.Pressed += OnAlgorithmLabButtonPressed;
     }
 
     private async Task FadeScreen(float alpha)
@@ -33,6 +28,13 @@ public partial class MainMenu : Control
     {
         if (_isStarting) return;
         _isStarting = true;
+        // Starting from the title after a bad ending must create a clean run; otherwise
+        // sanity would remain at zero and the bad ending would immediately trigger again.
+        DayClock.Instance?.ResetForNewRun();
+        SanityManager.Instance?.ResetForNewRun();
+        DailyTestSession.Reset();
+        ChallengeProgress.Reset();
+
         if (DayClock.Instance != null)
             DayClock.Instance.Running = true;
         await FadeScreen(1f);
@@ -42,11 +44,6 @@ public partial class MainMenu : Control
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             GetTree().ChangeSceneToFile("res://Scenes/Home/Rooms/World.tscn");
         }
-    }
-
-    private void OnAlgorithmLabButtonPressed()
-    {
-        GetTree().ChangeSceneToFile("res://Scenes/Challenges/ChallengeHub.tscn");
     }
 
     private void OnSettingsButtonPressed()
