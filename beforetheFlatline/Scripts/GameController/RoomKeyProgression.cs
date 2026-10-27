@@ -1,6 +1,5 @@
 using Godot;
 using System;
-using System.Collections.Generic;
 
 namespace SchoolYardGame;
 
@@ -90,26 +89,22 @@ public partial class RoomKeyProgression : Node
     {
         int tier = Mathf.Clamp(difficulty, 1, 5);
         int earnedPoints = 20 + tier * 5;
-
         HiddenPoints += earnedPoints;
-
-        var newlyUnlocked = new List<string>();
-        while (TotalKeysEarned < LockedRooms.Length &&
-               HiddenPoints >= (TotalKeysEarned + 1) * PointsPerKeyQuota)
-        {
-            string roomName = LockedRooms[TotalKeysEarned].Name;
-            TotalKeysEarned++;
-            newlyUnlocked.Add(roomName);
-            EmitSignal(SignalName.RoomKeyEarned, 1, roomName);
-        }
 
         return new TaskRewardResult(
             earnedPoints,
-            newlyUnlocked.ToArray(),
+            Array.Empty<string>(),
             HiddenPoints,
             TotalKeysEarned,
             PointsUntilNextKey,
             NextRoomKeyName);
+    }
+
+    // Start a new run without carrying over room keys or hidden points.
+    public void ResetForNewRun()
+    {
+        HiddenPoints = 0;
+        TotalKeysEarned = 0;
     }
 }
 
