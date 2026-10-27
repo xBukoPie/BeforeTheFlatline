@@ -295,26 +295,7 @@ public partial class ChallengeScene : Control
         DailyTestSession.Record(ChallengeId, correct, gaveUp, _difficulty);
 
         if (correct)
-        {
             ChallengeProgress.MarkCompleted(ChallengeId);
-            var keyProgression = RoomKeyProgression.Instance;
-            var reward = keyProgression?.AwardTaskCompletion(_difficulty);
-            if (reward != null)
-            {
-                if (reward.KeysEarned > 0)
-                {
-                    foreach (string roomName in reward.RoomsUnlocked)
-                        DailyTestSession.QueueNotification($"ROOM KEY ACQUIRED: {roomName}. Its locked door should now open.");
-
-                    if (reward.TotalKeys >= 4)
-                        DailyTestSession.QueueNotification("All currently key-locked rooms have been unlocked.");
-                }
-                else if (!string.IsNullOrWhiteSpace(reward.NextRoomKeyName))
-                {
-                    DailyTestSession.QueueNotification($"Correct answer. Progress toward the {reward.NextRoomKeyName} room key has been saved. Keep completing tasks to unlock it.");
-                }
-            }
-        }
 
         _completed = true;
         _submitButton.Disabled = true;
