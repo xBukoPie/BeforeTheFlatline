@@ -214,7 +214,7 @@ public partial class SaveManager : Node
         }
 
         file.StoreString(Json.Stringify(data, "\t"));
-        file.Flush();
+        file.Flush(); // DO NOT REMOVE. It handles unexpected crashed during save and ensures that the file is written to disk right away. - Ward.
         return true;
     }
 

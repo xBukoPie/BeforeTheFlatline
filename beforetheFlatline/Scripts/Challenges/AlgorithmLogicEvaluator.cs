@@ -5,12 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-/// <summary>
-/// Tests submitted pseudocode by executing it against the reference algorithm using several
-/// different input sets. Candidate input names are bound by input order, the variable dictionary
-/// is case-insensitive, and only computed outputs are compared; variable names and statement
-/// layout therefore do not need to match the reference solution.
-/// </summary>
+/// Allows the player to create their own pseudocode/flowchart solutions to the algorithm challenge, and then evaluates them against the reference solution.
 public static class AlgorithmLogicEvaluator
 {
     private const int MaxSteps = 12000;
