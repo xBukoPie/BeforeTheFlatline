@@ -41,14 +41,14 @@ public partial class HUDController : CanvasLayer
         var panel = new PanelContainer
         {
             Name = "VitalsHUD",
-            AnchorLeft = 0.5f,
-            AnchorRight = 0.5f,
+            AnchorLeft = 0f,
+            AnchorRight = 0f,
             AnchorTop = 0f,
             AnchorBottom = 0f,
-            OffsetLeft = -222,
-            OffsetRight = 222,
-            OffsetTop = 12,
-            OffsetBottom = 110,
+            OffsetLeft = 14,
+            OffsetRight = 274,
+            OffsetTop = 14,
+            OffsetBottom = 112,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
         panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
@@ -102,7 +102,7 @@ public partial class HUDController : CanvasLayer
             MaxValue = SanityManager.MaxSanity,
             Value = SanityManager.MaxSanity,
             ShowPercentage = false,
-            CustomMinimumSize = new Vector2(400, 12),
+            CustomMinimumSize = new Vector2(220, 10),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
@@ -140,7 +140,7 @@ public partial class HUDController : CanvasLayer
 
         _clockState = new Label
         {
-            Text = "T +3H",
+            Text = "RUNNING",
             HorizontalAlignment = HorizontalAlignment.Right,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
@@ -160,7 +160,7 @@ public partial class HUDController : CanvasLayer
         _clockVisual.Text = $"DAY {DayClock.Instance.DayNumber:00}  •  {h:00}:{m:00}";
 
         bool running = DayClock.Instance.Running;
-        _clockState.Text = running ? "T  +3H" : "TIME PAUSED";
+        _clockState.Text = running ? "RUNNING" : "TIME PAUSED";
         _clockState.AddThemeColorOverride("font_color",
             running ? new Color("a9a0ba") : new Color("e4b56b"));
     }
