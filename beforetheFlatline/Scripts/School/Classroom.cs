@@ -100,7 +100,7 @@ public partial class Classroom : Control
 
         new DialogueLine(
             speaker,
-            "Come on, we should get started.",
+            "Before we start, here is how today works: you will face a short assessment with four algorithm problems. Read each prompt, then either write pseudocode or arrange the flowchart blocks to express the logic. Submit when you are ready; if you get stuck, you can give up on a question and continue. The result comes at the end, and mistakes can affect your sanity. Take your time.",
             DialogueSide.Right)
     };
 
