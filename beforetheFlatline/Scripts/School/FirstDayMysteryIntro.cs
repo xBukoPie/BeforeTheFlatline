@@ -38,15 +38,15 @@ public partial class FirstDayMysteryIntro : Control
 
     private static IReadOnlyList<DialogueLine> BuildLines() => new List<DialogueLine>
     {
-        new("...", "So. You made it. I wondered whether you'd come back.", DialogueSide.Right),
+        new("...", "So. You found your way here again. I wondered if this place would feel familiar to you.", DialogueSide.Right),
         new("...", "The rules are simple enough. Move with WASD or the arrow keys. Press E when an interaction prompt appears. Most things won't respond unless you're close enough.", DialogueSide.Right),
         new("...", "Time moves while you explore. When the school asks you to complete an assessment, think carefully. Failure costs sanity, and recovering it can take longer than you'd like.", DialogueSide.Right),
         new("...", "The keys matter. Complete tasks to earn them, then use them on doors that remain locked. Some rooms have been closed for a long time. The school doesn't hand out keys for nothing.", DialogueSide.Right),
         new("...", "There are things behind those doors that people stopped talking about. Perhaps they hoped that if a room stayed locked long enough, whatever happened there would be forgotten.", DialogueSide.Right),
-        new("...", "And you... you came back here for a reason. There's something about you that you haven't remembered yet. When the rooms begin to open, don't assume everything inside is waiting for you—", DialogueSide.Right),
+        new("...", "And you... you look at these halls like they owe you an answer. Maybe they do. There are gaps in your story, and I would not rush to fill them. Some doors are better opened when you are ready—", DialogueSide.Right),
         new("...", "*BRRRRIIING!* The classroom bell rings sharply down the corridor, cutting the sentence short.", DialogueSide.Right),
         new("...", "Ah. The bell. That's my cue to leave. We shouldn't keep your classmates waiting.", DialogueSide.Right),
-        new("...", "Watch what you unlock. And take care of yourself.", DialogueSide.Right),
+        new("...", "Pay attention to what feels familiar. And be careful what you decide to remember.", DialogueSide.Right),
         new("...", "Bye bye.", DialogueSide.Right)
     };
 

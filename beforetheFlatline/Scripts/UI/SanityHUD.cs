@@ -5,14 +5,14 @@ public partial class SanityHUD : ProgressBar
 {
     public override void _Ready()
     {
-        AnchorLeft = 0.5f;
-        AnchorRight = 0.5f;
+        AnchorLeft = 0f;
+        AnchorRight = 0f;
         AnchorTop = 0f;
         AnchorBottom = 0f;
-        OffsetLeft = -180;
-        OffsetRight = 180;
-        OffsetTop = 24;
-        OffsetBottom = 42;
+        OffsetLeft = 14;
+        OffsetRight = 250;
+        OffsetTop = 18;
+        OffsetBottom = 32;
         ShowPercentage = false;
         AddThemeStyleboxOverride("background", new StyleBoxFlat
         {

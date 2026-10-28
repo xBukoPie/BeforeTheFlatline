@@ -12,7 +12,7 @@ public partial class DayClock : Node
 
     public static DayClock Instance { get; private set; }
 
-    [Export] public float DayLengthSeconds { get; set; } = 180f;
+    [Export] public float DayLengthSeconds { get; set; } = 600f;
     [Export(PropertyHint.Range, "0,24,0.25")] public float StartHour { get; set; } = 8f;
     [Export] public bool Running { get; set; } = true;
     [Export(PropertyHint.Range, "0,24,0.25")] public float SchoolOpenHour { get; set; } = 6.5f;
@@ -82,6 +82,10 @@ public partial class DayClock : Node
     public override void _Process(double delta)
     {
         if (!Running)
+            return;
+
+        // Day one is the mandatory tutorial day: keep the school accessible until the assessment is finished.
+        if (DayNumber == 1 && !SchoolChallengeCompletedToday)
             return;
 
         if (Input.IsActionJustPressed("time_skip"))

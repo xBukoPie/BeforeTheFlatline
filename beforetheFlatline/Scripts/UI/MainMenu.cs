@@ -7,14 +7,76 @@ public partial class MainMenu : Control
     [Export] public float FadeTime { get; set; } = 0.25f;
     private ColorRect _fade;
     private bool _isStarting = false;
+    private static bool _openingSplashPlayed;
 
     public override void _Ready()
     {
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
         _fade = GetNode<ColorRect>("UI/Fade");
-        BuildLoadGameButton();
-        BuildExitButton();
+        if (!_openingSplashPlayed)
+        {
+            _openingSplashPlayed = true;
+            PlayOpeningSplash();
+        }
+    }
+
+
+    private void PlayOpeningSplash()
+    {
+        var overlay = new Control
+        {
+            Name = "VoxTekOpeningSplash",
+            ProcessMode = ProcessModeEnum.Always,
+            MouseFilter = Control.MouseFilterEnum.Stop
+        };
+        overlay.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        overlay.ZIndex = 100;
+        AddChild(overlay);
+
+        var background = new ColorRect { Color = new Color("080b14"), MouseFilter = Control.MouseFilterEnum.Stop };
+        background.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        overlay.AddChild(background);
+
+        var center = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        center.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        overlay.AddChild(center);
+
+        var stack = new VBoxContainer();
+        stack.AddThemeConstantOverride("separation", 22);
+        stack.CustomMinimumSize = new Vector2(600, 0);
+        center.AddChild(stack);
+
+        var presented = new Label { Text = "VOXTEK INC. PRESENTS", HorizontalAlignment = HorizontalAlignment.Center };
+        presented.AddThemeFontSizeOverride("font_size", 18);
+        presented.AddThemeColorOverride("font_color", new Color("a8a0c7"));
+        stack.AddChild(presented);
+
+        var logo = new PanelContainer { CustomMinimumSize = new Vector2(420, 210), SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter };
+        logo.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color("111827"), BorderColor = new Color("655889"),
+            BorderWidthLeft = 2, BorderWidthRight = 2, BorderWidthTop = 2, BorderWidthBottom = 2,
+            CornerRadiusTopLeft = 18, CornerRadiusTopRight = 18, CornerRadiusBottomLeft = 18, CornerRadiusBottomRight = 18
+        });
+        stack.AddChild(logo);
+
+        var logoText = new Label { Text = "VOXTEK\\nLOGO PLACEHOLDER", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        logoText.AddThemeFontSizeOverride("font_size", 24);
+        logoText.AddThemeColorOverride("font_color", new Color("d8c6ff"));
+        logo.AddChild(logoText);
+
+        var title = new Label { Text = "BEFORE THE FLATLINE", HorizontalAlignment = HorizontalAlignment.Center };
+        title.AddThemeFontSizeOverride("font_size", 26);
+        title.AddThemeColorOverride("font_color", new Color("e2e8f0"));
+        stack.AddChild(title);
+
+        overlay.Modulate = new Color(1f, 1f, 1f, 0f);
+        var tween = CreateTween();
+        tween.TweenProperty(overlay, "modulate:a", 1f, 0.8f).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
+        tween.TweenInterval(1.8f);
+        tween.TweenProperty(overlay, "modulate:a", 0f, 0.75f).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
+        tween.TweenCallback(Callable.From(() => overlay.QueueFree()));
     }
 
     private void BuildLoadGameButton()
@@ -123,12 +185,12 @@ public partial class MainMenu : Control
         AddChild(exitButton);
     }
 
-    private void ExitGame()
+    public void ExitGame()
     {
         GetTree().Quit();
     }
 
-    private void OpenLoadGameMenu()
+    public void OpenLoadGameMenu()
     {
         var packedScene = GD.Load<PackedScene>("res://Scenes/Menu/SaveLoadMenu.tscn");
         if (packedScene == null)
@@ -191,17 +253,4 @@ public partial class MainMenu : Control
             GetTree().ChangeSceneToFile("res://Scenes/Menu/SettingsMenu.tscn");
     }
 
-    private void OnSupportButtonPressed()
-    {
-        var dialog = new AcceptDialog
-        {
-            Title = "Support & Controls",
-            DialogText = "BEFORE THE FLATLINE\n\nMove: WASD or arrow keys\nInteract: E\nAdvance time outside school: T\n\nUse Settings to adjust master volume, brightness, and fullscreen."
-        };
-        AddChild(dialog);
-        dialog.Confirmed += () => dialog.QueueFree();
-        dialog.Canceled += () => dialog.QueueFree();
-
-        dialog.PopupCentered();
-    }
 }
