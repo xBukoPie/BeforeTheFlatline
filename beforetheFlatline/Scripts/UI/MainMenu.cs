@@ -14,6 +14,7 @@ public partial class MainMenu : Control
             DayClock.Instance.Running = false;
         _fade = GetNode<ColorRect>("UI/Fade");
         BuildLoadGameButton();
+        BuildExitButton();
     }
 
     private void BuildLoadGameButton()
@@ -54,6 +55,77 @@ public partial class MainMenu : Control
         });
         loadButton.Pressed += OpenLoadGameMenu;
         AddChild(loadButton);
+    }
+
+    private void BuildExitButton()
+    {
+        var exitButton = new Button
+        {
+            Name = "ExitButton",
+            Text = "EXIT",
+            AnchorLeft = 1f,
+            AnchorRight = 1f,
+            AnchorTop = 1f,
+            AnchorBottom = 1f,
+            OffsetLeft = -250,
+            OffsetRight = -55,
+            OffsetTop = -130,
+            OffsetBottom = -84,
+            CustomMinimumSize = new Vector2(195, 46),
+            FocusMode = Control.FocusModeEnum.All
+        };
+        exitButton.AddThemeFontSizeOverride("font_size", 16);
+        exitButton.AddThemeColorOverride("font_color", new Color("f5f2ff"));
+        exitButton.AddThemeStyleboxOverride("normal", new StyleBoxFlat
+        {
+            BgColor = new Color("252d42"),
+            BorderColor = new Color("8272a7"),
+            BorderWidthLeft = 1,
+            BorderWidthRight = 1,
+            BorderWidthTop = 1,
+            BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 7,
+            CornerRadiusTopRight = 7,
+            CornerRadiusBottomLeft = 7,
+            CornerRadiusBottomRight = 7,
+            ContentMarginLeft = 10,
+            ContentMarginRight = 10,
+            ContentMarginTop = 8,
+            ContentMarginBottom = 8
+        });
+        exitButton.AddThemeStyleboxOverride("hover", new StyleBoxFlat
+        {
+            BgColor = new Color("343e59"),
+            BorderColor = new Color("8272a7"),
+            BorderWidthLeft = 1,
+            BorderWidthRight = 1,
+            BorderWidthTop = 1,
+            BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 7,
+            CornerRadiusTopRight = 7,
+            CornerRadiusBottomLeft = 7,
+            CornerRadiusBottomRight = 7
+        });
+        exitButton.AddThemeStyleboxOverride("pressed", new StyleBoxFlat
+        {
+            BgColor = new Color("1c2335"),
+            BorderColor = new Color("8272a7"),
+            BorderWidthLeft = 1,
+            BorderWidthRight = 1,
+            BorderWidthTop = 1,
+            BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 7,
+            CornerRadiusTopRight = 7,
+            CornerRadiusBottomLeft = 7,
+            CornerRadiusBottomRight = 7
+        });
+        exitButton.Pressed += ExitGame;
+        AddChild(exitButton);
+    }
+
+    private void ExitGame()
+    {
+        GetTree().Quit();
     }
 
     private void OpenLoadGameMenu()
