@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://2yyo34dm8phe"]
 
 [ext_resource type="Script" uid="uid://b4golkw6hql6n" path="res://Scripts/UI/VisualNovelScene.cs" id="1_vnscript"]
-[ext_resource type="Texture2D" uid="uid://bq3263mwocfps" path="res://Assets/Scenes/CLassroom.jpg" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://bq3263mwocfps" path="res://Assets/Scenes/Classroom.jpg" id="2_bg"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_focus"]
 draw_center = false
