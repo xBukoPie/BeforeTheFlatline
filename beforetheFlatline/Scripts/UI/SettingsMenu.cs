@@ -3,6 +3,9 @@ using SchoolYardGame;
 
 public partial class SettingsMenu : Control
 {
+    // Add developer support links here. Leave a URL empty to hide its button.
+    private const string DeveloperSupportUrl = "";
+    private const string DeveloperPageUrl = "";
     public bool EmbeddedInPauseMenu { get; set; }
 
     private Label _volumeValue;
@@ -36,7 +39,7 @@ public partial class SettingsMenu : Control
         center.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(center);
 
-        var panel = new PanelContainer { CustomMinimumSize = new Vector2(650, 520) };
+        var panel = new PanelContainer { CustomMinimumSize = new Vector2(650, 620) };
         panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color("172033"), BorderColor = new Color("46546e"),
@@ -103,6 +106,26 @@ public partial class SettingsMenu : Control
         _fullscreen.Toggled += enabled => SettingsManager.Instance?.SetFullscreen(enabled);
         stack.AddChild(_fullscreen);
 
+        var supportHeading = new Label { Text = "SUPPORT THE DEVELOPER", HorizontalAlignment = HorizontalAlignment.Center };
+        supportHeading.AddThemeFontSizeOverride("font_size", 15);
+        supportHeading.AddThemeColorOverride("font_color", new Color("7dd3fc"));
+        stack.AddChild(supportHeading);
+
+        var supportDescription = new Label
+        {
+            Text = "Optional links for supporting the developer or visiting the project page.",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        supportDescription.AddThemeColorOverride("font_color", new Color("cbd5e1"));
+        stack.AddChild(supportDescription);
+
+        var supportRow = new HBoxContainer();
+        supportRow.AddThemeConstantOverride("separation", 10);
+        stack.AddChild(supportRow);
+        AddSupportLink(supportRow, "Support the Developer", DeveloperSupportUrl);
+        AddSupportLink(supportRow, "Project Page", DeveloperPageUrl);
+
         var footer = new HBoxContainer();
         footer.AddThemeConstantOverride("separation", 10);
         stack.AddChild(footer);
@@ -135,6 +158,28 @@ public partial class SettingsMenu : Control
             SyncFromSettings();
         };
         footer.AddChild(defaults);
+    }
+
+    private void AddSupportLink(HBoxContainer parent, string label, string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return;
+
+        var button = new Button
+        {
+            Text = label,
+            CustomMinimumSize = new Vector2(0, 40),
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
+        button.Pressed += () =>
+        {
+            if (Uri.TryCreate(url, UriKind.Absolute, out var parsed) &&
+                (parsed.Scheme == Uri.UriSchemeHttps || parsed.Scheme == Uri.UriSchemeHttp))
+                OS.ShellOpen(parsed.ToString());
+            else
+                GD.PushWarning($"SettingsMenu: ignored invalid support URL '{url}'.");
+        };
+        parent.AddChild(button);
     }
 
     private void SyncFromSettings()
