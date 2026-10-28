@@ -13,8 +13,6 @@ public partial class MainMenu : Control
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
         _fade = GetNode<ColorRect>("UI/Fade");
-        BuildLoadGameButton();
-        BuildExitButton();
     }
 
     private void BuildLoadGameButton()
@@ -191,17 +189,4 @@ public partial class MainMenu : Control
             GetTree().ChangeSceneToFile("res://Scenes/Menu/SettingsMenu.tscn");
     }
 
-    private void OnSupportButtonPressed()
-    {
-        var dialog = new AcceptDialog
-        {
-            Title = "Support & Controls",
-            DialogText = "BEFORE THE FLATLINE\n\nMove: WASD or arrow keys\nInteract: E\nAdvance time outside school: T\n\nUse Settings to adjust master volume, brightness, and fullscreen."
-        };
-        AddChild(dialog);
-        dialog.Confirmed += () => dialog.QueueFree();
-        dialog.Canceled += () => dialog.QueueFree();
-
-        dialog.PopupCentered();
-    }
 }
