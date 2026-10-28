@@ -19,6 +19,7 @@ public partial class TestResults : Control
 
         bool alreadyFinalized = DailyTestSession.IsFinalized;
         _passed = DailyTestSession.FinalizeTest();
+        if (DayClock.Instance != null) DayClock.Instance.MarkSchoolChallengeCompletedToday();
 
         // A passed assessment grants the next room key once, regardless of in-game day
         // or whether the player got the minimum passing score or a perfect score.
