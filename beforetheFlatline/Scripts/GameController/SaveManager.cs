@@ -96,15 +96,29 @@ public partial class SaveManager : Node
     {
         if (!IsValidSlot(slot))
             return false;
-        string path = GetSlotPath(slot);
-        if (!FileAccess.FileExists(path))
-            return true;
-        Error error = DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(path));
-        if (error != Error.Ok)
+
+        // Remove every copy so an old save cannot be migrated back into the slot.
+        string[] paths =
         {
-            GD.PushError($"SaveManager: could not delete slot {slot} ({error}).");
-            return false;
+            $"{SaveDirectory}/save_slot_{slot}.json",
+            $"user://Saves/save_slot_{slot}.json",
+            $"user://save_slot_{slot}.json"
+        };
+
+        foreach (string path in paths)
+        {
+            if (!FileAccess.FileExists(path))
+                continue;
+
+            Error error = DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(path));
+            if (error != Error.Ok)
+            {
+                GD.PushError($"SaveManager: could not delete '{path}' for slot {slot} ({error}).");
+                return false;
+            }
+
         }
+
         return true;
     }
 
