@@ -2,9 +2,11 @@
 
 [ext_resource type="Script" uid="uid://bhrd7s35vkqmn" path="res://Scripts/UI/MainMenu.cs" id="1_3uny1"]
 [ext_resource type="Texture2D" uid="uid://woqw5c88o4un" path="res://Assets/UI/Menu/Background2.png" id="2_3uny1"]
-[ext_resource type="Texture2D" uid="uid://tot2piosk0sd" path="res://Assets/UI/Menu/PlayButton.png" id="3_v10og"]
-[ext_resource type="Texture2D" uid="uid://dasw0rm0nn1xl" path="res://Assets/UI/Menu/SettingsButton.png" id="4_kqm77"]
-[ext_resource type="Texture2D" uid="uid://kcrqk2o1olwp" path="res://Assets/UI/Menu/Support.png" id="5_snj4n"]
+[ext_resource type="Texture2D" uid="uid://tgqgwmpj6q1q" path="res://Assets/UI/Menu/texturePlay.png" id="3_1mlt5"]
+[ext_resource type="Texture2D" uid="uid://nmo8txlj4vy2" path="res://Assets/UI/Menu/textureSettings.png" id="3_8xtjf"]
+[ext_resource type="Texture2D" uid="uid://bp1yoi8k5sufh" path="res://Assets/UI/Menu/textureEXIT.png" id="4_1mlt5"]
+[ext_resource type="Texture2D" uid="uid://4jbtbsrnwjn6" path="res://Assets/UI/Menu/textureLoad.png" id="4_ix5u8"]
+[ext_resource type="Texture2D" uid="uid://ct76bcltb4fbh" path="res://Assets/UI/Menu/MenuTitle.png" id="5_ix5u8"]
 
 [sub_resource type="Gradient" id="Gradient_3uny1"]
 offsets = PackedFloat32Array(0, 0.48125)
@@ -39,39 +41,77 @@ offset_bottom = 720.0
 texture = SubResource("GradientTexture2D_48lxs")
 expand_mode = 3
 
-[node name="playButton" type="Button" parent="." unique_id=201751303]
+[node name="exitButton" type="Button" parent="." unique_id=121802419]
 layout_mode = 0
-offset_left = 60.0
-offset_top = 320.0
-offset_right = 652.0
-offset_bottom = 552.0
-scale = Vector2(0.35, 0.4)
-action_mode = 0
-icon = ExtResource("3_v10og")
-flat = true
+offset_left = 100.0
+offset_top = 570.0
+offset_right = 690.0
+offset_bottom = 800.0
+scale = Vector2(0.35, 0.35)
+autowrap_trim_flags = 192
 icon_alignment = 1
+expand_icon = true
+
+[node name="Sprite2D" type="Sprite2D" parent="exitButton" unique_id=1563302067]
+position = Vector2(300, 116.25)
+scale = Vector2(3, 2.325)
+texture = ExtResource("4_1mlt5")
 
 [node name="settingsButton" type="Button" parent="." unique_id=666486588]
 layout_mode = 0
-offset_left = 60.0
-offset_top = 420.0
-offset_right = 660.0
-offset_bottom = 652.0
-scale = Vector2(0.35, 0.4)
-icon = ExtResource("4_kqm77")
-flat = true
+offset_left = 100.0
+offset_top = 480.0
+offset_right = 690.0
+offset_bottom = 710.0
+scale = Vector2(0.35, 0.35)
 icon_alignment = 1
+expand_icon = true
 
-[node name="supportButton" type="Button" parent="." unique_id=121802419]
+[node name="settingsIcon" type="Sprite2D" parent="settingsButton" unique_id=971138127]
+position = Vector2(300.00003, 116.25002)
+scale = Vector2(3.0000002, 2.3250003)
+texture = ExtResource("3_8xtjf")
+
+[node name="loadButton" type="Button" parent="." unique_id=397805019]
 layout_mode = 0
-offset_left = 60.0
-offset_top = 520.0
-offset_right = 660.0
-offset_bottom = 752.0
-scale = Vector2(0.35, 0.4)
-icon = ExtResource("5_snj4n")
-flat = true
+offset_left = 100.0
+offset_top = 390.0
+offset_right = 690.0
+offset_bottom = 620.0
+scale = Vector2(0.35, 0.35)
+action_mode = 0
+text = "
+"
 icon_alignment = 1
+expand_icon = true
+
+[node name="loadIcon" type="Sprite2D" parent="loadButton" unique_id=574606975]
+position = Vector2(297.14288, 116.25001)
+scale = Vector2(2.9428577, 2.2749999)
+texture = ExtResource("4_ix5u8")
+
+[node name="playButton" type="Button" parent="." unique_id=201751303]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 300.0
+offset_right = 690.0
+offset_bottom = 530.0
+scale = Vector2(0.35, 0.35)
+action_mode = 0
+text = "
+"
+icon_alignment = 1
+expand_icon = true
+
+[node name="playIcon" type="Sprite2D" parent="playButton" unique_id=1260256181]
+position = Vector2(297.14288, 116.25001)
+scale = Vector2(2.9428577, 2.2749999)
+texture = ExtResource("3_1mlt5")
+
+[node name="MenuTitle" type="Sprite2D" parent="." unique_id=2062525094]
+position = Vector2(299, 168)
+scale = Vector2(0.2502747, 0.17654419)
+texture = ExtResource("5_ix5u8")
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=388611231]
 layer = 10
@@ -86,6 +126,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 1)
 
-[connection signal="pressed" from="playButton" to="." method="OnPlayButtonPressed"]
+[connection signal="pressed" from="exitButton" to="." method="OnSupportButtonPressed"]
 [connection signal="pressed" from="settingsButton" to="." method="OnSettingsButtonPressed"]
-[connection signal="pressed" from="supportButton" to="." method="OnSupportButtonPressed"]
+[connection signal="pressed" from="loadButton" to="." method="OnPlayButtonPressed"]
+[connection signal="pressed" from="playButton" to="." method="OnPlayButtonPressed"]

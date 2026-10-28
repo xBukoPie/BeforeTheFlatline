@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bq3263mwocfps"
-path="res://.godot/imported/CLassroom.jpg-44c7cedac64c8afb62bfa4d260e60868.ctex"
+path="res://.godot/imported/Classroom.jpg-17a204ac8ef46989c3d940e6b0b0c91c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Scenes/CLassroom.jpg"
-dest_files=["res://.godot/imported/CLassroom.jpg-44c7cedac64c8afb62bfa4d260e60868.ctex"]
+source_file="res://Assets/Scenes/Classroom.jpg"
+dest_files=["res://.godot/imported/Classroom.jpg-17a204ac8ef46989c3d940e6b0b0c91c.ctex"]
 
 [params]
 
