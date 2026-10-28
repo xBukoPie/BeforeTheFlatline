@@ -7,13 +7,18 @@ public partial class MainMenu : Control
     [Export] public float FadeTime { get; set; } = 0.25f;
     private ColorRect _fade;
     private bool _isStarting = false;
+    private static bool _openingSplashPlayed;
 
     public override void _Ready()
     {
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
         _fade = GetNode<ColorRect>("UI/Fade");
-        PlayOpeningSplash();
+        if (!_openingSplashPlayed)
+        {
+            _openingSplashPlayed = true;
+            PlayOpeningSplash();
+        }
     }
 
 
