@@ -185,12 +185,12 @@ public partial class MainMenu : Control
         AddChild(exitButton);
     }
 
-    private void ExitGame()
+    public void ExitGame()
     {
         GetTree().Quit();
     }
 
-    private void OpenLoadGameMenu()
+    public void OpenLoadGameMenu()
     {
         var packedScene = GD.Load<PackedScene>("res://Scenes/Menu/SaveLoadMenu.tscn");
         if (packedScene == null)
