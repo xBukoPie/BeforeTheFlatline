@@ -166,6 +166,7 @@ uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_l
 uniform float dizziness_strength = 0.0;
 uniform float anxiety_strength = 0.0;
 uniform float pressure_strength = 0.0;
+uniform float brightness_level = 0.88;
 uniform float time_seconds = 0.0;
 
 void fragment() {
@@ -176,6 +177,7 @@ void fragment() {
     uv.y += sin(uv.x * 15.0 + time_seconds * 0.8) * 0.0008 * wobble;
 
     vec4 image = texture(screen_texture, uv);
+    image.rgb *= brightness_level;
     float grain = fract(sin(dot(FRAGCOORD.xy + floor(time_seconds * 16.0), vec2(12.9898, 78.233))) * 43758.5453);
     float lineNoise = step(0.985, fract(FRAGCOORD.y * 0.5 + floor(time_seconds * 10.0) * 0.37));
     image.rgb += (grain - 0.5) * anxiety_strength * 0.12;
@@ -439,12 +441,9 @@ void fragment() {
             return;
 
         float brightness = SettingsManager.Instance?.Brightness ?? 0.88f;
-        float alpha = brightness < 1f
-            ? (1f - brightness) * 0.62f
-            : -(brightness - 1f) * 0.18f;
-        _brightnessWash.Color = alpha >= 0f
-            ? new Color(0f, 0f, 0f, alpha)
-            : new Color(1f, 1f, 1f, -alpha);
+        if (_fxMaterial != null)
+            _fxMaterial.SetShaderParameter("brightness_level", brightness);
+        _brightnessWash.Color = Colors.Transparent;
     }
 
     private static Color DebuffColor(SanityManager.DebuffType type) => type switch
