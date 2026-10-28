@@ -84,6 +84,10 @@ public partial class DayClock : Node
         if (!Running)
             return;
 
+        // Day one is the mandatory tutorial day: keep the school accessible until the assessment is finished.
+        if (DayNumber == 1 && !SchoolChallengeCompletedToday)
+            return;
+
         if (Input.IsActionJustPressed("time_skip"))
             AdvanceHours(3f);
 
