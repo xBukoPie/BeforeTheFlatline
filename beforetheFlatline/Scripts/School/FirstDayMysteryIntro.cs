@@ -4,7 +4,7 @@ using SchoolYardGame;
 
 public partial class FirstDayMysteryIntro : Control
 {
-    private const string PortraitPath = "res://Assets/Characters/Mysterious.svg";
+    private const string PortraitPath = "res://Assets/Characters/Mysterious.png";
 
     public Door DoorToContinue { get; set; }
 
