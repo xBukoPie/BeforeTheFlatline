@@ -27,6 +27,8 @@ public partial class StatusEffectsOverlay : CanvasLayer
     private SanityManager.DebuffType _dominantDebuff = SanityManager.DebuffType.Dizziness;
     private Color _flashColor = new("e34d5b");
     private ShaderMaterial _fxMaterial;
+    private readonly RandomNumberGenerator _rng = new();
+    private float _nextConfusionShuffle = 3f;
 
     public override void _Ready()
     {
@@ -37,6 +39,8 @@ public partial class StatusEffectsOverlay : CanvasLayer
         }
 
         Instance = this;
+        _rng.Randomize();
+        _nextConfusionShuffle = _rng.RandfRange(2.5f, 5.5f);
         Layer = 100;
         ProcessMode = ProcessModeEnum.Pausable;
         BuildOverlay();
@@ -74,6 +78,11 @@ public partial class StatusEffectsOverlay : CanvasLayer
     {
         float dt = (float)delta;
         _elapsed += dt;
+        if (_elapsed >= _nextConfusionShuffle)
+        {
+            RandomizeConfusionLayout();
+            _nextConfusionShuffle = _elapsed + _rng.RandfRange(3.5f, 7.5f);
+        }
         _flashTime = Mathf.Max(0f, _flashTime - dt);
         _noticeTime = Mathf.Max(0f, _noticeTime - dt);
         if (_noticeLabel != null)
@@ -162,9 +171,9 @@ uniform float time_seconds = 0.0;
 void fragment() {
     vec2 uv = SCREEN_UV;
     float wobble = dizziness_strength;
-    uv.x += sin(uv.y * 24.0 + time_seconds * 1.5) * 0.005 * wobble;
-    uv.x += sin(uv.y * 9.0 - time_seconds * 0.7) * 0.0025 * wobble;
-    uv.y += sin(uv.x * 15.0 + time_seconds * 1.0) * 0.0025 * wobble;
+    uv.x += sin(uv.y * 24.0 + time_seconds * 1.1) * 0.0018 * wobble;
+    uv.x += sin(uv.y * 9.0 - time_seconds * 0.55) * 0.0009 * wobble;
+    uv.y += sin(uv.x * 15.0 + time_seconds * 0.8) * 0.0008 * wobble;
 
     vec4 image = texture(screen_texture, uv);
     float grain = fract(sin(dot(FRAGCOORD.xy + floor(time_seconds * 16.0), vec2(12.9898, 78.233))) * 43758.5453);
@@ -268,6 +277,23 @@ void fragment() {
         _confusionWords.Add(CreateConfusionWord("I KNOW...", 0.89f, 0.61f, 1f));
     }
 
+    private void RandomizeConfusionLayout()
+    {
+        foreach (var label in _confusionWords)
+        {
+            bool leftSide = _rng.Randf() < 0.5f;
+            float x = leftSide ? _rng.RandfRange(0.025f, 0.16f) : _rng.RandfRange(0.84f, 0.975f);
+            float y = _rng.RandfRange(0.28f, 0.78f);
+            label.AnchorLeft = x;
+            label.AnchorRight = x;
+            label.AnchorTop = y;
+            label.AnchorBottom = y;
+            label.OffsetLeft = leftSide ? 0 : -148;
+            label.OffsetRight = leftSide ? 148 : 0;
+            label.Rotation = _rng.RandfRange(-0.07f, 0.07f);
+        }
+    }
+
     private Label CreateConfusionWord(string text, float anchorX, float anchorY, float side)
     {
         var label = new Label
@@ -319,7 +345,7 @@ void fragment() {
         int total = dizziness + confusion + anxiety + pressure;
 
         float fade = _endingFade;
-        float wobble = Mathf.Clamp(dizziness / 45f, 0f, 1f) * fade;
+        float wobble = Mathf.Clamp(dizziness / 55f, 0f, 1f) * 0.62f * fade;
         float staticStrength = Mathf.Clamp(anxiety / 38f, 0f, 1f) * fade;
         float pressureStrength = Mathf.Clamp(pressure / 50f, 0f, 1f) * fade;
         _fxMaterial.SetShaderParameter("dizziness_strength", wobble);
