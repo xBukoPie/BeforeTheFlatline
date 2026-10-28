@@ -40,7 +40,8 @@ public static class ChallengeProgress
         IsCompleted(FlowchartId) &&
         IsCompleted(FinalId);
 
-    // Serialize all daily completions using string day keys for JSON compatibility.
+    // Serializes all daily completions using string day keys for JSON compatibility.
+    // Save files are in JSON format, so we convert the integer day keys to strings when saving, and convert them back to integers when loading.
     public static Godot.Collections.Dictionary CreateSaveData()
     {
         var data = new Godot.Collections.Dictionary();
@@ -54,6 +55,7 @@ public static class ChallengeProgress
         return data;
     }
 
+    // Restores daily completions from a save file, converting string day keys back to integers.
     public static void RestoreFromSaveData(Godot.Collections.Dictionary data)
     {
         CompletedByDay.Clear();

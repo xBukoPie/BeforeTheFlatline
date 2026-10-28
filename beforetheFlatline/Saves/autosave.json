@@ -1,0 +1,39 @@
+{
+	"challenge_progress": {},
+	"clock_running": true,
+	"day": 1,
+	"first_day_special_greeting_pending": false,
+	"hour": 8.36121273040771,
+	"kind": "autosave",
+	"mystery_encounter_seen": false,
+	"player_x": 112.0,
+	"player_y": -80.0,
+	"room_keys": {
+		"hidden_points": 0,
+		"keys_earned": 0
+	},
+	"room_path": "res://Scenes/Home/Rooms/Sala.tscn",
+	"sanity_state": {
+		"current_sanity": 100,
+		"debuffs": {
+			"Anxiety": 0,
+			"Confusion": 0,
+			"Dizziness": 0,
+			"Pressure": 0
+		},
+		"difficulty_penalty": 0,
+		"failed_test_count": 0,
+		"recovery_targets": {
+			"Anxiety": 100,
+			"Confusion": 100,
+			"Dizziness": 100,
+			"Pressure": 100
+		}
+	},
+	"saved_at": "2026-10-28 07:51:58",
+	"scene_path": "res://Scenes/Home/Rooms/World.tscn",
+	"school_completed": false,
+	"school_started": false,
+	"slot": 0,
+	"version": 1
+}
