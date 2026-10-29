@@ -2,8 +2,8 @@
 
 [ext_resource type="Texture2D" uid="uid://dugn4hggd4rk1" path="res://Assets/Map/House/Laundry.jpg" id="1_gfuhk"]
 [ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_murr1"]
-[ext_resource type="PackedScene" path="res://Scenes/Home/Rooms/Lamp.tscn" id="2_7u4l3"]
-[ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="3_murr1"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Lamp.tscn" id="2_7u4l3"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Door.tscn" id="3_murr1"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
 size = Vector2(241, 10)
