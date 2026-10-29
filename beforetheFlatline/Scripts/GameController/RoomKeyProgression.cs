@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 namespace SchoolYardGame;
 
@@ -10,28 +11,33 @@ public partial class RoomKeyProgression : Node
 
     public static RoomKeyProgression Instance { get; private set; }
 
-    // HiddenPoints is retained for compatibility with existing version-1 save files.
-    // Room keys are now earned by reaching the assessment score threshold and collecting a ground pickup.
     public const int PointsPerKeyQuota = 100;
     public int HiddenPoints { get; private set; }
-    public int TotalKeysEarned { get; private set; }
+    public int TotalKeysEarned => _unlockedRoomIds.Count;
     public string PendingKeyRoomName { get; private set; } = string.Empty;
     public bool HasPendingKey => !string.IsNullOrWhiteSpace(PendingKeyRoomName);
-    public int PointsUntilNextKey => TotalKeysEarned >= LockedRooms.Length
+    public int PointsUntilNextKey => string.IsNullOrEmpty(NextRoomKeyName)
         ? 0
         : Math.Max(0, (TotalKeysEarned + 1) * PointsPerKeyQuota - HiddenPoints);
 
-    public string NextRoomKeyName => TotalKeysEarned >= LockedRooms.Length
-        ? string.Empty
-        : LockedRooms[TotalKeysEarned].Name;
+    public string NextRoomKeyName
+    {
+        get
+        {
+            int nextIndex = FindNextLockedRoomIndex();
+            return nextIndex < 0 ? string.Empty : LockedRooms[nextIndex].Name;
+        }
+    }
 
     private static readonly (string Id, string Name)[] LockedRooms =
     {
-        ("banyo", "Banyo"),
-        ("kusina", "Kusina"),
-        ("pasilyo", "Pasilyo"),
-        ("dirty_kitchen", "Dirty Kitchen")
+        ("Kitchen", "Kitchen"),
+        ("Laundry", "Laundry"),
+        ("Bathroom", "Bathroom"),
+        ("MasterBedroom", "MasterBedroom")
     };
+
+    private readonly HashSet<string> _unlockedRoomIds = new(StringComparer.OrdinalIgnoreCase);
 
     public override void _Ready()
     {
@@ -50,99 +56,140 @@ public partial class RoomKeyProgression : Node
             Instance = null;
     }
 
-    // Restore key ownership and any earned-but-not-yet-collected ground key.
-    public void RestoreProgress(int hiddenPoints, int totalKeysEarned, string pendingKeyRoomName = "")
+    public void RestoreProgress(
+        int hiddenPoints,
+        int totalKeysEarned,
+        string pendingKeyRoomName = "",
+        IEnumerable<string> unlockedRoomIds = null)
     {
         HiddenPoints = Math.Max(0, hiddenPoints);
-        TotalKeysEarned = Math.Clamp(totalKeysEarned, 0, LockedRooms.Length);
+        _unlockedRoomIds.Clear();
 
-        string expectedPendingRoom = TotalKeysEarned < LockedRooms.Length
-            ? LockedRooms[TotalKeysEarned].Name
-            : string.Empty;
-        PendingKeyRoomName = string.Equals(
-            pendingKeyRoomName?.Trim(),
-            expectedPendingRoom,
-            StringComparison.OrdinalIgnoreCase)
-            ? expectedPendingRoom
+        if (unlockedRoomIds == null)
+        {
+            // Legacy saves represented keys as a sequential count.
+            int count = Math.Clamp(totalKeysEarned, 0, LockedRooms.Length);
+            for (int i = 0; i < count; i++)
+                _unlockedRoomIds.Add(LockedRooms[i].Id);
+        }
+        else
+        {
+            foreach (string value in unlockedRoomIds)
+            {
+                int index = FindRoomIndex(value);
+                if (index >= 0)
+                    _unlockedRoomIds.Add(LockedRooms[index].Id);
+            }
+        }
+
+        int pendingIndex = FindRoomIndex(pendingKeyRoomName);
+        PendingKeyRoomName = pendingIndex >= 0 && !_unlockedRoomIds.Contains(LockedRooms[pendingIndex].Id)
+            ? LockedRooms[pendingIndex].Name
             : string.Empty;
     }
 
     public string[] GetUnlockedRoomNames()
     {
-        int count = Math.Clamp(TotalKeysEarned, 0, LockedRooms.Length);
-        var names = new string[count];
-        for (int i = 0; i < count; i++)
-            names[i] = LockedRooms[i].Name;
-        return names;
+        var names = new List<string>();
+        foreach (var room in LockedRooms)
+            if (_unlockedRoomIds.Contains(room.Id))
+                names.Add(room.Name);
+        return names.ToArray();
+    }
+
+    public string[] GetUnlockedRoomIds()
+    {
+        var ids = new List<string>();
+        foreach (var room in LockedRooms)
+            if (_unlockedRoomIds.Contains(room.Id))
+                ids.Add(room.Id);
+        return ids.ToArray();
     }
 
     public bool IsRoomUnlocked(string roomId)
     {
-        string id = (roomId ?? "").Trim().ToLowerInvariant();
-        if (string.IsNullOrEmpty(id))
+        if (string.IsNullOrWhiteSpace(roomId))
             return true;
 
-        int index = Array.FindIndex(LockedRooms, room => room.Id == id);
-        return index >= 0 && TotalKeysEarned > index;
+        int index = FindRoomIndex(roomId);
+        return index >= 0 && _unlockedRoomIds.Contains(LockedRooms[index].Id);
     }
 
-    /// <summary>
-    /// Queue the next room key as a physical pickup. This does not unlock the room yet.
-    /// Repeated calls while a key is waiting never create a second key.
-    /// </summary>
     public string QueueAssessmentKey()
     {
         if (HasPendingKey)
-            return PendingKeyRoomName;
+        {
+            int pendingIndex = FindRoomIndex(PendingKeyRoomName);
+            if (pendingIndex >= 0 && !_unlockedRoomIds.Contains(LockedRooms[pendingIndex].Id))
+                return PendingKeyRoomName;
+            PendingKeyRoomName = string.Empty;
+        }
 
-        if (TotalKeysEarned >= LockedRooms.Length)
+        int nextIndex = FindNextLockedRoomIndex();
+        if (nextIndex < 0)
             return string.Empty;
 
-        PendingKeyRoomName = LockedRooms[TotalKeysEarned].Name;
+        PendingKeyRoomName = LockedRooms[nextIndex].Name;
         return PendingKeyRoomName;
     }
 
-    /// <summary>Unlock the next room only when the player actually collects the waiting key.</summary>
     public string CollectPendingKey()
     {
-        if (!HasPendingKey || TotalKeysEarned >= LockedRooms.Length)
+        int index = FindRoomIndex(PendingKeyRoomName);
+        if (index < 0 || _unlockedRoomIds.Contains(LockedRooms[index].Id))
+        {
+            PendingKeyRoomName = string.Empty;
             return string.Empty;
+        }
 
-        string roomName = LockedRooms[TotalKeysEarned].Name;
-        if (!string.Equals(PendingKeyRoomName, roomName, StringComparison.OrdinalIgnoreCase))
-            return string.Empty;
-
-        TotalKeysEarned++;
+        string roomName = LockedRooms[index].Name;
+        _unlockedRoomIds.Add(LockedRooms[index].Id);
         PendingKeyRoomName = string.Empty;
         EmitSignal(SignalName.RoomKeyEarned, 1, roomName);
         return roomName;
     }
 
-    // Compatibility wrapper for any older caller: assessment completion now queues a pickup.
+    public string AdminGrantKeyForRoom(string roomIdOrName)
+    {
+        int index = FindRoomIndex(roomIdOrName);
+        if (index < 0 || !_unlockedRoomIds.Add(LockedRooms[index].Id))
+            return string.Empty;
+
+        string roomName = LockedRooms[index].Name;
+        if (string.Equals(PendingKeyRoomName, roomName, StringComparison.OrdinalIgnoreCase))
+            PendingKeyRoomName = string.Empty;
+
+        EmitSignal(SignalName.RoomKeyEarned, 1, roomName);
+        return roomName;
+    }
+
     public string AwardAssessmentCompletion() => QueueAssessmentKey();
 
-    /// <summary>Grant hidden points for a correctly completed task and unlock any reached quotas.</summary>
     public TaskRewardResult AwardTaskCompletion(int difficulty)
     {
         int tier = Mathf.Clamp(difficulty, 1, 5);
         int earnedPoints = 20 + tier * 5;
         HiddenPoints += earnedPoints;
-
-        return new TaskRewardResult(
-            earnedPoints,
-            Array.Empty<string>(),
-            HiddenPoints,
-            TotalKeysEarned,
-            PointsUntilNextKey,
-            NextRoomKeyName);
+        return new TaskRewardResult(earnedPoints, Array.Empty<string>(), HiddenPoints,
+            TotalKeysEarned, PointsUntilNextKey, NextRoomKeyName);
     }
 
-    // Start a new run without carrying over room keys or hidden points.
     public void ResetForNewRun()
     {
         HiddenPoints = 0;
-        TotalKeysEarned = 0;
+        _unlockedRoomIds.Clear();
         PendingKeyRoomName = string.Empty;
+    }
+
+    private int FindNextLockedRoomIndex() =>
+        Array.FindIndex(LockedRooms, room => !_unlockedRoomIds.Contains(room.Id));
+
+    private static int FindRoomIndex(string idOrName)
+    {
+        string value = (idOrName ?? string.Empty).Trim();
+        return Array.FindIndex(LockedRooms, room =>
+            string.Equals(room.Id, value, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(room.Name, value, StringComparison.OrdinalIgnoreCase));
     }
 }
 
@@ -156,13 +203,8 @@ public sealed class TaskRewardResult
     public int PointsUntilNextKey { get; }
     public string NextRoomKeyName { get; }
 
-    public TaskRewardResult(
-        int pointsAdded,
-        string[] roomsUnlocked,
-        int totalPoints,
-        int totalKeys,
-        int pointsUntilNextKey,
-        string nextRoomKeyName)
+    public TaskRewardResult(int pointsAdded, string[] roomsUnlocked, int totalPoints, int totalKeys,
+        int pointsUntilNextKey, string nextRoomKeyName)
     {
         PointsAdded = pointsAdded;
         RoomsUnlocked = roomsUnlocked ?? Array.Empty<string>();
