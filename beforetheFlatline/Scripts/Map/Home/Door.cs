@@ -11,7 +11,7 @@ public partial class Door : Area2D
     [Export] public bool RequiresSchoolHours { get; set; } = false;
     [Export] public string UnlockRoomId { get; set; } = "";
     [Export] public bool TriggersFirstDayMystery { get; set; } = false;
-    [Export] public string LockedPrompt { get; set; } = "Locked. Score at least 30 points, then find the key on the Lot.";
+    [Export] public string LockedPrompt { get; set; } = "Locked. Score at least 30 points, then find the key in the Yard.";
     [Export] public string ClosedPrompt { get; set; } = "School is closed. Come back after sunrise.";
     [Export] public float ClosedMessageDuration { get; set; } = 2.5f;
 
