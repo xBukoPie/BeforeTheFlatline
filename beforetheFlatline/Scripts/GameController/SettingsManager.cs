@@ -60,7 +60,7 @@ public partial class SettingsManager : Node
 
     public void SetPlayerName(string value)
     {
-        string normalized = (value ?? string.Empty).Trim();
+        string normalized = string.IsNullOrWhiteSpace(value) ? "Player" : value.Trim();
         if (normalized.Length > 24)
             normalized = normalized[..24];
 
@@ -82,6 +82,7 @@ public partial class SettingsManager : Node
         Brightness = Mathf.Clamp((float)config.GetValue("display", "brightness", Brightness), 0.65f, 1.05f);
         Fullscreen = (bool)config.GetValue("display", "fullscreen", Fullscreen);
         PlayerName = ((string)config.GetValue("player", "name", PlayerName) ?? PlayerName).Trim();
+        if (string.IsNullOrWhiteSpace(PlayerName)) PlayerName = "Player";
         if (PlayerName.Length > 24) PlayerName = PlayerName[..24];
     }
 

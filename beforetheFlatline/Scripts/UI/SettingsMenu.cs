@@ -8,7 +8,6 @@ public partial class SettingsMenu : Control
     private const string DeveloperSupportUrl = "";
     private const string DeveloperPageUrl = "";
     public bool EmbeddedInPauseMenu { get; set; }
-    private bool _syncingSettings;
 
     private Label _volumeValue;
     private Label _brightnessValue;
@@ -208,10 +207,8 @@ public partial class SettingsMenu : Control
         _volume.SetValueNoSignal(SettingsManager.Instance.MasterVolume);
         _brightness.SetValueNoSignal(SettingsManager.Instance.Brightness);
         _fullscreen.SetPressedNoSignal(SettingsManager.Instance.Fullscreen);
-        _syncingSettings = true;
         if (_playerName != null)
             _playerName.Text = SettingsManager.Instance.PlayerName;
-        _syncingSettings = false;
         _volumeValue.Text = $"{Mathf.RoundToInt(SettingsManager.Instance.MasterVolume * 100)}%";
         _brightnessValue.Text = $"{Mathf.RoundToInt(SettingsManager.Instance.Brightness * 100)}%";
     }
