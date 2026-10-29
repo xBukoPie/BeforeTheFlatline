@@ -228,7 +228,7 @@ public partial class MainMenu : Control
 
         if (SceneTransition.Instance != null)
         {
-            bool loaded = await SceneTransition.Instance.LoadSceneWithLoadingScreen("res://Scenes/Home/Rooms/World.tscn");
+            bool loaded = await SceneTransition.Instance.LoadSceneWithLoadingScreen("res://Scenes/Home/Areas/World.tscn");
             if (!loaded)
                 _isStarting = false;
         }
@@ -240,7 +240,7 @@ public partial class MainMenu : Control
                 if (DayClock.Instance != null)
                     DayClock.Instance.Running = true;
                 await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-                GetTree().ChangeSceneToFile("res://Scenes/Home/Rooms/World.tscn");
+                GetTree().ChangeSceneToFile("res://Scenes/Home/Areas/World.tscn");
             }
         }
     }
