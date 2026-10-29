@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="3_door"]
 [ext_resource type="Texture2D" uid="uid://cr6w64gmcim83" path="res://Assets/Map/Home/Dark.jpg" id="3_o5kfv"]
 [ext_resource type="PackedScene" path="res://Scenes/Home/Rooms/Lamp.tscn" id="4_lamp"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Rooms/GroundKeyPickup.tscn" id="5_key_pickup"]
 
 [sub_resource type="RectangleShape2D" id="R_474x505"]
 size = Vector2(474, 486)
@@ -312,6 +313,9 @@ TargetSpawn = "FromLot"
 Prompt = "Dirty Kitchen"
 UnlockRoomId = "dirty_kitchen"
 Size = Vector2(70, 12)
+
+[node name="GroundKeyPickup" parent="." instance=ExtResource("5_key_pickup")]
+position = Vector2(-370, 180)
 
 [node name="Spawns" type="Node2D" parent="." unique_id=1908490760]
 

@@ -201,7 +201,8 @@ public partial class SaveManager : Node
             ["room_keys"] = new Godot.Collections.Dictionary
             {
                 ["hidden_points"] = RoomKeyProgression.Instance?.HiddenPoints ?? 0,
-                ["keys_earned"] = RoomKeyProgression.Instance?.TotalKeysEarned ?? 0
+                ["keys_earned"] = RoomKeyProgression.Instance?.TotalKeysEarned ?? 0,
+                ["pending_key_room"] = RoomKeyProgression.Instance?.PendingKeyRoomName ?? string.Empty
             },
             ["challenge_progress"] = ChallengeProgress.CreateSaveData()
         };
@@ -261,6 +262,7 @@ public partial class SaveManager : Node
         if (SanityManager.Instance != null && sanityState.Count > 0)
             SanityManager.Instance.RestoreFromSaveData(sanityState);
         int keysToRestore = Mathf.Max(0, ReadInt(keyState, "keys_earned", 0));
+        string pendingKeyRoom = ReadString(keyState, "pending_key_room", string.Empty);
         if (data.ContainsKey("challenge_progress"))
         {
             int passedAssessments = CountPassedAssessmentDays(challengeState);
@@ -268,11 +270,16 @@ public partial class SaveManager : Node
             if (validKeys < keysToRestore)
                 GD.PushWarning($"SaveManager: ignored {keysToRestore - validKeys} room key(s) without a matching passed assessment.");
             keysToRestore = validKeys;
+
+            // An uncollected key also needs a completed passing assessment in the save history.
+            if (passedAssessments <= keysToRestore)
+                pendingKeyRoom = string.Empty;
         }
 
         RoomKeyProgression.Instance?.RestoreProgress(
             ReadInt(keyState, "hidden_points", 0),
-            keysToRestore);
+            keysToRestore,
+            pendingKeyRoom);
         ChallengeProgress.RestoreFromSaveData(challengeState);
 
         RoomManager.RequestStartRoomOnNextLoad(roomPath, "startSpawn");
