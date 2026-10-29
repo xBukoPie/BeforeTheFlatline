@@ -2,9 +2,10 @@
 
 [ext_resource type="Texture2D" uid="uid://bwbqh2k0onwv2" path="res://Assets/Map/House/Yard.jpg" id="1_77dj7"]
 [ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_vg5qo"]
-[ext_resource type="PackedScene" path="res://Scenes/Home/Rooms/Lamp.tscn" id="2_2e2xe"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Lamp.tscn" id="2_2e2xe"]
 [ext_resource type="Texture2D" uid="uid://dbrehj5o8ff4p" path="res://Assets/Map/House/YardExpansion.jpg" id="2_puml3"]
-[ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="3_2e2xe"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Door.tscn" id="3_2e2xe"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Areas/GroundKeyPickup.tscn" id="5_key_pickup"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
 size = Vector2(604, 222)
@@ -172,6 +173,9 @@ Prompt = "School"
 Size = Vector2(30, 62)
 RequiresSchoolHours = true
 ClosedPrompt = "Too late for school today. Come back tomorrow morning."
+
+[node name="GroundKeyPickup" parent="." instance=ExtResource("5_key_pickup")]
+position = Vector2(-370, 180)
 
 [node name="Spawns" type="Node2D" parent="." unique_id=695283417]
 
