@@ -12,6 +12,9 @@ public static class DailyTestSession
 
     public const int QuestionCount = 4;
     public const int QuestionsNeededToPass = 3;
+    public const int PointsPerCorrectAnswer = 10;
+    public const int MinimumPassingScore = 30;
+    public const int MaximumScore = QuestionCount * PointsPerCorrectAnswer;
 
     public static int Day => _day;
     public static bool IsActive => _active;
@@ -21,7 +24,8 @@ public static class DailyTestSession
     public static IReadOnlyList<string> PendingNotifications => Notifications;
     public static int CorrectCount => Attempts.Count(result => result.Correct);
     public static int AnsweredCount => Attempts.Count(result => !result.GaveUp);
-    public static bool Passed => Attempts.Count >= QuestionCount && CorrectCount >= QuestionsNeededToPass;
+    public static int Score => CorrectCount * PointsPerCorrectAnswer;
+    public static bool Passed => Attempts.Count >= QuestionCount && Score >= MinimumPassingScore;
 
     public static void Begin(int day)
     {

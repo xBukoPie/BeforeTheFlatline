@@ -13,6 +13,12 @@ public partial class PostChallengeConversation : Control
     [Export]
     public string HomeSpawn { get; set; } = "startSpawn";
 
+    [Export(PropertyHint.File, "*.tscn")]
+    public string LotRoomPath { get; set; } = "res://Scenes/Home/Rooms/Lot.tscn";
+
+    [Export]
+    public string LotSpawn { get; set; } = "FromSchool";
+
     private VisualNovelScene _dialogue;
     private bool _isReturning;
 
@@ -185,7 +191,10 @@ public partial class PostChallengeConversation : Control
                 clock.SetHourOfDay(homeTime);
         }
 
-        global::RoomManager.RequestStartRoomOnNextLoad(HomeRoomPath, HomeSpawn);
+        bool keyWaitingOnLot = RoomKeyProgression.Instance?.HasPendingKey == true;
+        string destinationRoom = keyWaitingOnLot ? LotRoomPath : HomeRoomPath;
+        string destinationSpawn = keyWaitingOnLot ? LotSpawn : HomeSpawn;
+        global::RoomManager.RequestStartRoomOnNextLoad(destinationRoom, destinationSpawn);
 
         if (!ResourceLoader.Exists(WorldScenePath))
         {
