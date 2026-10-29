@@ -10,9 +10,13 @@ public partial class RoomKeyProgression : Node
 
     public static RoomKeyProgression Instance { get; private set; }
 
+    // HiddenPoints is retained for compatibility with existing version-1 save files.
+    // Room keys are now earned by reaching the assessment score threshold and collecting a ground pickup.
     public const int PointsPerKeyQuota = 100;
     public int HiddenPoints { get; private set; }
     public int TotalKeysEarned { get; private set; }
+    public string PendingKeyRoomName { get; private set; } = string.Empty;
+    public bool HasPendingKey => !string.IsNullOrWhiteSpace(PendingKeyRoomName);
     public int PointsUntilNextKey => TotalKeysEarned >= LockedRooms.Length
         ? 0
         : Math.Max(0, (TotalKeysEarned + 1) * PointsPerKeyQuota - HiddenPoints);
@@ -46,11 +50,21 @@ public partial class RoomKeyProgression : Node
             Instance = null;
     }
 
-    // Restore the hidden point total and unlocked-key count from a save file.
-    public void RestoreProgress(int hiddenPoints, int totalKeysEarned)
+    // Restore key ownership and any earned-but-not-yet-collected ground key.
+    public void RestoreProgress(int hiddenPoints, int totalKeysEarned, string pendingKeyRoomName = "")
     {
         HiddenPoints = Math.Max(0, hiddenPoints);
         TotalKeysEarned = Math.Clamp(totalKeysEarned, 0, LockedRooms.Length);
+
+        string expectedPendingRoom = TotalKeysEarned < LockedRooms.Length
+            ? LockedRooms[TotalKeysEarned].Name
+            : string.Empty;
+        PendingKeyRoomName = string.Equals(
+            pendingKeyRoomName?.Trim(),
+            expectedPendingRoom,
+            StringComparison.OrdinalIgnoreCase)
+            ? expectedPendingRoom
+            : string.Empty;
     }
 
     public string[] GetUnlockedRoomNames()
@@ -72,17 +86,40 @@ public partial class RoomKeyProgression : Node
         return index >= 0 && TotalKeysEarned > index;
     }
 
-    /// <summary>Grant the next room key when a full assessment is passed. Day and score above the pass threshold do not affect the reward.</summary>
-    public string AwardAssessmentCompletion()
+    /// <summary>
+    /// Queue the next room key as a physical pickup. This does not unlock the room yet.
+    /// Repeated calls while a key is waiting never create a second key.
+    /// </summary>
+    public string QueueAssessmentKey()
     {
+        if (HasPendingKey)
+            return PendingKeyRoomName;
+
         if (TotalKeysEarned >= LockedRooms.Length)
             return string.Empty;
 
+        PendingKeyRoomName = LockedRooms[TotalKeysEarned].Name;
+        return PendingKeyRoomName;
+    }
+
+    /// <summary>Unlock the next room only when the player actually collects the waiting key.</summary>
+    public string CollectPendingKey()
+    {
+        if (!HasPendingKey || TotalKeysEarned >= LockedRooms.Length)
+            return string.Empty;
+
         string roomName = LockedRooms[TotalKeysEarned].Name;
+        if (!string.Equals(PendingKeyRoomName, roomName, StringComparison.OrdinalIgnoreCase))
+            return string.Empty;
+
         TotalKeysEarned++;
+        PendingKeyRoomName = string.Empty;
         EmitSignal(SignalName.RoomKeyEarned, 1, roomName);
         return roomName;
     }
+
+    // Compatibility wrapper for any older caller: assessment completion now queues a pickup.
+    public string AwardAssessmentCompletion() => QueueAssessmentKey();
 
     /// <summary>Grant hidden points for a correctly completed task and unlock any reached quotas.</summary>
     public TaskRewardResult AwardTaskCompletion(int difficulty)
@@ -105,6 +142,7 @@ public partial class RoomKeyProgression : Node
     {
         HiddenPoints = 0;
         TotalKeysEarned = 0;
+        PendingKeyRoomName = string.Empty;
     }
 }
 

@@ -21,28 +21,29 @@ public partial class TestResults : Control
         _passed = DailyTestSession.FinalizeTest();
         if (DayClock.Instance != null) DayClock.Instance.MarkSchoolChallengeCompletedToday();
 
-        // A passed assessment grants the next room key once, regardless of in-game day
-        // or whether the player got the minimum passing score or a perfect score.
-        // A failed assessment grants no key; repeated result rendering cannot duplicate it.
-        if (_passed && !alreadyFinalized)
+        int correct = DailyTestSession.CorrectCount;
+        int score = DailyTestSession.Score;
+        int attempted = DailyTestSession.AnsweredCount;
+
+        // A passing score queues a key on the Lot. Room ownership changes only when it is collected.
+        if (score >= DailyTestSession.MinimumPassingScore && !alreadyFinalized)
         {
-            string roomName = RoomKeyProgression.Instance?.AwardAssessmentCompletion() ?? string.Empty;
+            string roomName = RoomKeyProgression.Instance?.QueueAssessmentKey() ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(roomName))
-                DailyTestSession.QueueNotification($"ROOM KEY ACQUIRED: {roomName}. Its locked door should now open.");
+                DailyTestSession.QueueNotification($"SCORE REWARD: A key for {roomName} is waiting on the Lot. Pick it up after school to unlock the room.");
             else if (RoomKeyProgression.Instance != null && RoomKeyProgression.Instance.TotalKeysEarned >= 4)
                 DailyTestSession.QueueNotification("All currently key-locked rooms have already been unlocked.");
         }
 
-        int correct = DailyTestSession.CorrectCount;
-        int attempted = DailyTestSession.AnsweredCount;
         _title.Text = _passed ? "ASSESSMENT PASSED" : "ASSESSMENT FAILED";
         _title.AddThemeColorOverride("font_color", _passed ? new Color("86efac") : new Color("fca5a5"));
-        _summary.Text = $"{correct} / {DailyTestSession.QuestionCount} correct  •  {attempted} answered  •  Day {DailyTestSession.Day}";
+        _summary.Text = $"{score} / {DailyTestSession.MaximumScore} points  •  {correct} / {DailyTestSession.QuestionCount} correct  •  Day {DailyTestSession.Day}";
 
         var lines = new System.Collections.Generic.List<string>();
+        lines.Add($"ASSESSMENT SCORE: {score} / {DailyTestSession.MaximumScore} points. Each correct answer is worth {DailyTestSession.PointsPerCorrectAnswer} points.");
         lines.Add(_passed
-            ? "You met the passing requirement. The school day continues."
-            : $"You needed {DailyTestSession.QuestionsNeededToPass} correct answers to pass. Your focus has been affected.");
+            ? $"You reached the {DailyTestSession.MinimumPassingScore}-point passing requirement. The school day continues."
+            : $"You needed at least {DailyTestSession.MinimumPassingScore} points ({DailyTestSession.QuestionsNeededToPass} correct answers) to pass. Your focus has been affected.");
 
         foreach (var result in DailyTestSession.Results)
         {
@@ -57,9 +58,15 @@ public partial class TestResults : Control
         if (keyProgression != null)
         {
             string[] unlockedKeys = keyProgression.GetUnlockedRoomNames();
-            lines.Add(unlockedKeys.Length > 0
-                ? $"ROOM KEYS OWNED: {string.Join(", ", unlockedKeys)}."
-                : $"No room keys acquired yet. Pass an assessment to earn the {keyProgression.NextRoomKeyName} key.");
+            if (unlockedKeys.Length > 0)
+                lines.Add($"ROOMS UNLOCKED: {string.Join(", ", unlockedKeys)}.");
+
+            if (keyProgression.HasPendingKey)
+                lines.Add($"KEY WAITING ON THE LOT: {keyProgression.PendingKeyRoomName}. Find it after school.");
+            else if (keyProgression.TotalKeysEarned < 4)
+                lines.Add($"NEXT ROOM KEY: {keyProgression.NextRoomKeyName}. Earn at least {DailyTestSession.MinimumPassingScore} assessment points and collect it on the Lot.");
+            else
+                lines.Add("All currently key-locked rooms have been unlocked.");
         }
 
         if (_passed)
