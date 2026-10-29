@@ -1,5 +1,4 @@
 using Godot;
-using System.Linq;
 using SchoolYardGame;
 
 public partial class TestResults : Control
@@ -23,7 +22,6 @@ public partial class TestResults : Control
 
         int correct = DailyTestSession.CorrectCount;
         int score = DailyTestSession.Score;
-        int attempted = DailyTestSession.AnsweredCount;
 
         // A passing score queues a key on the Lot. Room ownership changes only when it is collected.
         if (score >= DailyTestSession.MinimumPassingScore && !alreadyFinalized)
