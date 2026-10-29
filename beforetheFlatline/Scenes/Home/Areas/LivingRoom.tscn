@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_oy02n"]
 [ext_resource type="Texture2D" uid="uid://drq8647apnfe1" path="res://Assets/Map/House/House.jpg" id="1_tkhq2"]
-[ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="2_m6c8v"]
-[ext_resource type="PackedScene" path="res://Scenes/Home/Rooms/Lamp.tscn" id="3_5cw2u"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Door.tscn" id="2_m6c8v"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Lamp.tscn" id="3_5cw2u"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
 size = Vector2(393, 14)
@@ -116,7 +116,7 @@ LockedPrompt = "Locked. You need a key."
 
 [node name="ToMasterBedroom" parent="Doors" unique_id=1760159428 instance=ExtResource("2_m6c8v")]
 position = Vector2(128, -85)
-TargetRoom = "uid://y5s1ns2fwcxf"
+TargetRoom = "uid://dr6fe7lwj68cb"
 TargetSpawn = "FromLivingRoom"
 Prompt = "Master's Bedroom"
 Size = Vector2(44, 12)
@@ -125,7 +125,7 @@ LockedPrompt = "Locked. You need a key."
 
 [node name="ToLaundry" parent="Doors" unique_id=946600844 instance=ExtResource("2_m6c8v")]
 position = Vector2(175, -69)
-TargetRoom = "uid://y5s1ns2fwcxf"
+TargetRoom = "uid://bw80fec0hf1k"
 TargetSpawn = "FromLivingRoom"
 Prompt = "Laundry Room"
 Size = Vector2(44, 12)
@@ -134,7 +134,7 @@ LockedPrompt = "Locked. You need a key."
 
 [node name="ToKitchen" parent="Doors" unique_id=507469121 instance=ExtResource("2_m6c8v")]
 position = Vector2(175.7143, 44.28572)
-TargetRoom = "uid://y5s1ns2fwcxf"
+TargetRoom = "uid://mrrxfx4oj27r"
 TargetSpawn = "FromLivingRoom"
 Prompt = "Kitchen"
 Size = Vector2(44, 12)
