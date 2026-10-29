@@ -28,7 +28,7 @@ public partial class TestResults : Control
         {
             string roomName = RoomKeyProgression.Instance?.QueueAssessmentKey() ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(roomName))
-                DailyTestSession.QueueNotification($"SCORE REWARD: A key for {roomName} is waiting on the Lot. Pick it up after school to unlock the room.");
+                DailyTestSession.QueueNotification($"SCORE REWARD: A key for {roomName} is waiting in the Yard. Pick it up after school to unlock the room.");
             else if (RoomKeyProgression.Instance != null && RoomKeyProgression.Instance.TotalKeysEarned >= 4)
                 DailyTestSession.QueueNotification("All currently key-locked rooms have already been unlocked.");
         }
@@ -61,9 +61,9 @@ public partial class TestResults : Control
                 lines.Add($"ROOMS UNLOCKED: {string.Join(", ", unlockedKeys)}.");
 
             if (keyProgression.HasPendingKey)
-                lines.Add($"KEY WAITING ON THE LOT: {keyProgression.PendingKeyRoomName}. Find it after school.");
+                lines.Add($"KEY WAITING IN THE YARD: {keyProgression.PendingKeyRoomName}. Find it after school.");
             else if (keyProgression.TotalKeysEarned < 4)
-                lines.Add($"NEXT ROOM KEY: {keyProgression.NextRoomKeyName}. Earn at least {DailyTestSession.MinimumPassingScore} assessment points and collect it on the Lot.");
+                lines.Add($"NEXT ROOM KEY: {keyProgression.NextRoomKeyName}. Earn at least {DailyTestSession.MinimumPassingScore} assessment points and collect it in the Yard.");
             else
                 lines.Add("All currently key-locked rooms have been unlocked.");
         }
