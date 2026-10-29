@@ -24,7 +24,7 @@ public partial class TestResults : Control
         int score = DailyTestSession.Score;
 
         // A passing score queues a key on the Lot. Room ownership changes only when it is collected.
-        if (score >= DailyTestSession.MinimumPassingScore && !alreadyFinalized)
+        if (_passed && !alreadyFinalized)
         {
             string roomName = RoomKeyProgression.Instance?.QueueAssessmentKey() ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(roomName))
@@ -45,8 +45,9 @@ public partial class TestResults : Control
 
         foreach (var result in DailyTestSession.Results)
         {
+            int pointsEarned = result.Correct ? DailyTestSession.PointsPerCorrectAnswer : 0;
             string outcome = result.GaveUp ? "GAVE UP" : result.Correct ? "CORRECT" : "INCORRECT";
-            lines.Add($"{result.ChallengeId.ToUpperInvariant()}: {outcome}");
+            lines.Add($"{result.ChallengeId.ToUpperInvariant()}: {outcome} (+{pointsEarned} points)");
         }
 
         foreach (string notification in DailyTestSession.PendingNotifications)
