@@ -5,16 +5,16 @@ using SchoolYardGame;
 public partial class PostChallengeConversation : Control
 {
     [Export(PropertyHint.File, "*.tscn")]
-    public string WorldScenePath { get; set; } = "res://Scenes/Home/Rooms/World.tscn";
+    public string WorldScenePath { get; set; } = "res://Scenes/Home/Areas/World.tscn";
 
     [Export(PropertyHint.File, "*.tscn")]
-    public string HomeRoomPath { get; set; } = "res://Scenes/Home/Rooms/Kwarto.tscn";
+    public string HomeRoomPath { get; set; } = "res://Scenes/Home/Areas/PlayerRoom.tscn";
 
     [Export]
     public string HomeSpawn { get; set; } = "startSpawn";
 
     [Export(PropertyHint.File, "*.tscn")]
-    public string LotRoomPath { get; set; } = "res://Scenes/Home/Rooms/Lot.tscn";
+    public string LotRoomPath { get; set; } = "res://Scenes/Home/Areas/Yard.tscn";
 
     [Export]
     public string LotSpawn { get; set; } = "FromSchool";
