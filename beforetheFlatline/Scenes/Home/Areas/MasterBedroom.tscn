@@ -1,0 +1,87 @@
+[gd_scene format=3 uid="uid://dr6fe7lwj68cb"]
+
+[ext_resource type="Texture2D" uid="uid://dkvlsq5h8vai6" path="res://Assets/Map/House/NoDoor.jpg" id="1_3iftt"]
+[ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_obkb0"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Rooms/Lamp.tscn" id="2_0ectk"]
+[ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="3_wqje3"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
+size = Vector2(254, 13)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_48lxs"]
+size = Vector2(15, 183.5)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vbfqq"]
+size = Vector2(36, 55)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_oejw2"]
+size = Vector2(148, 84)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_8uv3r"]
+size = Vector2(49, 17)
+
+[node name="MasterBedroom" type="Node2D" unique_id=379798415]
+scale = Vector2(0.7, 0.7)
+script = ExtResource("1_obkb0")
+RoomName = "MasterBedroom"
+
+[node name="Ground" type="Sprite2D" parent="." unique_id=888119586]
+texture = ExtResource("1_3iftt")
+region_enabled = true
+region_rect = Rect2(481, 55, 255, 203)
+
+[node name="Structures" type="StaticBody2D" parent="." unique_id=1412512315]
+
+[node name="TopWall" type="CollisionShape2D" parent="Structures" unique_id=628103533]
+position = Vector2(0, -102)
+shape = SubResource("RectangleShape2D_v2h47")
+
+[node name="BottomWall" type="CollisionShape2D" parent="Structures" unique_id=607551257]
+position = Vector2(0, 94.5)
+shape = SubResource("RectangleShape2D_v2h47")
+
+[node name="LeftWall" type="CollisionShape2D" parent="Structures" unique_id=174961287]
+position = Vector2(-119.5, -3.75)
+shape = SubResource("RectangleShape2D_48lxs")
+
+[node name="RightWall" type="CollisionShape2D" parent="Structures" unique_id=1521904339]
+position = Vector2(119, -4)
+shape = SubResource("RectangleShape2D_48lxs")
+
+[node name="Decorations" type="StaticBody2D" parent="." unique_id=1505662882]
+
+[node name="Cabinet" type="CollisionShape2D" parent="Decorations" unique_id=1621915606]
+position = Vector2(93, 10.5)
+shape = SubResource("RectangleShape2D_vbfqq")
+
+[node name="Bed" type="CollisionShape2D" parent="Decorations" unique_id=279643972]
+position = Vector2(-37, -24)
+shape = SubResource("RectangleShape2D_oejw2")
+
+[node name="SmallCabinet" type="CollisionShape2D" parent="Decorations" unique_id=752301742]
+position = Vector2(73.5, -47.5)
+shape = SubResource("RectangleShape2D_8uv3r")
+
+[node name="Lights" type="Node2D" parent="." unique_id=418901487]
+
+[node name="Lamp" parent="Lights" unique_id=1571701973 instance=ExtResource("2_0ectk")]
+position = Vector2(-0.5000057, 2.0000048)
+scale = Vector2(0.49262157, 0.41666672)
+color = Color(0.96454877, 0.87721324, 1, 1)
+energy = 0.67
+texture_scale = 1.8
+
+[node name="Doors" type="Node2D" parent="." unique_id=365524634]
+
+[node name="ToLivingRoom" parent="Doors" unique_id=1210053727 instance=ExtResource("3_wqje3")]
+position = Vector2(58, 79)
+TargetRoom = "uid://qwiv766taqxf"
+TargetSpawn = "FromMasterBedroom"
+Prompt = "Living Room"
+Size = Vector2(44, 12)
+LockedPrompt = "Locked. You need a key."
+
+[node name="Spawns" type="Node2D" parent="." unique_id=145319617]
+
+[node name="FromLivingRoom" type="Marker2D" parent="Spawns" unique_id=1602623943]
+position = Vector2(5, 56)

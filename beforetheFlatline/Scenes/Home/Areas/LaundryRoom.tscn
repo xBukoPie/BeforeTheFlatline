@@ -1,0 +1,92 @@
+[gd_scene format=3 uid="uid://bw80fec0hf1k"]
+
+[ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_up35t"]
+[ext_resource type="Texture2D" uid="uid://dugn4hggd4rk1" path="res://Assets/Map/House/Laundry.jpg" id="1_x63h0"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Rooms/Lamp.tscn" id="2_hb41j"]
+[ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="3_q21ty"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
+size = Vector2(238, 25)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_48lxs"]
+size = Vector2(16, 135)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vbfqq"]
+size = Vector2(56, 95)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_oejw2"]
+size = Vector2(100, 11)
+
+[node name="LaundryRoom" type="Node2D" unique_id=1164805956]
+scale = Vector2(0.7, 0.7)
+script = ExtResource("1_up35t")
+RoomName = "LaundryRoom"
+
+[node name="Ground" type="Sprite2D" parent="." unique_id=1050202132]
+texture = ExtResource("1_x63h0")
+region_enabled = true
+region_rect = Rect2(723, 148, 238, 165)
+
+[node name="Structures" type="StaticBody2D" parent="." unique_id=1722707678]
+
+[node name="BottomWall" type="CollisionShape2D" parent="Structures" unique_id=2092145318]
+position = Vector2(0, 89)
+shape = SubResource("RectangleShape2D_v2h47")
+
+[node name="TopWall" type="CollisionShape2D" parent="Structures" unique_id=1533545453]
+position = Vector2(0, -71.5)
+shape = SubResource("RectangleShape2D_v2h47")
+
+[node name="LeftWall" type="CollisionShape2D" parent="Structures" unique_id=1031827643]
+position = Vector2(-111, 8.5)
+shape = SubResource("RectangleShape2D_48lxs")
+
+[node name="RightWall" type="CollisionShape2D" parent="Structures" unique_id=1834324705]
+position = Vector2(111, 9)
+shape = SubResource("RectangleShape2D_48lxs")
+
+[node name="Decorations" type="StaticBody2D" parent="." unique_id=1544283853]
+
+[node name="Sink" type="CollisionShape2D" parent="Decorations" unique_id=909641580]
+position = Vector2(75, 26.5)
+shape = SubResource("RectangleShape2D_vbfqq")
+
+[node name="HangingBaskets" type="CollisionShape2D" parent="Decorations" unique_id=860436840]
+position = Vector2(47, -53.5)
+shape = SubResource("RectangleShape2D_oejw2")
+
+[node name="Lights" type="Node2D" parent="." unique_id=825486288]
+
+[node name="Lamp" parent="Lights" unique_id=996770519 instance=ExtResource("2_hb41j")]
+position = Vector2(6, 2)
+scale = Vector2(0.48828125, 0.35373268)
+color = Color(0.96454877, 0.87721324, 1, 1)
+energy = 0.67
+texture_scale = 1.8
+
+[node name="Doors" type="Node2D" parent="." unique_id=1652613587]
+
+[node name="ToLivingRoom" parent="Doors" unique_id=1210053727 instance=ExtResource("3_q21ty")]
+position = Vector2(-92, 50)
+TargetRoom = "uid://qwiv766taqxf"
+TargetSpawn = "FromLivingRoom"
+Prompt = "Living Room"
+Size = Vector2(44, 12)
+LockedPrompt = "Locked. You need a key."
+
+[node name="ToBathroom" parent="Doors" unique_id=206247422 instance=ExtResource("3_q21ty")]
+position = Vector2(-53, -44)
+TargetRoom = "uid://bvsarfe1kvi2f"
+TargetSpawn = "FromLaundry"
+Prompt = "Bathroom"
+Size = Vector2(44, 12)
+UnlockRoomId = "Bathroom"
+LockedPrompt = "Locked. You need a key."
+
+[node name="Spawns" type="Node2D" parent="." unique_id=1953082524]
+
+[node name="FromLivingRoom" type="Marker2D" parent="Spawns" unique_id=190139480]
+position = Vector2(-40, 35)
+
+[node name="FromBathroom" type="Marker2D" parent="Spawns" unique_id=303705611]
+position = Vector2(-56, 22)
