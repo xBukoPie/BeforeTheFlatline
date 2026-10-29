@@ -1,0 +1,32 @@
+[gd_scene format=3 uid="uid://kj4c42fo10oo"]
+
+[ext_resource type="Script" uid="uid://b4pdeuc2hglbs" path="res://Scripts/Map/Home/GroundKeyPickup.cs" id="1_pickup"]
+[ext_resource type="Texture2D" uid="uid://d20gn8mqhuoim" path="res://Assets/Objects/Keys/keyBathroom.png" id="2_hswb5"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_key"]
+
+[node name="GroundKeyPickup" type="Area2D" unique_id=853869735]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_pickup")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=171839493]
+z_index = 5
+scale = Vector2(0.35, 0.35)
+texture = ExtResource("2_hswb5")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=285595642]
+shape = SubResource("RectangleShape2D_key")
+
+[node name="Prompt" type="Label" parent="." unique_id=219336750]
+visible = false
+z_index = 100
+offset_left = -48.0
+offset_top = -34.0
+offset_right = 48.0
+offset_bottom = -18.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 10
+text = "[E] Pick up key"
+horizontal_alignment = 1
