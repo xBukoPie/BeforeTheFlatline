@@ -124,7 +124,7 @@ public partial class PostChallengeConversation : Control
         {
             new(
                 character,
-                $"Hey, can I rant to you about {topic}? The challenges were stressful enough, and now this is getting on my nerves.",
+                $"Hey, {{player}}, can I rant to you about {topic}? The challenges were stressful enough, and now this is getting on my nerves.",
                 DialogueSide.Right,
                 Choices: new[]
                 {

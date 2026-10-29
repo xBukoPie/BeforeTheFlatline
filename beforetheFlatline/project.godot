@@ -25,6 +25,7 @@ SanityManager="*res://Scripts/GameController/SanityManager.cs"
 SettingsManager="*res://Scripts/GameController/SettingsManager.cs"
 StatusEffectsOverlay="*res://Scripts/UI/StatusEffectsOverlay.cs"
 PauseMenuController="*res://Scripts/UI/PauseMenuController.cs"
+SuperUserAccess="*res://Scripts/UI/SuperUserAccess.cs"
 
 [display]
 

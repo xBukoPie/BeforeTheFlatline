@@ -14,6 +14,7 @@ public partial class SettingsManager : Node
     public float MasterVolume { get; private set; } = 0.85f;
     public float Brightness { get; private set; } = 0.88f;
     public bool Fullscreen { get; private set; } = false;
+    public string PlayerName { get; private set; } = "Player";
 
     public override void _Ready()
     {
@@ -57,6 +58,20 @@ public partial class SettingsManager : Node
         SettingsChanged?.Invoke();
     }
 
+    public void SetPlayerName(string value)
+    {
+        string normalized = (value ?? string.Empty).Trim();
+        if (normalized.Length > 24)
+            normalized = normalized[..24];
+
+        if (PlayerName == normalized)
+            return;
+
+        PlayerName = normalized;
+        SaveSettings();
+        SettingsChanged?.Invoke();
+    }
+
     private void LoadSettings()
     {
         var config = new ConfigFile();
@@ -66,6 +81,8 @@ public partial class SettingsManager : Node
         MasterVolume = Mathf.Clamp((float)config.GetValue("audio", "master_volume", MasterVolume), 0f, 1f);
         Brightness = Mathf.Clamp((float)config.GetValue("display", "brightness", Brightness), 0.65f, 1.05f);
         Fullscreen = (bool)config.GetValue("display", "fullscreen", Fullscreen);
+        PlayerName = ((string)config.GetValue("player", "name", PlayerName) ?? PlayerName).Trim();
+        if (PlayerName.Length > 24) PlayerName = PlayerName[..24];
     }
 
     private void ApplyAll()
@@ -96,6 +113,7 @@ public partial class SettingsManager : Node
         config.SetValue("audio", "master_volume", MasterVolume);
         config.SetValue("display", "brightness", Brightness);
         config.SetValue("display", "fullscreen", Fullscreen);
+        config.SetValue("player", "name", PlayerName);
         config.Save(SettingsPath);
     }
 }
