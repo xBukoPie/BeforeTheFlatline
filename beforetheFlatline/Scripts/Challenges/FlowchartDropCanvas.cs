@@ -55,6 +55,9 @@ public partial class FlowchartDropCanvas : PanelContainer
 
     public void ClearBlocks() => BuildFromDefinitions(new List<FlowchartBlockDefinition>());
 
+    public void SetDefinitions(IReadOnlyList<FlowchartBlockDefinition> definitions) =>
+        BuildFromDefinitions(definitions ?? Array.Empty<FlowchartBlockDefinition>());
+
     private void MoveBlock(int index, int delta)
     {
         var definitions = GetDefinitions();

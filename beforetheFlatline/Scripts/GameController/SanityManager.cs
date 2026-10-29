@@ -98,6 +98,40 @@ public partial class SanityManager : Node
             QueueBadEnding();
     }
 
+    public void RemoveSanityForAdmin(int amount)
+    {
+        if (_badEndingQueued || amount <= 0)
+            return;
+
+        CurrentSanity = Mathf.Max(0, CurrentSanity - Mathf.Clamp(amount, 1, MaxSanity));
+        OnSanityChanged?.Invoke(CurrentSanity);
+        if (CurrentSanity == 0)
+            QueueBadEnding();
+    }
+
+    public void SetDebuffLevelForAdmin(DebuffType type, int intensity)
+    {
+        if (_badEndingQueued)
+            return;
+
+        int level = Mathf.Clamp(intensity, 0, MaxSanity);
+        _debuffs[type] = level;
+        if (level == 0)
+        {
+            _recoveryTargets[type] = MaxSanity;
+        }
+        else
+        {
+            int missingSanity = MaxSanity - CurrentSanity;
+            int recoveryNeeded = Mathf.CeilToInt(missingSanity * 0.45f);
+            _recoveryTargets[type] = Mathf.Min(MaxSanity, CurrentSanity + recoveryNeeded);
+        }
+
+        OnDebuffChanged?.Invoke(type, level);
+    }
+
+    public void ClearDebuffForAdmin(DebuffType type) => SetDebuffLevelForAdmin(type, 0);
+
     // Capture sanity, failure penalties, active debuffs, and their recovery gates.
     public Godot.Collections.Dictionary CreateSaveData()
     {
