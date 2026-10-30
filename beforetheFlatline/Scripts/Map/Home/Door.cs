@@ -54,18 +54,20 @@ public partial class Door : Area2D
             ZIndex = 100,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
-            CustomMinimumSize = new Vector2(520, 44),
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            CustomMinimumSize = new Vector2(640, 56),
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
         _hint.AnchorLeft = 0.5f;
         _hint.AnchorRight = 0.5f;
         _hint.AnchorTop = 1f;
         _hint.AnchorBottom = 1f;
-        _hint.OffsetLeft = -260;
-        _hint.OffsetRight = 260;
-        _hint.OffsetTop = -94;
+        _hint.OffsetLeft = -320;
+        _hint.OffsetRight = 320;
+        _hint.OffsetTop = -106;
         _hint.OffsetBottom = -50;
         _hint.AddThemeFontSizeOverride("font_size", 18);
+        _hint.AddThemeColorOverride("font_color", Colors.White);
         _hint.AddThemeColorOverride("font_outline_color", Colors.Black);
         _hint.AddThemeConstantOverride("outline_size", 4);
         _promptLayer.AddChild(_hint);
