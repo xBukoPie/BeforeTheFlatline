@@ -41,6 +41,7 @@ public partial class GroundKeyPickup : Area2D
         _prompt.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         _prompt.MouseFilter = Control.MouseFilterEnum.Ignore;
         _prompt.AddThemeFontSizeOverride("font_size", 18);
+        _prompt.AddThemeColorOverride("font_color", Colors.White);
         _prompt.AddThemeColorOverride("font_outline_color", Colors.Black);
         _prompt.AddThemeConstantOverride("outline_size", 4);
 
