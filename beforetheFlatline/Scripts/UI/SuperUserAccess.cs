@@ -44,6 +44,11 @@ public partial class SuperUserAccess : CanvasLayer
             return;
 
         _challengeContext = inChallenge;
+        if (_challengeContext)
+            SetTopRight(_toggleButton, -270, 12, -122, 48);
+        else
+            SetBottomLeft(_toggleButton, 12, -48, 154, -12);
+
         if (_panel != null && _panel.Visible)
         {
             if (_challengeContext)
@@ -244,6 +249,18 @@ public partial class SuperUserAccess : CanvasLayer
         };
         _status.AddThemeColorOverride("font_color", new Color("fcd34d"));
         _adminSection.AddChild(_status);
+    }
+
+    private static void SetTopRight(Control control, float leftOffset, float topOffset, float rightOffset, float bottomOffset)
+    {
+        control.AnchorLeft = 1f;
+        control.AnchorRight = 1f;
+        control.AnchorTop = 0f;
+        control.AnchorBottom = 0f;
+        control.OffsetLeft = leftOffset;
+        control.OffsetRight = rightOffset;
+        control.OffsetTop = topOffset;
+        control.OffsetBottom = bottomOffset;
     }
 
     private static void SetBottomLeft(Control control, float leftOffset, float topOffset, float rightOffset, float bottomOffset)
