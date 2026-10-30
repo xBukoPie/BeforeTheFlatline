@@ -14,6 +14,7 @@ public partial class SettingsMenu : Control
     private HSlider _volume;
     private HSlider _brightness;
     private CheckButton _fullscreen;
+    private LineEdit _playerName;
 
     public override void _Ready()
     {
@@ -40,7 +41,7 @@ public partial class SettingsMenu : Control
         center.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(center);
 
-        var panel = new PanelContainer { CustomMinimumSize = new Vector2(650, 620) };
+        var panel = new PanelContainer { CustomMinimumSize = new Vector2(650, 680) };
         panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color("172033"), BorderColor = new Color("46546e"),
@@ -68,6 +69,20 @@ public partial class SettingsMenu : Control
         };
         description.AddThemeColorOverride("font_color", new Color("cbd5e1"));
         stack.AddChild(description);
+
+        var playerNameRow = new VBoxContainer();
+        playerNameRow.AddThemeConstantOverride("separation", 5);
+        playerNameRow.AddChild(new Label { Text = "Player name" });
+        _playerName = new LineEdit
+        {
+            PlaceholderText = "Enter the name used in character interactions",
+            MaxLength = 24,
+            CustomMinimumSize = new Vector2(0, 38)
+        };
+        _playerName.TextSubmitted += value => SettingsManager.Instance?.SetPlayerName(value);
+        _playerName.FocusExited += () => SettingsManager.Instance?.SetPlayerName(_playerName.Text);
+        playerNameRow.AddChild(_playerName);
+        stack.AddChild(playerNameRow);
 
         var volumeRow = new VBoxContainer();
         volumeRow.AddThemeConstantOverride("separation", 5);
@@ -156,6 +171,7 @@ public partial class SettingsMenu : Control
             SettingsManager.Instance?.SetMasterVolume(0.85f);
             SettingsManager.Instance?.SetBrightness(0.88f);
             SettingsManager.Instance?.SetFullscreen(false);
+            SettingsManager.Instance?.SetPlayerName("Player");
             SyncFromSettings();
         };
         footer.AddChild(defaults);
@@ -191,6 +207,8 @@ public partial class SettingsMenu : Control
         _volume.SetValueNoSignal(SettingsManager.Instance.MasterVolume);
         _brightness.SetValueNoSignal(SettingsManager.Instance.Brightness);
         _fullscreen.SetPressedNoSignal(SettingsManager.Instance.Fullscreen);
+        if (_playerName != null)
+            _playerName.Text = SettingsManager.Instance.PlayerName;
         _volumeValue.Text = $"{Mathf.RoundToInt(SettingsManager.Instance.MasterVolume * 100)}%";
         _brightnessValue.Text = $"{Mathf.RoundToInt(SettingsManager.Instance.Brightness * 100)}%";
     }

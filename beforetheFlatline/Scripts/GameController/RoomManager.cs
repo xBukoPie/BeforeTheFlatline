@@ -30,7 +30,7 @@ public partial class RoomManager : Node2D
 
     public Vector2 CurrentPlayerPosition => _player?.GlobalPosition ?? Vector2.Zero;
 
-    [Export(PropertyHint.File, "*.tscn")] public string StartRoom { get; set; } = "res://Scenes/Home/Rooms/Kwarto.tscn";
+    [Export(PropertyHint.File, "*.tscn")] public string StartRoom { get; set; } = "res://Scenes/Home/Areas/PlayerRoom.tscn";
     [Export] public string StartSpawn { get; set; } = "startSpawn";
     [Export] public bool IsNight { get; set; } = true;
     [Export] public bool AllowNightToggleKey { get; set; } = true;

@@ -1,5 +1,6 @@
 using Godot;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace SchoolYardGame;
 
@@ -195,16 +196,18 @@ public partial class VisualNovelScene : Control
         _hint.Visible = false;
         _hint.Text = HintInteract;
 
-        _nameLabel.Text = line.Speaker;
+        string resolvedSpeaker = ResolvePlayerNameTokens(line.Speaker);
+        string resolvedText = ResolvePlayerNameTokens(line.Text);
+        _nameLabel.Text = resolvedSpeaker;
         _nameTag.ResetSize();
         PlaceNameTag(line.Side, animate: _nameTagPlaced);
         _nameTagPlaced = true;
         HighlightSpeaker(line.Side);
 
-        AppendLog($"[b]{Escape(line.Speaker)}[/b]\n{line.Text}\n\n");
+        AppendLog($"[b]{Escape(resolvedSpeaker)}[/b]\n{Escape(resolvedText)}\n\n");
 
         KillTween(ref _typeTween);
-        _text.Text = line.Text;
+        _text.Text = resolvedText;
         _text.VisibleCharacters = 0;
         int total = _text.GetTotalCharacterCount();
         _typing = true;
@@ -296,7 +299,7 @@ public partial class VisualNovelScene : Control
             int captured = i;
             var button = new Button
             {
-                Text = choices[i].Label,
+                Text = ResolvePlayerNameTokens(choices[i].Label),
                 CustomMinimumSize = new Vector2(0, 100),
                 FocusMode = FocusModeEnum.All
             };
@@ -318,9 +321,22 @@ public partial class VisualNovelScene : Control
     private void OnChoicePressed(int choiceIndex, DialogueChoice choice)
     {
         EmitSignal(SignalName.ChoiceSelected, choiceIndex);
-        AppendLog($"[color=#7a3f12]▶ {Escape(choice.Label)}[/color]\n\n");
+        AppendLog($"[color=#7a3f12]▶ {Escape(ResolvePlayerNameTokens(choice.Label))}[/color]\n\n");
         HideChoices();
         ShowLine(choice.Goto >= 0 ? choice.Goto : _index + 1);
+    }
+
+    private static string ResolvePlayerNameTokens(string text)
+    {
+        string playerName = SettingsManager.Instance?.PlayerName?.Trim();
+        if (string.IsNullOrWhiteSpace(playerName))
+            playerName = "Player";
+
+        return Regex.Replace(
+            text ?? string.Empty,
+            @"\{player(?:name)?\}",
+            _ => playerName,
+            RegexOptions.IgnoreCase);
     }
 
     // Slides the name tag above the left or right end of the dialogue panel.
