@@ -309,7 +309,7 @@ public partial class VisualNovelScene : Control
                 CustomMinimumSize = new Vector2(0, 100),
                 FocusMode = FocusModeEnum.All
             };
-            button.AddThemeFontSizeOverride("font_size", 28);
+            button.AddThemeFontSizeOverride("font_size", 30);
             button.Pressed += () => OnChoicePressed(captured, choices[captured]);
             _choiceBox.AddChild(button);
         }
