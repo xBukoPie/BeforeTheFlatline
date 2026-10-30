@@ -13,6 +13,7 @@ public partial class SuperUserAccess : CanvasLayer
     private SpinBox _debuffIntensity;
     private OptionButton _keyRoom;
     private bool _accessAvailable;
+    private bool _challengeContext;
 
     private static readonly string[] KeyRoomIds =
     {
@@ -33,6 +34,22 @@ public partial class SuperUserAccess : CanvasLayer
             SettingsManager.Instance.SuperUserAccessRequested += ActivateAccess;
             if (SettingsManager.Instance.SuperUserAccessEnabledThisSession)
                 ActivateAccess();
+        }
+    }
+
+    public override void _Process(double delta)
+    {
+        bool inChallenge = GetTree().GetNodesInGroup("challenge_scene").Count > 0;
+        if (inChallenge == _challengeContext)
+            return;
+
+        _challengeContext = inChallenge;
+        if (_panel != null && _panel.Visible)
+        {
+            if (_challengeContext)
+                PositionPanelForContext();
+            else
+                _panel.Visible = false;
         }
     }
 
@@ -117,7 +134,7 @@ public partial class SuperUserAccess : CanvasLayer
         _adminSection.AddChild(title);
 
         AddSectionHeader(_adminSection, "ASSESSMENT");
-        var solveButton = MakeButton("Auto-solve current question & continue");
+        var solveButton = MakeButton("Auto-solve current question");
         solveButton.Pressed += SolveCurrentQuestion;
         _adminSection.AddChild(solveButton);
 
@@ -273,6 +290,40 @@ public partial class SuperUserAccess : CanvasLayer
             return;
 
         _panel.Visible = !_panel.Visible;
+        if (_panel.Visible)
+        {
+            _challengeContext = GetTree().GetNodesInGroup("challenge_scene").Count > 0;
+            PositionPanelForContext();
+        }
+    }
+
+    private void PositionPanelForContext()
+    {
+        if (_challengeContext)
+        {
+            // Keep the assessment console compact and above the editor/canvas area.
+            _panel.CustomMinimumSize = new Vector2(330, 168);
+            _panel.AnchorLeft = 0f;
+            _panel.AnchorRight = 0f;
+            _panel.AnchorTop = 0f;
+            _panel.AnchorBottom = 0f;
+            _panel.OffsetLeft = 12;
+            _panel.OffsetRight = 342;
+            _panel.OffsetTop = 12;
+            _panel.OffsetBottom = 180;
+        }
+        else
+        {
+            _panel.CustomMinimumSize = new Vector2(390, 580);
+            _panel.AnchorLeft = 0f;
+            _panel.AnchorRight = 0f;
+            _panel.AnchorTop = 1f;
+            _panel.AnchorBottom = 1f;
+            _panel.OffsetLeft = 12;
+            _panel.OffsetRight = 402;
+            _panel.OffsetTop = -638;
+            _panel.OffsetBottom = -58;
+        }
     }
 
     private void SolveCurrentQuestion()
@@ -281,9 +332,12 @@ public partial class SuperUserAccess : CanvasLayer
         {
             if (node is ChallengeScene challenge)
             {
-                SetStatus(challenge.SuperUserSolveCurrentQuestion()
-                    ? "Correct solution generated and submitted."
+                bool solved = challenge.SuperUserSolveCurrentQuestion();
+                SetStatus(solved
+                    ? "Solution filled in. Review it, then press Submit & Next manually."
                     : "No active question can be auto-solved right now.");
+                if (solved)
+                    _panel.Visible = false;
                 return;
             }
         }
