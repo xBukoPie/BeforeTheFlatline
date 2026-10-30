@@ -1,0 +1,119 @@
+[gd_scene format=3 uid="uid://mrrxfx4oj27r"]
+
+[ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_rbmfx"]
+[ext_resource type="Texture2D" uid="uid://dkvlsq5h8vai6" path="res://Assets/Map/House/NoDoor.jpg" id="1_stdmg"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Door.tscn" id="2_lb6fg"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Lamp.tscn" id="3_6kgnw"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
+size = Vector2(238, 4)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_48lxs"]
+size = Vector2(238, 11)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vbfqq"]
+size = Vector2(13, 157)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_oejw2"]
+size = Vector2(49, 50)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_8uv3r"]
+size = Vector2(50, 56)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_kx8p7"]
+size = Vector2(136, 26)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_4jngp"]
+size = Vector2(57, 36)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_lmbop"]
+size = Vector2(58, 34)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_v2h47"]
+radius = 9.055386
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_48lxs"]
+radius = 9.0
+
+[node name="Kitchen" type="Node2D" unique_id=223312721]
+scale = Vector2(0.7, 0.7)
+script = ExtResource("1_rbmfx")
+RoomName = "Kitchen"
+
+[node name="Ground" type="Sprite2D" parent="." unique_id=557890966]
+texture = ExtResource("1_stdmg")
+region_enabled = true
+region_rect = Rect2(723, 312, 237, 172)
+
+[node name="Structures" type="StaticBody2D" parent="." unique_id=2120244221]
+
+[node name="TopWall" type="CollisionShape2D" parent="Structures" unique_id=662658929]
+position = Vector2(0, -84)
+shape = SubResource("RectangleShape2D_v2h47")
+
+[node name="BottomWall" type="CollisionShape2D" parent="Structures" unique_id=1810433310]
+position = Vector2(0, 80.5)
+shape = SubResource("RectangleShape2D_48lxs")
+
+[node name="LeftWall" type="CollisionShape2D" parent="Structures" unique_id=1276282658]
+position = Vector2(-112.5, -3.5)
+shape = SubResource("RectangleShape2D_vbfqq")
+
+[node name="RightWall" type="CollisionShape2D" parent="Structures" unique_id=635597169]
+position = Vector2(112, -3)
+shape = SubResource("RectangleShape2D_vbfqq")
+
+[node name="Decorations" type="StaticBody2D" parent="." unique_id=560687363]
+
+[node name="Sink" type="CollisionShape2D" parent="Decorations" unique_id=985806187]
+position = Vector2(80.5, -7)
+shape = SubResource("RectangleShape2D_oejw2")
+
+[node name="Refrigerator" type="CollisionShape2D" parent="Decorations" unique_id=1761799528]
+position = Vector2(80, 47)
+shape = SubResource("RectangleShape2D_8uv3r")
+
+[node name="Tabletop" type="CollisionShape2D" parent="Decorations" unique_id=2055075813]
+position = Vector2(37, -45)
+shape = SubResource("RectangleShape2D_kx8p7")
+
+[node name="Stove" type="CollisionShape2D" parent="Decorations" unique_id=1741915955]
+position = Vector2(-68.5, -46)
+shape = SubResource("RectangleShape2D_4jngp")
+
+[node name="Table" type="CollisionShape2D" parent="Decorations" unique_id=366177998]
+position = Vector2(-39, 50)
+shape = SubResource("RectangleShape2D_lmbop")
+
+[node name="Stool" type="CollisionShape2D" parent="Decorations" unique_id=586233177]
+position = Vector2(7, 54)
+shape = SubResource("CircleShape2D_v2h47")
+
+[node name="Stool2" type="CollisionShape2D" parent="Decorations" unique_id=1315931334]
+position = Vector2(-85, 55)
+shape = SubResource("CircleShape2D_48lxs")
+
+[node name="Lights" type="Node2D" parent="." unique_id=179930689]
+
+[node name="Lamp" parent="Lights" unique_id=28066272 instance=ExtResource("3_6kgnw")]
+position = Vector2(0.25000715, 2.499998)
+scale = Vector2(0.51323783, 0.36675346)
+color = Color(0.96454877, 0.87721324, 1, 1)
+energy = 0.67
+texture_scale = 1.8
+
+[node name="Doors" type="Node2D" parent="." unique_id=1577947098]
+
+[node name="ToLivingRoom" parent="Doors" unique_id=1210053727 instance=ExtResource("2_lb6fg")]
+position = Vector2(-96, 12)
+TargetRoom = "uid://qwiv766taqxf"
+TargetSpawn = "FromKitchen"
+Prompt = "Living Room"
+Size = Vector2(44, 12)
+LockedPrompt = "Locked. You need a key."
+
+[node name="Spawns" type="Node2D" parent="." unique_id=458269474]
+
+[node name="FromLivingRoom" type="Marker2D" parent="Spawns" unique_id=177880052]
+position = Vector2(-27.999992, 3.000002)
+scale = Vector2(0.7, 0.7)

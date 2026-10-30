@@ -9,8 +9,8 @@ public partial class SaveManager : Node
     public static SaveManager Instance { get; private set; }
 
     public const int ManualSlotCount = 3;
-    public const string WorldScenePath = "res://Scenes/Home/Rooms/World.tscn";
-    private const string DefaultRoomPath = "res://Scenes/Home/Rooms/Kwarto.tscn";
+    public const string WorldScenePath = "res://Scenes/Home/Areas/World.tscn";
+    private const string DefaultRoomPath = "res://Scenes/Home/Areas/PlayerRoom.tscn";
     private const string SaveDirectory = "res://Saves";
     private const string AutoSaveFileName = "autosave.json";
     private const double AutoSaveIntervalSeconds = 60.0;
@@ -202,7 +202,8 @@ public partial class SaveManager : Node
             {
                 ["hidden_points"] = RoomKeyProgression.Instance?.HiddenPoints ?? 0,
                 ["keys_earned"] = RoomKeyProgression.Instance?.TotalKeysEarned ?? 0,
-                ["pending_key_room"] = RoomKeyProgression.Instance?.PendingKeyRoomName ?? string.Empty
+                ["pending_key_room"] = RoomKeyProgression.Instance?.PendingKeyRoomName ?? string.Empty,
+                ["unlocked_rooms"] = CreateUnlockedRoomIds()
             },
             ["challenge_progress"] = ChallengeProgress.CreateSaveData()
         };
@@ -263,23 +264,34 @@ public partial class SaveManager : Node
             SanityManager.Instance.RestoreFromSaveData(sanityState);
         int keysToRestore = Mathf.Max(0, ReadInt(keyState, "keys_earned", 0));
         string pendingKeyRoom = ReadString(keyState, "pending_key_room", string.Empty);
+        bool hasExplicitUnlockedRooms = keyState.ContainsKey("unlocked_rooms") &&
+            keyState["unlocked_rooms"].VariantType == Variant.Type.Array;
+        string[] unlockedRoomIds = ReadStringArray(keyState, "unlocked_rooms");
+
         if (data.ContainsKey("challenge_progress"))
         {
             int passedAssessments = CountPassedAssessmentDays(challengeState);
-            int validKeys = Math.Min(keysToRestore, passedAssessments);
-            if (validKeys < keysToRestore)
-                GD.PushWarning($"SaveManager: ignored {keysToRestore - validKeys} room key(s) without a matching passed assessment.");
-            keysToRestore = validKeys;
+            if (!hasExplicitUnlockedRooms)
+            {
+                int validKeys = Math.Min(keysToRestore, passedAssessments);
+                if (validKeys < keysToRestore)
+                    GD.PushWarning($"SaveManager: ignored {keysToRestore - validKeys} room key(s) without a matching passed assessment.");
+                keysToRestore = validKeys;
 
-            // An uncollected key also needs a completed passing assessment in the save history.
-            if (passedAssessments <= keysToRestore)
+                if (passedAssessments <= keysToRestore)
+                    pendingKeyRoom = string.Empty;
+            }
+            else if (passedAssessments == 0)
+            {
                 pendingKeyRoom = string.Empty;
+            }
         }
 
         RoomKeyProgression.Instance?.RestoreProgress(
             ReadInt(keyState, "hidden_points", 0),
             keysToRestore,
-            pendingKeyRoom);
+            pendingKeyRoom,
+            hasExplicitUnlockedRooms ? unlockedRoomIds : null);
         ChallengeProgress.RestoreFromSaveData(challengeState);
 
         RoomManager.RequestStartRoomOnNextLoad(roomPath, "startSpawn");
@@ -446,6 +458,29 @@ public partial class SaveManager : Node
         return value.VariantType == Variant.Type.Dictionary
             ? value.AsGodotDictionary()
             : new Godot.Collections.Dictionary();
+    }
+
+    private static Godot.Collections.Array CreateUnlockedRoomIds()
+    {
+        var values = new Godot.Collections.Array();
+        foreach (string id in RoomKeyProgression.Instance?.GetUnlockedRoomIds() ?? System.Array.Empty<string>())
+            values.Add(id);
+        return values;
+    }
+
+    private static string[] ReadStringArray(Godot.Collections.Dictionary data, string key)
+    {
+        var values = new List<string>();
+        if (!data.ContainsKey(key) || data[key].VariantType != Variant.Type.Array)
+            return values.ToArray();
+
+        foreach (Variant item in data[key].AsGodotArray())
+        {
+            if (item.VariantType == Variant.Type.String && !string.IsNullOrWhiteSpace(item.AsString()))
+                values.Add(item.AsString());
+        }
+
+        return values.ToArray();
     }
 
     private static int ReadSaveVersion(Godot.Collections.Dictionary data)

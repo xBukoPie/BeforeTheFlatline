@@ -35,6 +35,7 @@ public partial class ChallengeScene : Control
 
     public override void _Ready()
     {
+        AddToGroup("challenge_scene");
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
@@ -314,6 +315,29 @@ public partial class ChallengeScene : Control
             SceneTransition.Instance.ChangeSceneToFile(_nextScene);
         else
             GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, _nextScene);
+    }
+
+    public bool SuperUserSolveCurrentQuestion()
+    {
+        if (_completed || _challenge == null)
+            return false;
+
+        if (_challenge.IsFlowchart)
+        {
+            if (_flowCanvas == null)
+                return false;
+            _flowCanvas.SetDefinitions(_challenge.FlowchartSolution);
+        }
+        else
+        {
+            if (_codeEditor == null || _challenge.PseudocodeSolution.Length == 0)
+                return false;
+            _codeEditor.Text = string.Join("\n", _challenge.PseudocodeSolution);
+        }
+
+        _feedback.Text = "SUPERUSER: answer generated. Recording the correct response...";
+        RecordAndContinue(gaveUp: false);
+        return true;
     }
 
     private bool CheckPseudocodeAnswer()
