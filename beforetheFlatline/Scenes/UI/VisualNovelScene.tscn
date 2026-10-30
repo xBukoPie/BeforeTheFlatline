@@ -66,7 +66,7 @@ shadow_offset = Vector2(0, 3)
 
 [sub_resource type="Theme" id="Theme_vn"]
 default_font = ExtResource("3_ithaca")
-default_font_size = 22
+default_font_size = 23
 Button/colors/font_color = Color(0.17, 0.11, 0.06, 1)
 Button/colors/font_focus_color = Color(0.17, 0.11, 0.06, 1)
 Button/colors/font_hover_color = Color(0.1, 0.06, 0.02, 1)
@@ -80,8 +80,8 @@ Button/styles/normal = SubResource("StyleBoxFlat_btn")
 Button/styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
 Label/colors/font_color = Color(0.17, 0.11, 0.06, 1)
 RichTextLabel/colors/default_color = Color(0.17, 0.11, 0.06, 1)
-RichTextLabel/font_sizes/bold_font_size = 24
-RichTextLabel/font_sizes/normal_font_size = 27
+RichTextLabel/font_sizes/bold_font_size = 26
+RichTextLabel/font_sizes/normal_font_size = 29
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_placeholder"]
 bg_color = Color(0.08, 0.08, 0.1, 0.4)
@@ -298,7 +298,7 @@ theme_override_constants/separation = 12
 [node name="Choice1" type="Button" parent="UI/ChoiceContainer" unique_id=1246028841]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 30
 text = "Sure thing"
 
 [node name="Choice2" type="Button" parent="UI/ChoiceContainer" unique_id=1018329764]
@@ -321,7 +321,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_nametag")
 [node name="NameLabel" type="Label" parent="UI/NameTag" unique_id=56869784]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 28
 text = "Erin"
 horizontal_alignment = 1
 
@@ -370,7 +370,7 @@ offset_top = -26.0
 offset_right = 200.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 20
 text = "Press [Space] to interact"
 horizontal_alignment = 1
 
