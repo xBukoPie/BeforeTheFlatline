@@ -13,6 +13,7 @@ public partial class SuperUserAccess : CanvasLayer
     private SpinBox _debuffIntensity;
     private OptionButton _keyRoom;
     private bool _accessAvailable;
+    private bool _challengeContext;
 
     private static readonly string[] KeyRoomIds =
     {
@@ -33,6 +34,27 @@ public partial class SuperUserAccess : CanvasLayer
             SettingsManager.Instance.SuperUserAccessRequested += ActivateAccess;
             if (SettingsManager.Instance.SuperUserAccessEnabledThisSession)
                 ActivateAccess();
+        }
+    }
+
+    public override void _Process(double delta)
+    {
+        bool inChallenge = GetTree().GetNodesInGroup("challenge_scene").Count > 0;
+        if (inChallenge == _challengeContext)
+            return;
+
+        _challengeContext = inChallenge;
+        if (_challengeContext)
+            SetTopRight(_toggleButton, -300, 12, -150, 48);
+        else
+            SetBottomLeft(_toggleButton, 12, -48, 154, -12);
+
+        if (_panel != null && _panel.Visible)
+        {
+            if (_challengeContext)
+                PositionPanelForContext();
+            else
+                _panel.Visible = false;
         }
     }
 
@@ -117,7 +139,7 @@ public partial class SuperUserAccess : CanvasLayer
         _adminSection.AddChild(title);
 
         AddSectionHeader(_adminSection, "ASSESSMENT");
-        var solveButton = MakeButton("Auto-solve current question & continue");
+        var solveButton = MakeButton("Auto-solve current question");
         solveButton.Pressed += SolveCurrentQuestion;
         _adminSection.AddChild(solveButton);
 
@@ -229,6 +251,18 @@ public partial class SuperUserAccess : CanvasLayer
         _adminSection.AddChild(_status);
     }
 
+    private static void SetTopRight(Control control, float leftOffset, float topOffset, float rightOffset, float bottomOffset)
+    {
+        control.AnchorLeft = 1f;
+        control.AnchorRight = 1f;
+        control.AnchorTop = 0f;
+        control.AnchorBottom = 0f;
+        control.OffsetLeft = leftOffset;
+        control.OffsetRight = rightOffset;
+        control.OffsetTop = topOffset;
+        control.OffsetBottom = bottomOffset;
+    }
+
     private static void SetBottomLeft(Control control, float leftOffset, float topOffset, float rightOffset, float bottomOffset)
     {
         control.AnchorLeft = 0f;
@@ -273,6 +307,46 @@ public partial class SuperUserAccess : CanvasLayer
             return;
 
         _panel.Visible = !_panel.Visible;
+        if (_panel.Visible)
+        {
+            _challengeContext = GetTree().GetNodesInGroup("challenge_scene").Count > 0;
+            PositionPanelForContext();
+        }
+    }
+
+    private void PositionPanelForContext()
+    {
+        for (int i = 0; i < _adminSection.GetChildCount(); i++)
+        {
+            if (_adminSection.GetChild(i) is Control child)
+                child.Visible = !_challengeContext || i <= 2;
+        }
+
+        if (_challengeContext)
+        {
+            // Only the solve action is shown during assessments, keeping the editor clear.
+            _panel.CustomMinimumSize = new Vector2(280, 116);
+            _panel.AnchorLeft = 1f;
+            _panel.AnchorRight = 1f;
+            _panel.AnchorTop = 0f;
+            _panel.AnchorBottom = 0f;
+            _panel.OffsetLeft = -292;
+            _panel.OffsetRight = -12;
+            _panel.OffsetTop = 52;
+            _panel.OffsetBottom = 168;
+        }
+        else
+        {
+            _panel.CustomMinimumSize = new Vector2(390, 580);
+            _panel.AnchorLeft = 0f;
+            _panel.AnchorRight = 0f;
+            _panel.AnchorTop = 1f;
+            _panel.AnchorBottom = 1f;
+            _panel.OffsetLeft = 12;
+            _panel.OffsetRight = 402;
+            _panel.OffsetTop = -638;
+            _panel.OffsetBottom = -58;
+        }
     }
 
     private void SolveCurrentQuestion()
@@ -281,9 +355,12 @@ public partial class SuperUserAccess : CanvasLayer
         {
             if (node is ChallengeScene challenge)
             {
-                SetStatus(challenge.SuperUserSolveCurrentQuestion()
-                    ? "Correct solution generated and submitted."
+                bool solved = challenge.SuperUserSolveCurrentQuestion();
+                SetStatus(solved
+                    ? "Solution filled in. Review it, then press Submit & Next manually."
                     : "No active question can be auto-solved right now.");
+                if (solved)
+                    _panel.Visible = false;
                 return;
             }
         }

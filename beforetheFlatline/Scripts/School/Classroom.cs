@@ -32,7 +32,10 @@ public partial class Classroom : Control
 
         FreezePlayer();
 
-        _firstDayGreetingVariant = DayClock.Instance?.ConsumeFirstDaySpecialGreetingPending() ?? false;
+        var clock = DayClock.Instance;
+        _firstDayGreetingVariant = clock != null &&
+            !clock.FirstDayMysteryEncounterSeen &&
+            clock.ConsumeFirstDaySpecialGreetingPending();
         _greetingActive = true;
         _dialogue.DialogueFinished += OnGreetingFinished;
         CallDeferred(MethodName.StartGreeting);
@@ -121,7 +124,7 @@ public partial class Classroom : Control
         _greetingActive = false;
         _dialogue.QueueFree();
 
-        bool alreadyCleared = ChallengeProgress.IsCompleted(ChallengeProgress.SequenceId);
+        bool alreadyCleared = DayClock.Instance?.SchoolChallengeCompletedToday == true;
 
         if (!alreadyCleared
             && !string.IsNullOrWhiteSpace(ChallengeScenePath)

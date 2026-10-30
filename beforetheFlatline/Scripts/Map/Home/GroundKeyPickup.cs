@@ -19,6 +19,32 @@ public partial class GroundKeyPickup : Area2D
         _prompt = GetNode<Label>("Prompt");
         _prompt.Visible = false;
 
+        var promptLayer = new CanvasLayer
+        {
+            Name = "InteractionPromptLayer",
+            Layer = 105
+        };
+        AddChild(promptLayer);
+        _prompt.GetParent()?.RemoveChild(_prompt);
+        promptLayer.AddChild(_prompt);
+        _prompt.AnchorLeft = 0.5f;
+        _prompt.AnchorRight = 0.5f;
+        _prompt.AnchorTop = 1f;
+        _prompt.AnchorBottom = 1f;
+        _prompt.OffsetLeft = -280;
+        _prompt.OffsetRight = 280;
+        _prompt.OffsetTop = -94;
+        _prompt.OffsetBottom = -50;
+        _prompt.CustomMinimumSize = new Vector2(560, 44);
+        _prompt.HorizontalAlignment = HorizontalAlignment.Center;
+        _prompt.VerticalAlignment = VerticalAlignment.Center;
+        _prompt.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        _prompt.MouseFilter = Control.MouseFilterEnum.Ignore;
+        _prompt.AddThemeFontSizeOverride("font_size", 18);
+        _prompt.AddThemeColorOverride("font_color", Colors.White);
+        _prompt.AddThemeColorOverride("font_outline_color", Colors.Black);
+        _prompt.AddThemeConstantOverride("outline_size", 4);
+
         if (RoomKeyProgression.Instance == null || !RoomKeyProgression.Instance.HasPendingKey)
         {
             QueueFree();
@@ -49,8 +75,6 @@ public partial class GroundKeyPickup : Area2D
         Monitoring = false;
         _sprite.Visible = false;
         _prompt.Text = $"KEY ACQUIRED: {roomName} unlocked!";
-        _prompt.Position = new Vector2(-78, -34);
-        _prompt.CustomMinimumSize = new Vector2(156, 0);
         _prompt.Visible = true;
         _feedbackRemaining = 2.5f;
 
@@ -74,8 +98,6 @@ public partial class GroundKeyPickup : Area2D
 
         _playerInside = true;
         _prompt.Text = "[E] Pick up key";
-        _prompt.Position = new Vector2(-48, -34);
-        _prompt.CustomMinimumSize = new Vector2(96, 0);
         _prompt.Visible = true;
     }
 
