@@ -3,20 +3,16 @@ using SchoolYardGame;
 
 public partial class SuperUserAccess : CanvasLayer
 {
-    private const string AccessPhrase = "SUPERBFT";
-
     private Control _root;
     private Button _toggleButton;
     private PanelContainer _panel;
-    private VBoxContainer _lockedSection;
     private VBoxContainer _adminSection;
-    private LineEdit _accessInput;
     private Label _status;
     private OptionButton _debuffType;
     private SpinBox _amount;
     private SpinBox _debuffIntensity;
     private OptionButton _keyRoom;
-    private bool _authenticated;
+    private bool _accessAvailable;
 
     private static readonly string[] KeyRoomIds =
     {
@@ -29,8 +25,17 @@ public partial class SuperUserAccess : CanvasLayer
     public override void _Ready()
     {
         ProcessMode = ProcessModeEnum.Always;
-        Layer = 100;
+        Layer = 110;
         BuildUi();
+
+        if (SettingsManager.Instance != null)
+            SettingsManager.Instance.SuperUserAccessRequested += ActivateAccess;
+    }
+
+    public override void _ExitTree()
+    {
+        if (SettingsManager.Instance != null)
+            SettingsManager.Instance.SuperUserAccessRequested -= ActivateAccess;
     }
 
     private void BuildUi()
@@ -43,21 +48,28 @@ public partial class SuperUserAccess : CanvasLayer
         {
             Text = "SUPERUSER",
             TooltipText = "Open SuperUser access",
-            FocusMode = Control.FocusModeEnum.None
+            FocusMode = Control.FocusModeEnum.None,
+            Visible = false
         };
-        SetTopRight(_toggleButton, -164, 10, -12, 44);
+        SetBottomLeft(_toggleButton, 12, -48, 154, -12);
         _toggleButton.Pressed += TogglePanel;
         _root.AddChild(_toggleButton);
 
-        _panel = new PanelContainer { Name = "SuperUserPanel", Visible = false, CustomMinimumSize = new Vector2(390, 620) };
-        _panel.AnchorLeft = 1f;
-        _panel.AnchorRight = 1f;
-        _panel.AnchorTop = 0f;
-        _panel.AnchorBottom = 0f;
-        _panel.OffsetLeft = -402;
-        _panel.OffsetRight = -12;
-        _panel.OffsetTop = 52;
-        _panel.OffsetBottom = 682;
+        _panel = new PanelContainer
+        {
+            Name = "SuperUserPanel",
+            Visible = false,
+            CustomMinimumSize = new Vector2(390, 580),
+            MouseFilter = Control.MouseFilterEnum.Stop
+        };
+        _panel.AnchorLeft = 0f;
+        _panel.AnchorRight = 0f;
+        _panel.AnchorTop = 1f;
+        _panel.AnchorBottom = 1f;
+        _panel.OffsetLeft = 12;
+        _panel.OffsetRight = 402;
+        _panel.OffsetTop = -638;
+        _panel.OffsetBottom = -58;
         _panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color("101827"),
@@ -86,9 +98,9 @@ public partial class SuperUserAccess : CanvasLayer
         };
         _panel.AddChild(scroll);
 
-        var content = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        content.AddThemeConstantOverride("separation", 8);
-        scroll.AddChild(content);
+        _adminSection = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        _adminSection.AddThemeConstantOverride("separation", 8);
+        scroll.AddChild(_adminSection);
 
         var title = new Label
         {
@@ -98,31 +110,7 @@ public partial class SuperUserAccess : CanvasLayer
         };
         title.AddThemeFontSizeOverride("font_size", 18);
         title.AddThemeColorOverride("font_color", new Color("c4b5fd"));
-        content.AddChild(title);
-
-        _lockedSection = new VBoxContainer();
-        _lockedSection.AddThemeConstantOverride("separation", 8);
-        content.AddChild(_lockedSection);
-        _lockedSection.AddChild(new Label
-        {
-            Text = "Enter the access phrase to enable testing controls.",
-            AutowrapMode = TextServer.AutowrapMode.WordSmart
-        });
-        _accessInput = new LineEdit
-        {
-            PlaceholderText = "Access phrase",
-            Secret = true,
-            CustomMinimumSize = new Vector2(0, 38)
-        };
-        _accessInput.TextSubmitted += _ => Unlock();
-        _lockedSection.AddChild(_accessInput);
-        var unlockButton = MakeButton("Unlock Admin Access");
-        unlockButton.Pressed += Unlock;
-        _lockedSection.AddChild(unlockButton);
-
-        _adminSection = new VBoxContainer { Visible = false };
-        _adminSection.AddThemeConstantOverride("separation", 10);
-        content.AddChild(_adminSection);
+        _adminSection.AddChild(title);
 
         AddSectionHeader(_adminSection, "ASSESSMENT");
         var solveButton = MakeButton("Auto-solve current question & continue");
@@ -131,7 +119,7 @@ public partial class SuperUserAccess : CanvasLayer
 
         AddSectionHeader(_adminSection, "SANITY & DEBUFFS");
         var amountRow = new HBoxContainer();
-        amountRow.AddChild(new Label { Text = "Amount", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, VerticalAlignment = VerticalAlignment.Center });
+        amountRow.AddChild(new Label { Text = "Sanity amount", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, VerticalAlignment = VerticalAlignment.Center });
         _amount = new SpinBox { MinValue = 1, MaxValue = 100, Step = 1, Value = 10, CustomMinimumSize = new Vector2(110, 34) };
         amountRow.AddChild(_amount);
         _adminSection.AddChild(amountRow);
@@ -146,7 +134,7 @@ public partial class SuperUserAccess : CanvasLayer
         _adminSection.AddChild(debuffRow);
 
         var debuffIntensityRow = new HBoxContainer();
-        debuffIntensityRow.AddChild(new Label { Text = "Debuff level", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, VerticalAlignment = VerticalAlignment.Center });
+        debuffIntensityRow.AddChild(new Label { Text = "Intensity", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, VerticalAlignment = VerticalAlignment.Center });
         _debuffIntensity = new SpinBox { MinValue = 1, MaxValue = SanityManager.MaxSanity, Step = 1, Value = 25, CustomMinimumSize = new Vector2(110, 34) };
         debuffIntensityRow.AddChild(_debuffIntensity);
         _adminSection.AddChild(debuffIntensityRow);
@@ -179,7 +167,7 @@ public partial class SuperUserAccess : CanvasLayer
         _adminSection.AddChild(grantKey);
 
         AddSectionHeader(_adminSection, "EVENTS & CONDITIONS");
-        var schoolComplete = MakeButton("Mark school assessment complete");
+        var schoolComplete = MakeButton("Mark assessment complete");
         schoolComplete.Pressed += () =>
         {
             DayClock.Instance?.MarkSchoolChallengeCompletedToday();
@@ -187,7 +175,7 @@ public partial class SuperUserAccess : CanvasLayer
         };
         _adminSection.AddChild(schoolComplete);
 
-        var schoolOpen = MakeButton("Set time to 08:00 (school open)");
+        var schoolOpen = MakeButton("Set time to 08:00");
         schoolOpen.Pressed += () =>
         {
             DayClock.Instance?.SetHourOfDay(8f);
@@ -199,7 +187,7 @@ public partial class SuperUserAccess : CanvasLayer
         nextDay.Pressed += () =>
         {
             DayClock.Instance?.AdvanceHours(24f);
-            SetStatus("Advanced the in-game day by 24 hours.");
+            SetStatus("Advanced the in-game day.");
         };
         _adminSection.AddChild(nextDay);
 
@@ -209,7 +197,7 @@ public partial class SuperUserAccess : CanvasLayer
         markMystery.Pressed += () =>
         {
             DayClock.Instance?.MarkFirstDayMysteryEncounterCompleted();
-            SetStatus("First-day mystery is marked seen; the special greeting is pending.");
+            SetStatus("First-day mystery marked as seen.");
         };
         mysteryRow.AddChild(markMystery);
 
@@ -218,39 +206,31 @@ public partial class SuperUserAccess : CanvasLayer
         resetMystery.Pressed += () =>
         {
             DayClock.Instance?.RestoreFirstDayMysteryState(false, false);
-            SetStatus("First-day mystery condition reset.");
+            SetStatus("First-day mystery state reset.");
         };
         mysteryRow.AddChild(resetMystery);
         _adminSection.AddChild(mysteryRow);
 
-        var lockButton = MakeButton("Lock admin access");
-        lockButton.Pressed += () =>
-        {
-            _authenticated = false;
-            _lockedSection.Visible = true;
-            _adminSection.Visible = false;
-            _accessInput.Clear();
-            _toggleButton.Text = "SUPERUSER";
-            SetStatus("Admin access locked.");
-        };
-        _adminSection.AddChild(lockButton);
+        var hideButton = MakeButton("Hide console");
+        hideButton.Pressed += () => _panel.Visible = false;
+        _adminSection.AddChild(hideButton);
 
         _status = new Label
         {
-            Text = "Admin access is locked.",
+            Text = "SuperUser access is hidden.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            CustomMinimumSize = new Vector2(0, 44)
+            CustomMinimumSize = new Vector2(0, 38)
         };
         _status.AddThemeColorOverride("font_color", new Color("fcd34d"));
-        content.AddChild(_status);
+        _adminSection.AddChild(_status);
     }
 
-    private static void SetTopRight(Control control, float leftOffset, float topOffset, float rightOffset, float bottomOffset)
+    private static void SetBottomLeft(Control control, float leftOffset, float topOffset, float rightOffset, float bottomOffset)
     {
-        control.AnchorLeft = 1f;
-        control.AnchorRight = 1f;
-        control.AnchorTop = 0f;
-        control.AnchorBottom = 0f;
+        control.AnchorLeft = 0f;
+        control.AnchorRight = 0f;
+        control.AnchorTop = 1f;
+        control.AnchorBottom = 1f;
         control.OffsetLeft = leftOffset;
         control.OffsetRight = rightOffset;
         control.OffsetTop = topOffset;
@@ -272,27 +252,23 @@ public partial class SuperUserAccess : CanvasLayer
         parent.AddChild(label);
     }
 
-    private void TogglePanel()
+    private void ActivateAccess()
     {
-        _panel.Visible = !_panel.Visible;
-        if (_panel.Visible && !_authenticated)
-            _accessInput.GrabFocus();
+        if (_accessAvailable)
+            return;
+
+        _accessAvailable = true;
+        _toggleButton.Visible = true;
+        SetStatus("Developer mode enabled for this session.");
+        GD.Print("SuperUserAccess: developer mode enabled by player-name setting.");
     }
 
-    private void Unlock()
+    private void TogglePanel()
     {
-        if (string.Equals(_accessInput.Text.Trim(), AccessPhrase, System.StringComparison.OrdinalIgnoreCase))
-        {
-            _authenticated = true;
-            _lockedSection.Visible = false;
-            _adminSection.Visible = true;
-            _toggleButton.Text = "ADMIN PANEL";
-            SetStatus("Access granted. Changes affect the current game session.");
-        }
-        else
-        {
-            SetStatus("Access denied. Check the phrase and try again.");
-        }
+        if (!_accessAvailable)
+            return;
+
+        _panel.Visible = !_panel.Visible;
     }
 
     private void SolveCurrentQuestion()
