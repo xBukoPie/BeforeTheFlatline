@@ -7,6 +7,7 @@ public partial class SettingsManager : Node
 {
     public static SettingsManager Instance { get; private set; }
     public event Action SettingsChanged;
+    public event Action SuperUserAccessRequested;
 
     private const string SettingsPath = "user://before_the_flatline_settings.cfg";
     private const string AudioBusName = "Master";
@@ -15,6 +16,7 @@ public partial class SettingsManager : Node
     public float Brightness { get; private set; } = 0.88f;
     public bool Fullscreen { get; private set; } = false;
     public string PlayerName { get; private set; } = "Player";
+    public bool SuperUserAccessEnabledThisSession { get; private set; }
 
     public override void _Ready()
     {
@@ -60,7 +62,20 @@ public partial class SettingsManager : Node
 
     public void SetPlayerName(string value)
     {
-        string normalized = string.IsNullOrWhiteSpace(value) ? "Player" : value.Trim();
+        string enteredName = (value ?? string.Empty).Trim();
+
+        // The developer trigger is consumed immediately; it is never stored as the character name.
+        if (string.Equals(enteredName, "/BFTDevMode", StringComparison.Ordinal))
+        {
+            SuperUserAccessEnabledThisSession = true;
+            PlayerName = "Default";
+            SaveSettings();
+            SettingsChanged?.Invoke();
+            SuperUserAccessRequested?.Invoke();
+            return;
+        }
+
+        string normalized = string.IsNullOrWhiteSpace(enteredName) ? "Player" : enteredName;
         if (normalized.Length > 24)
             normalized = normalized[..24];
 
@@ -83,6 +98,12 @@ public partial class SettingsManager : Node
         Fullscreen = (bool)config.GetValue("display", "fullscreen", Fullscreen);
         PlayerName = ((string)config.GetValue("player", "name", PlayerName) ?? PlayerName).Trim();
         if (string.IsNullOrWhiteSpace(PlayerName)) PlayerName = "Player";
+        if (string.Equals(PlayerName, "/BFTDevMode", StringComparison.Ordinal))
+        {
+            SuperUserAccessEnabledThisSession = true;
+            PlayerName = "Default";
+            SaveSettings();
+        }
         if (PlayerName.Length > 24) PlayerName = PlayerName[..24];
     }
 

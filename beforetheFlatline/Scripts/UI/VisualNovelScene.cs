@@ -108,6 +108,12 @@ public partial class VisualNovelScene : Control
             CallDeferred(MethodName.StartDemo); // wait one frame so container layout is final
     }
 
+    public override void _ExitTree()
+    {
+        // Prevent a local dialogue pause from leaving the global status overlay hidden after this scene closes.
+        StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
+    }
+
     public override void _Process(double delta)
     {
         if (!_lineActive || _logOpen || (_pauseMenu != null && _pauseMenu.Visible))
@@ -430,6 +436,7 @@ public partial class VisualNovelScene : Control
         _clockWasRunningBeforePause = DayClock.Instance?.Running ?? false;
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
+        StatusEffectsOverlay.Instance?.SetPauseMenuVisible(true);
 
         if (_pauseMenu != null)
         {
@@ -537,6 +544,7 @@ public partial class VisualNovelScene : Control
 
         if (DayClock.Instance != null)
             DayClock.Instance.Running = _clockWasRunningBeforePause;
+        StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
     }
 
     private void SkipEntireDialogue()
