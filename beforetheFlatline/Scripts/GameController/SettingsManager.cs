@@ -16,6 +16,7 @@ public partial class SettingsManager : Node
     public float Brightness { get; private set; } = 0.88f;
     public bool Fullscreen { get; private set; } = false;
     public string PlayerName { get; private set; } = "Player";
+    public bool SuperUserAccessEnabledThisSession { get; private set; }
 
     public override void _Ready()
     {
@@ -66,6 +67,7 @@ public partial class SettingsManager : Node
         // The developer trigger is consumed immediately; it is never stored as the character name.
         if (string.Equals(enteredName, "/BFTDevMode", StringComparison.Ordinal))
         {
+            SuperUserAccessEnabledThisSession = true;
             PlayerName = "Default";
             SaveSettings();
             SettingsChanged?.Invoke();
@@ -96,6 +98,12 @@ public partial class SettingsManager : Node
         Fullscreen = (bool)config.GetValue("display", "fullscreen", Fullscreen);
         PlayerName = ((string)config.GetValue("player", "name", PlayerName) ?? PlayerName).Trim();
         if (string.IsNullOrWhiteSpace(PlayerName)) PlayerName = "Player";
+        if (string.Equals(PlayerName, "/BFTDevMode", StringComparison.Ordinal))
+        {
+            SuperUserAccessEnabledThisSession = true;
+            PlayerName = "Default";
+            SaveSettings();
+        }
         if (PlayerName.Length > 24) PlayerName = PlayerName[..24];
     }
 
