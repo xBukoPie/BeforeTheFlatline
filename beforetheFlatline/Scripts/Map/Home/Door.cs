@@ -18,6 +18,7 @@ public partial class Door : Area2D
     private const bool DebugLog = true;   // prints door activity to the Output panel; set to false once doors work
 
     private Label _hint;
+    private CanvasLayer _promptLayer;
     private bool _playerInside;
     private bool _mysteryIntroOpening;
     private float _closedPromptRemaining;
@@ -39,19 +40,35 @@ public partial class Door : Area2D
             });
         }
 
+        _promptLayer = new CanvasLayer
+        {
+            Name = "InteractionPromptLayer",
+            Layer = 105
+        };
+        AddChild(_promptLayer);
+
         _hint = new Label
         {
             Text = $"[E] {Prompt}",
             Visible = false,
             ZIndex = 100,
             HorizontalAlignment = HorizontalAlignment.Center,
-            CustomMinimumSize = new Vector2(120, 0),
-            Position = new Vector2(-60, -Mathf.Min(Size.Y / 2f, 20f) - 18f),
+            VerticalAlignment = VerticalAlignment.Center,
+            CustomMinimumSize = new Vector2(520, 44),
+            MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        _hint.AddThemeFontSizeOverride("font_size", 8);
+        _hint.AnchorLeft = 0.5f;
+        _hint.AnchorRight = 0.5f;
+        _hint.AnchorTop = 1f;
+        _hint.AnchorBottom = 1f;
+        _hint.OffsetLeft = -260;
+        _hint.OffsetRight = 260;
+        _hint.OffsetTop = -94;
+        _hint.OffsetBottom = -50;
+        _hint.AddThemeFontSizeOverride("font_size", 18);
         _hint.AddThemeColorOverride("font_outline_color", Colors.Black);
-        _hint.AddThemeConstantOverride("outline_size", 3);
-        AddChild(_hint);
+        _hint.AddThemeConstantOverride("outline_size", 4);
+        _promptLayer.AddChild(_hint);
 
         BodyEntered += OnBodyEntered;
         BodyExited += OnBodyExited;
