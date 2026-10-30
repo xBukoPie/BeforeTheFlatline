@@ -36,7 +36,8 @@ public static class GeneratedChallengeFactory
     private static readonly string[] VariableNames =
     {
         "score", "points", "mark", "result", "value", "grade", "average",
-        "balance", "quantity", "attendance", "attempts", "total", "temperature"
+        "rating", "examScore", "quizScore", "finalMark", "classScore",
+        "performance", "testResult"
     };
 
     // These settings and terms are mixed into generated prompts to vary their vocabulary.
@@ -350,8 +351,8 @@ public static class GeneratedChallengeFactory
         string framedPrompt = Pick(rng, new[]
         {
             $"At {setting}, {sentence}",
-            $"During {setting}, {sentence}",
-            $"For an activity connected to {setting}, {sentence}",
+            $"While visiting {setting}, {sentence}",
+            $"For an activity at {setting}, {sentence}",
             $"Scenario: {prompt}",
             $"Your task: {prompt}"
         });
