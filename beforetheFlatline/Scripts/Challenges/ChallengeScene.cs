@@ -18,6 +18,7 @@ public partial class ChallengeScene : Control
     private Button _clearButton;
 
     private GeneratedChallenge _challenge;
+    private string _activeChallengeId = "";
     private string _nextScene = "";
     private int _difficulty = 1;
     private int _day = 1;
@@ -74,7 +75,7 @@ public partial class ChallengeScene : Control
         _main.AddChild(top);
 
         var banner = new Label { Text = "ALGORITHM LAB", SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        banner.AddThemeFontSizeOverride("font_size", 14);
+        banner.AddThemeFontSizeOverride("font_size", 16);
         banner.AddThemeColorOverride("font_color", new Color("7dd3fc"));
         top.AddChild(banner);
 
@@ -106,7 +107,7 @@ public partial class ChallengeScene : Control
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             CustomMinimumSize = new Vector2(0, 62)
         };
-        prompt.AddThemeFontSizeOverride("font_size", 16);
+        prompt.AddThemeFontSizeOverride("font_size", 18);
         prompt.AddThemeColorOverride("font_color", new Color("cbd5e1"));
         _main.AddChild(prompt);
 
@@ -128,7 +129,7 @@ public partial class ChallengeScene : Control
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             CustomMinimumSize = new Vector2(0, 34)
         };
-        _feedback.AddThemeFontSizeOverride("font_size", 14);
+        _feedback.AddThemeFontSizeOverride("font_size", 16);
         _feedback.AddThemeColorOverride("font_color", new Color("94a3b8"));
         _main.AddChild(_feedback);
 
@@ -142,6 +143,7 @@ public partial class ChallengeScene : Control
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             VerticalAlignment = VerticalAlignment.Center
         };
+        _progress.AddThemeFontSizeOverride("font_size", 16);
         footer.AddChild(_progress);
 
         _clearButton = new Button { Text = "Clear Entry", CustomMinimumSize = new Vector2(105, 44) };
@@ -160,45 +162,51 @@ public partial class ChallengeScene : Control
     private void GenerateCurrentTask()
     {
         _day = DayClock.Instance?.DayNumber ?? 1;
+        DailyTestSession.BeginIfNeeded(_day);
 
-        if (ChallengeId.Equals("sequence", StringComparison.OrdinalIgnoreCase))
+        _activeChallengeId = DailyTestSession.CurrentQuestionId;
+        if (string.IsNullOrWhiteSpace(_activeChallengeId))
+        {
+            GD.PushError("ChallengeScene: the daily question order is empty. Resetting the assessment session.");
             DailyTestSession.Begin(_day);
-        else
-            DailyTestSession.BeginIfNeeded(_day);
+            _activeChallengeId = DailyTestSession.CurrentQuestionId;
+        }
 
         int failureAdjustment = SanityManager.Instance?.DifficultyPenalty ?? 0;
         _difficulty = Mathf.Clamp(_day + failureAdjustment - 1, 1, 5);
 
         var rng = new Random(unchecked((int)GD.Randi()));
-        _challenge = GeneratedChallengeFactory.Generate(ChallengeId, _difficulty, rng);
+        _challenge = GeneratedChallengeFactory.Generate(_activeChallengeId, _difficulty, rng);
 
         var title = _main.GetNode<Label>("ChallengeTitle");
         var prompt = _main.GetNode<Label>("ChallengePrompt");
         title.Text = _challenge.Title;
         prompt.Text = _challenge.Prompt;
 
-        _nextScene = ChallengeId.ToLowerInvariant() switch
-        {
-            "sequence" => "res://Scenes/Challenges/ConditionChallenge.tscn",
-            "condition" => "res://Scenes/Challenges/FlowchartChallenge.tscn",
-            "flowchart" => "res://Scenes/Challenges/FinalChallenge.tscn",
-            _ => "res://Scenes/School/TestResults.tscn"
-        };
+        string nextQuestionId = DailyTestSession.NextQuestionId;
+        _nextScene = string.IsNullOrWhiteSpace(nextQuestionId)
+            ? "res://Scenes/School/TestResults.tscn"
+            : GetChallengeScenePath(nextQuestionId);
 
         if (_challenge.IsFlowchart)
             RenderFlowchartEditor();
         else
             RenderPseudocodeEditor();
 
-        int questionNumber = ChallengeId.ToLowerInvariant() switch
-        {
-            "sequence" => 1,
-            "condition" => 2,
-            "flowchart" => 3,
-            _ => 4
-        };
+        int questionNumber = DailyTestSession.AttemptCount + 1;
         _progress.Text = $"QUESTION {questionNumber}/4   •   DAY {_day}   •   DIFFICULTY {_difficulty}/5";
     }
+
+
+    private static string GetChallengeScenePath(string challengeId) =>
+        challengeId.ToLowerInvariant() switch
+        {
+            "sequence" => "res://Scenes/Challenges/SequenceChallenge.tscn",
+            "condition" => "res://Scenes/Challenges/ConditionChallenge.tscn",
+            "flowchart" => "res://Scenes/Challenges/FlowchartChallenge.tscn",
+            "final" => "res://Scenes/Challenges/FinalChallenge.tscn",
+            _ => "res://Scenes/School/TestResults.tscn"
+        };
 
     private void RenderPseudocodeEditor()
     {
@@ -208,6 +216,7 @@ public partial class ChallengeScene : Control
             Text = "Write pseudocode that solves the problem. Use any variable names you like.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
+        guide.AddThemeFontSizeOverride("font_size", 18);
         guide.AddThemeColorOverride("font_color", new Color("7dd3fc"));
         _content.AddChild(guide);
 
@@ -235,6 +244,7 @@ public partial class ChallengeScene : Control
             Text = "Build a flowchart that solves the problem. Drag in blocks and arrange them in order.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
+        guide.AddThemeFontSizeOverride("font_size", 18);
         guide.AddThemeColorOverride("font_color", new Color("7dd3fc"));
         _content.AddChild(guide);
 
@@ -257,6 +267,7 @@ public partial class ChallengeScene : Control
         }
 
         var canvasTitle = new Label { Text = "CONNECTED FLOWCHART" };
+        canvasTitle.AddThemeFontSizeOverride("font_size", 16);
         canvasTitle.AddThemeColorOverride("font_color", new Color("7dd3fc"));
         _content.AddChild(canvasTitle);
 
@@ -289,10 +300,10 @@ public partial class ChallengeScene : Control
             return;
 
         bool correct = !gaveUp && (_challenge.IsFlowchart ? CheckFlowchartAnswer() : CheckPseudocodeAnswer());
-        DailyTestSession.Record(ChallengeId, correct, gaveUp, _difficulty);
+        DailyTestSession.Record(_activeChallengeId, correct, gaveUp, _difficulty);
 
         if (correct)
-            ChallengeProgress.MarkCompleted(ChallengeId);
+            ChallengeProgress.MarkCompleted(_activeChallengeId);
 
         _completed = true;
         _submitButton.Disabled = true;
@@ -335,8 +346,8 @@ public partial class ChallengeScene : Control
             _codeEditor.Text = string.Join("\n", _challenge.PseudocodeSolution);
         }
 
-        _feedback.Text = "SUPERUSER: answer generated. Recording the correct response...";
-        RecordAndContinue(gaveUp: false);
+        _feedback.Text = "SUPERUSER: solution filled in. Review it, then press Submit & Next when ready.";
+        _feedback.AddThemeColorOverride("font_color", new Color("86efac"));
         return true;
     }
 

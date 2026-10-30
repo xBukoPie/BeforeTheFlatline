@@ -36,12 +36,12 @@ public partial class DayClock : Node
     public void MarkFirstDayMysteryEncounterCompleted()
     {
         FirstDayMysteryEncounterSeen = true;
-        _firstDaySpecialGreetingPending = true;
+        _firstDaySpecialGreetingPending = false;
     }
 
     public bool ConsumeFirstDaySpecialGreetingPending()
     {
-        bool pending = _firstDaySpecialGreetingPending;
+        bool pending = _firstDaySpecialGreetingPending && !FirstDayMysteryEncounterSeen;
         _firstDaySpecialGreetingPending = false;
         return pending;
     }
@@ -49,7 +49,8 @@ public partial class DayClock : Node
     public void RestoreFirstDayMysteryState(bool encounterSeen, bool specialGreetingPending)
     {
         FirstDayMysteryEncounterSeen = encounterSeen;
-        _firstDaySpecialGreetingPending = specialGreetingPending;
+        // Old saves may contain both flags. A completed mystery encounter always wins.
+        _firstDaySpecialGreetingPending = specialGreetingPending && !encounterSeen;
     }
 
     public bool IsSchoolOpen => Hour >= SchoolOpenHour && Hour < SchoolClosingHour;
