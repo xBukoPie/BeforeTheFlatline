@@ -351,8 +351,8 @@ public static class GeneratedChallengeFactory
         string framedPrompt = Pick(rng, new[]
         {
             $"At {setting}, {sentence}",
-            $"While visiting {setting}, {sentence}",
-            $"For an activity at {setting}, {sentence}",
+            $"In connection with {setting}, {sentence}",
+            $"For a task related to {setting}, {sentence}",
             $"Scenario: {prompt}",
             $"Your task: {prompt}"
         });
