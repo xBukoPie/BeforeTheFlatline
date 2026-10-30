@@ -108,6 +108,12 @@ public partial class VisualNovelScene : Control
             CallDeferred(MethodName.StartDemo); // wait one frame so container layout is final
     }
 
+    public override void _ExitTree()
+    {
+        // Prevent a local dialogue pause from leaving the global status overlay hidden after this scene closes.
+        StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
+    }
+
     public override void _Process(double delta)
     {
         if (!_lineActive || _logOpen || (_pauseMenu != null && _pauseMenu.Visible))

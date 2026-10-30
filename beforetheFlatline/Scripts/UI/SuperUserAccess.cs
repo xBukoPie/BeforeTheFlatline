@@ -29,7 +29,11 @@ public partial class SuperUserAccess : CanvasLayer
         BuildUi();
 
         if (SettingsManager.Instance != null)
+        {
             SettingsManager.Instance.SuperUserAccessRequested += ActivateAccess;
+            if (SettingsManager.Instance.SuperUserAccessEnabledThisSession)
+                ActivateAccess();
+        }
     }
 
     public override void _ExitTree()
