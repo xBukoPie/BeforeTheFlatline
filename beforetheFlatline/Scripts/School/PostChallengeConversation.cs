@@ -63,6 +63,7 @@ public partial class PostChallengeConversation : Control
         if (rng.Randf() < 0.35f)
         {
             _dialogue.Visible = false;
+            GD.Print("[PostChallengeConversation] No follow-up conversation selected; returning to the world.");
             CallDeferred(MethodName.OnDialogueFinished);
             return;
         }
@@ -96,7 +97,7 @@ public partial class PostChallengeConversation : Control
         };
     }
 
-    private void OnDialogueFinished()
+    private async void OnDialogueFinished()
     {
         if (_isReturning)
             return;
@@ -125,8 +126,25 @@ public partial class PostChallengeConversation : Control
             return;
         }
 
-        if (SceneTransition.Instance != null)
-            SceneTransition.Instance.ChangeSceneToFile(WorldScenePath);
+        GD.Print($"[PostChallengeConversation] Loading {WorldScenePath}; destination room: {destinationRoom}; pending key: {keyWaitingOnLot}.");
+
+        // This scene can finish immediately when the random no-conversation branch is chosen.
+        // In that case the fade used to enter this scene may still be active. SceneTransition
+        // ignores requests while busy, so wait for that transition instead of silently staying here.
+        SceneTransition transition = SceneTransition.Instance;
+        while (transition != null && GodotObject.IsInstanceValid(transition) && transition.IsBusy)
+        {
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            if (!IsInsideTree())
+                return;
+            transition = SceneTransition.Instance;
+        }
+
+        if (!IsInsideTree())
+            return;
+
+        if (transition != null && GodotObject.IsInstanceValid(transition))
+            transition.ChangeSceneToFile(WorldScenePath);
         else
             GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, WorldScenePath);
     }
