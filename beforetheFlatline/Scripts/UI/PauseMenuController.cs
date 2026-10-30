@@ -85,6 +85,7 @@ public partial class PauseMenuController : CanvasLayer
         _settingsOpen = false;
         _pauseMenuContent.Visible = true;
         _overlay.Visible = true;
+        StatusEffectsOverlay.Instance?.SetPauseMenuVisible(true);
         GetTree().Paused = true;
     }
 
@@ -101,6 +102,7 @@ public partial class PauseMenuController : CanvasLayer
         _isPaused = false;
         _overlay.Visible = false;
         GetTree().Paused = false;
+        StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
 
         if (DayClock.Instance != null)
             DayClock.Instance.Running = _clockWasRunning;
@@ -197,6 +199,7 @@ public partial class PauseMenuController : CanvasLayer
         _isPaused = false;
         _overlay.Visible = false;
         GetTree().Paused = false;
+        StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
     }
@@ -223,6 +226,7 @@ public partial class PauseMenuController : CanvasLayer
         _isPaused = false;
         _overlay.Visible = false;
         GetTree().Paused = false;
+        StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
     }
 
     private void BuildMenu()
