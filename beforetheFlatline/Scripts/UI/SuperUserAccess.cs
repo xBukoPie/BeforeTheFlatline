@@ -316,18 +316,24 @@ public partial class SuperUserAccess : CanvasLayer
 
     private void PositionPanelForContext()
     {
+        for (int i = 0; i < _adminSection.GetChildCount(); i++)
+        {
+            if (_adminSection.GetChild(i) is Control child)
+                child.Visible = !_challengeContext || i <= 2;
+        }
+
         if (_challengeContext)
         {
-            // Keep the assessment console compact and above the editor/canvas area.
-            _panel.CustomMinimumSize = new Vector2(330, 168);
-            _panel.AnchorLeft = 0f;
-            _panel.AnchorRight = 0f;
+            // Only the solve action is shown during assessments, keeping the editor clear.
+            _panel.CustomMinimumSize = new Vector2(280, 116);
+            _panel.AnchorLeft = 1f;
+            _panel.AnchorRight = 1f;
             _panel.AnchorTop = 0f;
             _panel.AnchorBottom = 0f;
-            _panel.OffsetLeft = 12;
-            _panel.OffsetRight = 342;
-            _panel.OffsetTop = 12;
-            _panel.OffsetBottom = 180;
+            _panel.OffsetLeft = -292;
+            _panel.OffsetRight = -12;
+            _panel.OffsetTop = 52;
+            _panel.OffsetBottom = 168;
         }
         else
         {
