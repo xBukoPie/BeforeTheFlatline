@@ -23,6 +23,9 @@ public partial class StatusEffectsOverlay : CanvasLayer
     private float _elapsed;
     private float _sanity = SanityManager.MaxSanity;
     private float _endingFade = 1f;
+    private float _mainMenuFade = 1f;
+    private float _pauseFade = 1f;
+    private bool _pauseMenuVisible;
     private bool _endingTransitionStarted;
     private SanityManager.DebuffType _dominantDebuff = SanityManager.DebuffType.Dizziness;
     private Color _flashColor = new("e34d5b");
@@ -87,6 +90,24 @@ public partial class StatusEffectsOverlay : CanvasLayer
         _noticeTime = Mathf.Max(0f, _noticeTime - dt);
         if (_noticeLabel != null)
             _noticeLabel.Visible = _noticeTime > 0f;
+
+        string scenePath = GetTree()?.CurrentScene?.SceneFilePath ?? string.Empty;
+        bool onMainMenu = string.Equals(
+            scenePath,
+            "res://Scenes/Menu/Main.tscn",
+            StringComparison.OrdinalIgnoreCase);
+        _mainMenuFade = Mathf.MoveToward(_mainMenuFade, onMainMenu ? 0f : 1f, dt / 1.25f);
+        _pauseFade = Mathf.MoveToward(_pauseFade, _pauseMenuVisible ? 0f : 1f, dt / 0.18f);
+
+        RefreshEffects();
+    }
+
+    // Keep the status effects underneath pause UI, including the dialogue's local pause panel.
+    public void SetPauseMenuVisible(bool visible)
+    {
+        _pauseMenuVisible = visible;
+        if (visible)
+            _pauseFade = 0f;
 
         RefreshEffects();
     }
@@ -346,7 +367,8 @@ void fragment() {
         int pressure = manager?.GetDebuffLevel(SanityManager.DebuffType.Pressure) ?? 0;
         int total = dizziness + confusion + anxiety + pressure;
 
-        float fade = _endingFade;
+        float fade = Mathf.Clamp(_endingFade * _mainMenuFade * _pauseFade, 0f, 1f);
+        _root.Visible = fade > 0.005f;
         float wobble = Mathf.Clamp(dizziness / 55f, 0f, 1f) * 0.62f * fade;
         float staticStrength = Mathf.Clamp(anxiety / 38f, 0f, 1f) * fade;
         float pressureStrength = Mathf.Clamp(pressure / 50f, 0f, 1f) * fade;
@@ -388,6 +410,7 @@ void fragment() {
         _statusLabel.Visible = total > 0 || _sanity < SanityManager.StableSanityThreshold;
         _statusLabel.Text = total > 0 ? "DISTRESS" : (_sanity < 25 ? "CRITICAL" : "UNSTEADY");
         _statusLabel.Modulate = new Color(1f, 1f, 1f, 0.38f * fade);
+        _noticeLabel.Modulate = new Color(1f, 1f, 1f, fade);
 
         _effectWash.Color = new Color(tint.R, tint.G, tint.B, washAlpha);
         _screenFx.Modulate = new Color(1f, 1f, 1f, fade);

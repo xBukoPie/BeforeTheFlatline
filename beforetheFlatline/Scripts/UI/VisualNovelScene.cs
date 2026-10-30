@@ -430,6 +430,7 @@ public partial class VisualNovelScene : Control
         _clockWasRunningBeforePause = DayClock.Instance?.Running ?? false;
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
+        StatusEffectsOverlay.Instance?.SetPauseMenuVisible(true);
 
         if (_pauseMenu != null)
         {
@@ -537,6 +538,7 @@ public partial class VisualNovelScene : Control
 
         if (DayClock.Instance != null)
             DayClock.Instance.Running = _clockWasRunningBeforePause;
+        StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
     }
 
     private void SkipEntireDialogue()
