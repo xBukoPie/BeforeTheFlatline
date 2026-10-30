@@ -244,6 +244,7 @@ public partial class ChallengeScene : Control
             Text = "Build a flowchart that solves the problem. Drag in blocks and arrange them in order.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
+        guide.AddThemeFontSizeOverride("font_size", 18);
         guide.AddThemeColorOverride("font_color", new Color("7dd3fc"));
         _content.AddChild(guide);
 
