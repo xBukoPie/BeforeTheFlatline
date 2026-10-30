@@ -124,7 +124,7 @@ public partial class ChallengeScene : Control
 
         _feedback = new Label
         {
-            Text = "Your score will be revealed after the final question.",
+            Text = "Your score appears after question 4.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             CustomMinimumSize = new Vector2(0, 34)
         };
@@ -205,7 +205,7 @@ public partial class ChallengeScene : Control
         ClearContent();
         var guide = new Label
         {
-            Text = "TYPE YOUR OWN PSEUDOCODE. Choose any valid variable names and use them consistently; the example names in the prompt are optional. Submit or give up to continue; individual answers are not revealed yet.",
+            Text = "Write pseudocode that solves the problem. Use any variable names you like.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
         guide.AddThemeColorOverride("font_color", new Color("7dd3fc"));
@@ -232,7 +232,7 @@ public partial class ChallengeScene : Control
         ClearContent();
         var guide = new Label
         {
-            Text = "DRAG A SHAPE INTO THE CANVAS. You may choose your own valid variable names; keep them consistent in Input, Process, Decision, and Output blocks. Use ↑ / ↓ to order the connected blocks.",
+            Text = "Build a flowchart that solves the problem. Drag in blocks and arrange them in order.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
         guide.AddThemeColorOverride("font_color", new Color("7dd3fc"));
@@ -300,8 +300,8 @@ public partial class ChallengeScene : Control
         _clearButton.Disabled = true;
 
         _feedback.Text = gaveUp
-            ? "Question skipped. Moving to the next question; the overall result appears at the end."
-            : "Response recorded. Moving to the next question; the overall result appears at the end.";
+            ? "Skipped. Moving to the next question."
+            : "Submitted. Moving to the next question.";
         _feedback.AddThemeColorOverride("font_color", new Color("cbd5e1"));
 
         if (!ResourceLoader.Exists(_nextScene))

@@ -29,63 +29,21 @@ public partial class PostChallengeConversation : Control
         ("Cess", "res://Assets/Characters/Cess.png")
     };
 
-    private static readonly (string Topic, string Rant, string FollowUp)[] Topics =
+    private sealed record InteractionTopic(string Opening, string FirstReply, string SecondReply, string FirstResponse, string SecondResponse, string Closing);
+
+    private static readonly InteractionTopic[] Topics =
     {
-        (
-            "the group project",
-            "I made the slides, organized the notes, and reminded everyone about the deadline. The group chat stayed silent all afternoon, then suddenly everyone had opinions at midnight.",
-            "And somehow, if one tiny thing is missing, the whole group acts like nobody knew about the deadline."
-        ),
-        (
-            "the canteen food",
-            "The canteen changed the menu again. I waited in line for ages, ordered pancit, and got about three noodles and a mysterious amount of sauce.",
-            "I swear the serving gets smaller every time the price goes up."
-        ),
-        (
-            "our latest assignment",
-            "Our teacher said, 'This is the last activity for today.' Then came another worksheet, a surprise quiz, and a reminder about a project due tomorrow.",
-            "I want to be responsible, but I also want one afternoon where my bag doesn't contain six new deadlines."
-        ),
-        (
-            "the rumor going around school",
-            "People keep repeating a rumor without checking whether it's true. Now everyone is acting like they know the whole story, and nobody asks the person involved.",
-            "It would take less effort to ask one honest question than to invent ten versions of what happened."
-        ),
-        (
-            "the school's unreliable Wi-Fi",
-            "The Wi-Fi only works when nobody needs it. The moment I try to submit homework, the connection disappears like it has somewhere better to be.",
-            "Then the page finally loads after the deadline, as if the internet is personally trying to annoy me."
-        ),
-        (
-            "the surprise quiz",
-            "Our teacher said we should review casually, then walked in with a stack of papers and called it a 'quick check'. Nobody even had time to put their notes away.",
-            "I think the phrase 'don't worry about it' has permanently lost all meaning."
-        ),
-        (
-            "the class group chat",
-            "Someone sent forty-seven messages about a meeting, but somehow nobody actually wrote down the time or the room. Now everyone is asking the same question.",
-            "We need one pinned message and a little less chaos."
-        ),
-        (
-            "the sports festival",
-            "They signed me up for an event because I was standing near the list. I don't know how that became consent, but apparently I'm on a relay team now.",
-            "I should probably train instead of hoping the day gets cancelled."
-        ),
-        (
-            "my missing school ID",
-            "I checked my bag, every pocket, the classroom desk, and the canteen. The ID vanished, and now I have to explain it at the gate tomorrow.",
-            "I can remember an entire assignment rubric but not where I put a card five minutes ago."
-        ),
-        (
-            "the classroom inspection",
-            "We had ten minutes to clean up after being told the room was fine yesterday. Everyone moved the same pile of papers from one desk to another.",
-            "At least the room looks organized from the doorway."
-        ),
-        (
-            "choosing a school club",
-            "Every club says the workload is light until you attend the orientation. Then suddenly there are committees, weekly meetings, and a full event calendar.",
-            "I want to try something new without accidentally taking on a second job."
-        )
+        new("Hey, {player}, did you understand today's lesson on conditions?", "I think so, but I need more practice.", "Yeah, the examples helped.", "Same here. The THEN and ELSE parts finally make sense to me.", "Good. Maybe the next activity will feel easier too.", "Anyway, see you tomorrow. Take care on your way home."),
+        new("Hey, {player}, are you joining any school clubs this term?", "I'm still deciding.", "I might join the art club.", "There are a few interesting ones. We should check the sign-up board.", "That sounds fun. I might visit their next meeting.", "Let me know what you decide. Maybe we can join together."),
+        new("Have you tried the new food stall near the canteen, {player}?", "Not yet. Is it good?", "I tried it earlier.", "People say the sandwiches are worth trying. I might get one tomorrow.", "Then you already know the best thing on the menu. Save me a recommendation.", "Now I'm getting hungry again. See you around."),
+        new("I missed one note from today's lesson, {player}. Could I compare notes with you?", "Sure. Let's compare them tomorrow.", "I only wrote down the main points.", "Thanks. That should help me fill in the part I missed.", "That's still useful. We can ask the teacher about the details.", "Thanks for helping. I'll catch you in class."),
+        new("The sports festival is coming up, {player}. Are you watching any events?", "I'll probably watch the games.", "I might join one of them.", "Same. I want to support our class without getting drafted into a team.", "Good luck. I'll cheer for you if you end up joining.", "We should meet up during the festival. See you later."),
+        new("Do you usually study in the library after class, {player}?", "Sometimes. It's quiet there.", "Not really. I prefer studying at home.", "The quiet helps me focus. Maybe I'll see you there sometime.", "Fair enough. Everyone has a different routine.", "Good luck with your work. Have a safe trip home."),
+        new("Our teacher mentioned a class activity for next week, {player}. Did you hear about it?", "I only caught part of the announcement.", "Yeah, I wrote down the date.", "I'll ask around so I don't miss the details.", "Could you remind me of the date tomorrow? I don't want to forget.", "Let's check the announcement board before class. See you."),
+        new("Hey, {player}, what kind of music do you listen to while studying?", "Usually something quiet.", "Anything with a good beat.", "I use instrumental playlists. Lyrics distract me too easily.", "I need something energetic or I'll fall asleep over my notes.", "Send me a song recommendation sometime. Later!"),
+        new("I found a pencil case near the classroom, {player}. Have you seen anyone looking for one?", "Maybe we should leave it with the teacher.", "Let's check the name tag first.", "Good idea. The teacher can help return it to the owner.", "There's a name inside. I'll bring it to the office.", "Glad that's sorted. See you tomorrow."),
+        new("The weather has been strange lately, {player}. Do you think it will rain later?", "It looks like it might.", "I hope it stays clear.", "I'll bring an umbrella just in case.", "Same. I don't want to get caught in the rain on the way home.", "Take care out there. See you next class."),
+        new("Hey, {player}, did you finish the book you were reading?", "Not yet. I'm still halfway through.", "I finished it last night.", "No spoilers, please. I want to find out what happens myself.", "I'll lend it to you sometime. I think you'd like it.", "Let's talk about it after you finish. Bye!")
     };
 
     public override void _Ready()
@@ -100,12 +58,21 @@ public partial class PostChallengeConversation : Control
 
         var rng = new RandomNumberGenerator();
         rng.Randomize();
+
+        // Some school days end quietly without another conversation.
+        if (rng.Randf() < 0.35f)
+        {
+            _dialogue.Visible = false;
+            CallDeferred(MethodName.OnDialogueFinished);
+            return;
+        }
+
         var character = Characters[rng.RandiRange(0, Characters.Length - 1)];
         var topic = Topics[rng.RandiRange(0, Topics.Length - 1)];
 
         _dialogue.SetPortrait(DialogueSide.Left, null);
         _dialogue.SetPortrait(DialogueSide.Right, GD.Load<Texture2D>(character.PortraitPath));
-        _dialogue.StartDialogue(BuildConversation(character.Name, topic.Topic, topic.Rant, topic.FollowUp));
+        _dialogue.StartDialogue(BuildConversation(character.Name, topic));
     }
 
     public override void _ExitTree()
@@ -114,63 +81,18 @@ public partial class PostChallengeConversation : Control
             _dialogue.DialogueFinished -= OnDialogueFinished;
     }
 
-    private static IReadOnlyList<DialogueLine> BuildConversation(
-        string character,
-        string topic,
-        string rant,
-        string followUp)
+    private static IReadOnlyList<DialogueLine> BuildConversation(string character, InteractionTopic topic)
     {
         return new List<DialogueLine>
         {
-            new(
-                character,
-                $"Hey, {{player}}, can I rant to you about {topic}? The challenges were stressful enough, and now this is getting on my nerves.",
-                DialogueSide.Right,
-                Choices: new[]
-                {
-                    new DialogueChoice("Go on. I'm listening.", Goto: 1),
-                    new DialogueChoice("What happened this time?", Goto: 2)
-                }),
-
-            new(
-                character,
-                rant,
-                DialogueSide.Right,
-                Next: 3),
-
-            new(
-                character,
-                $"Okay, here's the short version. {rant}",
-                DialogueSide.Right,
-                Next: 3),
-
-            new(
-                character,
-                $"{followUp} Am I overreacting, or would that annoy you too?",
-                DialogueSide.Right,
-                Choices: new[]
-                {
-                    new DialogueChoice("That's fair. I'd be annoyed too.", Goto: 4),
-                    new DialogueChoice("Maybe talk it out before assuming the worst.", Goto: 5)
-                }),
-
-            new(
-                character,
-                "Exactly! Thank you for actually hearing me out instead of changing the subject.",
-                DialogueSide.Right,
-                Next: 6),
-
-            new(
-                character,
-                "Maybe you're right. I'll ask them about it before I get more worked up. I needed that reminder.",
-                DialogueSide.Right,
-                Next: 6),
-
-            new(
-                character,
-                "Anyway, thanks for sticking around. Let's head home before it gets too late.",
-                DialogueSide.Right,
-                Next: 7)
+            new(character, topic.Opening, DialogueSide.Right, Choices: new[]
+            {
+                new DialogueChoice(topic.FirstReply, Goto: 1),
+                new DialogueChoice(topic.SecondReply, Goto: 2)
+            }),
+            new(character, topic.FirstResponse, DialogueSide.Right, Next: 3),
+            new(character, topic.SecondResponse, DialogueSide.Right, Next: 3),
+            new(character, topic.Closing, DialogueSide.Right)
         };
     }
 
