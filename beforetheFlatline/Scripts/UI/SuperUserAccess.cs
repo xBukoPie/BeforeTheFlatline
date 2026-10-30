@@ -45,7 +45,7 @@ public partial class SuperUserAccess : CanvasLayer
 
         _challengeContext = inChallenge;
         if (_challengeContext)
-            SetTopRight(_toggleButton, -270, 12, -122, 48);
+            SetTopRight(_toggleButton, -300, 12, -150, 48);
         else
             SetBottomLeft(_toggleButton, 12, -48, 154, -12);
 
