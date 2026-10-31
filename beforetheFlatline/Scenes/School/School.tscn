@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://cwar2ouikcogv" path="res://Scripts/GameController/GameController.cs" id="3_xqy2q"]
 [ext_resource type="Script" uid="uid://b3n44xxs1mak7" path="res://Scripts/Map/School/StreetLamp.cs" id="4_lamp"]
 [ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="5_xqy2q"]
+[ext_resource type="Script" path="res://Scripts/Map/School/SchoolFriendsSpawner.cs" id="6_friends"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_3"]
 size = Vector2(404, 184)
@@ -420,3 +421,7 @@ position = Vector2(70, 254)
 
 [node name="FromHome" type="Marker2D" parent="Spawns" unique_id=233850800]
 position = Vector2(35, 127)
+
+[node name="SchoolFriends" type="Node2D" parent="."]
+y_sort_enabled = true
+script = ExtResource("6_friends")
