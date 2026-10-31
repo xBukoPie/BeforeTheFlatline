@@ -815,6 +815,18 @@ public static class SchoolFriendSpawnHistory
                 SpawnPlan.Add(new SchoolFriendSpawn(name, new Vector2(x, y)));
         }
 
+        // Saves from older builds could contain all three friends outside.
+        // Trim those legacy rosters so the new 0-2 rule is applied immediately on load.
+        if (SpawnPlan.Count > 2)
+        {
+            var rng = new RandomNumberGenerator();
+            rng.Randomize();
+            while (SpawnPlan.Count > 2)
+                SpawnPlan.RemoveAt(rng.RandiRange(0, SpawnPlan.Count - 1));
+
+            _classroomGreeterName = string.Empty;
+        }
+
         if (data.ContainsKey("classroom_greeter") &&
             data["classroom_greeter"].VariantType == Variant.Type.String)
         {
