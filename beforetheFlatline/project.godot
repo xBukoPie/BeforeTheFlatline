@@ -42,6 +42,7 @@ window/vsync/vsync_mode=0
 project/assembly_name="BeforetheFlatline"
 
 [gui]
+
 theme/custom_font="res://Assets/TextFonts/Ithaca-LVB75.ttf"
 
 [input]
