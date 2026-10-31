@@ -206,7 +206,8 @@ public partial class SaveManager : Node
                 ["unlocked_rooms"] = CreateUnlockedRoomIds()
             },
             ["challenge_progress"] = ChallengeProgress.CreateSaveData(),
-            ["school_friend_interactions"] = SchoolFriendInteractionHistory.CreateSaveData()
+            ["school_friend_interactions"] = SchoolFriendInteractionHistory.CreateSaveData(),
+            ["school_friend_spawn_plan"] = SchoolFriendSpawnHistory.CreateSaveData()
         };
 
         using var file = FileAccess.Open(path, FileAccess.ModeFlags.Write);
@@ -257,9 +258,11 @@ public partial class SaveManager : Node
         var keyState = ReadDictionary(data, "room_keys");
         var challengeState = ReadDictionary(data, "challenge_progress");
         var friendInteractionState = ReadDictionary(data, "school_friend_interactions");
+        var friendSpawnState = ReadDictionary(data, "school_friend_spawn_plan");
 
         DayClock.Instance?.RestoreState(day, hour, true, schoolStarted, schoolCompleted);
         SchoolFriendInteractionHistory.RestoreFromSaveData(friendInteractionState);
+        SchoolFriendSpawnHistory.RestoreFromSaveData(friendSpawnState, day, schoolCompleted);
         DayClock.Instance?.RestoreFirstDayMysteryState(
             ReadBool(data, "mystery_encounter_seen", false),
             ReadBool(data, "first_day_special_greeting_pending", false));
