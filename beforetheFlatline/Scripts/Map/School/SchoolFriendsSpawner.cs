@@ -318,7 +318,7 @@ public partial class SchoolFriendsSpawner : Node2D
         Shuffle(positions);
 
         // Uniformly choose zero, one, two, or all three friends for this school phase.
-        int count = _rng.RandiRange(0, definitions.Length);
+        int count = _rng.RandiRange(0, definitions.Length - 1); // 0, 1, or 2 friends outside; never all three.
         var plan = new List<SchoolFriendSpawn>(count);
         for (int i = 0; i < count; i++)
             plan.Add(new SchoolFriendSpawn(definitions[i].Name, positions[i]));
@@ -681,6 +681,7 @@ public static class SchoolFriendSpawnHistory
     private static int _planDay = -1;
     private static bool _planAfterAssessment;
     private static bool _hasPlan;
+    private static string _classroomGreeterName = string.Empty;
     private static readonly List<SchoolFriendSpawn> SpawnPlan = new();
 
     public static IReadOnlyList<SchoolFriendSpawn> GetOrCreateSpawnPlan(
@@ -694,6 +695,7 @@ public static class SchoolFriendSpawnHistory
             _planDay = day;
             _planAfterAssessment = assessmentComplete;
             _hasPlan = true;
+            _classroomGreeterName = string.Empty;
             SpawnPlan.Clear();
 
             List<SchoolFriendSpawn> newPlan = createPlan?.Invoke();
@@ -702,6 +704,51 @@ public static class SchoolFriendSpawnHistory
         }
 
         return SpawnPlan;
+    }
+
+    // Selects exactly one classroom greeter from the friends not currently spawned outside.
+    // The selection remains fixed for this day/assessment phase and is saved with the roster.
+    public static string GetOrAssignClassroomGreeter(IReadOnlyList<string> allFriendNames)
+    {
+        var absentNames = new List<string>();
+        if (allFriendNames != null)
+        {
+            foreach (string candidate in allFriendNames)
+            {
+                if (string.IsNullOrWhiteSpace(candidate))
+                    continue;
+
+                bool isOutside = false;
+                foreach (SchoolFriendSpawn spawn in SpawnPlan)
+                {
+                    if (string.Equals(spawn.Name, candidate, StringComparison.OrdinalIgnoreCase))
+                    {
+                        isOutside = true;
+                        break;
+                    }
+                }
+
+                if (!isOutside)
+                    absentNames.Add(candidate);
+            }
+        }
+
+        if (absentNames.Count == 0)
+            return string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(_classroomGreeterName))
+        {
+            foreach (string candidate in absentNames)
+            {
+                if (string.Equals(candidate, _classroomGreeterName, StringComparison.OrdinalIgnoreCase))
+                    return _classroomGreeterName;
+            }
+        }
+
+        var rng = new RandomNumberGenerator();
+        rng.Randomize();
+        _classroomGreeterName = absentNames[rng.RandiRange(0, absentNames.Count - 1)];
+        return _classroomGreeterName;
     }
 
     public static Godot.Collections.Dictionary CreateSaveData()
@@ -722,6 +769,7 @@ public static class SchoolFriendSpawnHistory
             ["day"] = _planDay,
             ["after_assessment"] = _planAfterAssessment,
             ["created"] = _hasPlan,
+            ["classroom_greeter"] = _classroomGreeterName,
             ["entries"] = entries
         };
     }
@@ -766,6 +814,12 @@ public static class SchoolFriendSpawnHistory
             if (!string.IsNullOrWhiteSpace(name))
                 SpawnPlan.Add(new SchoolFriendSpawn(name, new Vector2(x, y)));
         }
+
+        if (data.ContainsKey("classroom_greeter") &&
+            data["classroom_greeter"].VariantType == Variant.Type.String)
+        {
+            _classroomGreeterName = data["classroom_greeter"].AsString();
+        }
     }
 
     public static void Reset()
@@ -773,6 +827,7 @@ public static class SchoolFriendSpawnHistory
         _planDay = -1;
         _planAfterAssessment = false;
         _hasPlan = false;
+        _classroomGreeterName = string.Empty;
         SpawnPlan.Clear();
     }
 
