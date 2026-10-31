@@ -145,6 +145,7 @@ public partial class DayClock : Node
         _skipSchoolGreetingOnNextLoad = false;
         FirstDayMysteryEncounterSeen = false;
         _firstDaySpecialGreetingPending = false;
+        SchoolFriendInteractionHistory.Reset();
         EmitSignal(SignalName.DayChanged, DayNumber);
         EmitSignal(SignalName.TimeChanged, Hour);
     }
