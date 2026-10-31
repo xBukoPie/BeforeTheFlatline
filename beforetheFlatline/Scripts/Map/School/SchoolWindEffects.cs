@@ -4,11 +4,15 @@ using System;
 namespace SchoolYardGame;
 
 /// <summary>
-/// Lightweight, screen-independent wind ambience for the school yard.
-/// Leaves drift slowly across the map and never interact with gameplay.
+/// Visible but unobtrusive wind ambience for the school yard.
+/// Leaves drift across the play area and never interact with gameplay.
 /// </summary>
 public partial class SchoolWindEffects : Node2D
 {
+    private const int LeafCount = 22;
+    private const float WindStartX = -520f;
+    private const float WindEndX = 520f;
+
     private readonly RandomNumberGenerator _rng = new();
     private bool _stopping;
 
@@ -17,19 +21,26 @@ public partial class SchoolWindEffects : Node2D
         _rng.Randomize();
         Texture2D leafTexture = CreateLeafTexture();
 
-        // Keep the ambience sparse so it adds movement without obscuring the characters.
-        for (int i = 0; i < 9; i++)
+        for (int i = 0; i < LeafCount; i++)
         {
+            float alpha = _rng.RandfRange(0.68f, 0.88f);
+            Color leafColor = i % 3 switch
+            {
+                0 => new Color(1f, 0.86f, 0.54f, alpha),
+                1 => new Color(0.82f, 0.9f, 0.57f, alpha),
+                _ => new Color(0.94f, 0.73f, 0.48f, alpha)
+            };
+
             var leaf = new Sprite2D
             {
                 Name = $"WindLeaf_{i + 1}",
                 Texture = leafTexture,
                 Position = new Vector2(
-                    _rng.RandfRange(-500f, 500f),
+                    _rng.RandfRange(WindStartX, WindEndX),
                     _rng.RandfRange(-255f, 255f)),
-                Rotation = _rng.RandfRange(-0.6f, 0.6f),
-                Scale = Vector2.One * _rng.RandfRange(0.16f, 0.25f),
-                Modulate = new Color(0.91f, 0.82f, 0.61f, _rng.RandfRange(0.35f, 0.58f)),
+                Rotation = _rng.RandfRange(-0.8f, 0.8f),
+                Scale = Vector2.One * _rng.RandfRange(0.42f, 0.68f),
+                Modulate = leafColor,
                 TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
                 ZAsRelative = false,
                 ZIndex = 8
@@ -49,14 +60,18 @@ public partial class SchoolWindEffects : Node2D
     {
         while (!_stopping && IsInsideTree() && GodotObject.IsInstanceValid(leaf))
         {
-            float remaining = Mathf.Clamp((500f - leaf.Position.X) / 1000f, 0.08f, 1f);
-            double duration = _rng.RandfRange(20f, 31f) * remaining;
+            float remaining = Mathf.Clamp(
+                (WindEndX - leaf.Position.X) / (WindEndX - WindStartX),
+                0.08f,
+                1f);
 
+            // A slow cross-map breeze with a small vertical drift.
+            double duration = _rng.RandfRange(25f, 38f) * remaining;
             Vector2 target = new(
-                520f,
-                Mathf.Clamp(leaf.Position.Y + _rng.RandfRange(-75f, 75f), -260f, 260f));
+                WindEndX,
+                Mathf.Clamp(leaf.Position.Y + _rng.RandfRange(-95f, 95f), -260f, 260f));
 
-            float targetRotation = leaf.Rotation + _rng.RandfRange(-2.2f, 2.2f);
+            float targetRotation = leaf.Rotation + _rng.RandfRange(-2.6f, 2.6f);
             Tween tween = CreateTween();
             tween.TweenProperty(leaf, "position", target, duration)
                 .SetTrans(Tween.TransitionType.Sine)
@@ -68,11 +83,11 @@ public partial class SchoolWindEffects : Node2D
             if (_stopping || !IsInsideTree() || !GodotObject.IsInstanceValid(leaf))
                 return;
 
-            // Restart beyond the left edge so the breeze feels continuous.
+            // Restart beyond the left edge so the breeze remains continuous.
             leaf.Position = new Vector2(
-                -520f,
+                WindStartX,
                 _rng.RandfRange(-255f, 255f));
-            leaf.Rotation = _rng.RandfRange(-0.6f, 0.6f);
+            leaf.Rotation = _rng.RandfRange(-0.8f, 0.8f);
         }
     }
 
@@ -81,7 +96,6 @@ public partial class SchoolWindEffects : Node2D
         Image image = Image.CreateEmpty(12, 8, false, Image.Format.Rgba8);
         image.Fill(Colors.Transparent);
 
-        Color baseColor = Colors.White;
         int[][] rows =
         {
             new[] { 5, 6 },
@@ -96,10 +110,10 @@ public partial class SchoolWindEffects : Node2D
         for (int y = 0; y < rows.Length; y++)
         {
             foreach (int x in rows[y])
-                image.SetPixel(x, y, baseColor);
+                image.SetPixel(x, y, Colors.White);
         }
 
-        // A small central vein gives the generated leaf a readable silhouette.
+        // The contrasting center vein keeps the leaf readable while it rotates.
         image.SetPixel(5, 1, new Color(0.72f, 0.72f, 0.72f, 1f));
         image.SetPixel(6, 2, new Color(0.72f, 0.72f, 0.72f, 1f));
         image.SetPixel(5, 3, new Color(0.72f, 0.72f, 0.72f, 1f));
