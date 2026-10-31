@@ -146,6 +146,7 @@ public partial class DayClock : Node
         FirstDayMysteryEncounterSeen = false;
         _firstDaySpecialGreetingPending = false;
         SchoolFriendInteractionHistory.Reset();
+        SchoolFriendSpawnHistory.Reset();
         EmitSignal(SignalName.DayChanged, DayNumber);
         EmitSignal(SignalName.TimeChanged, Hour);
     }
