@@ -230,6 +230,8 @@ public partial class SchoolFriendsSpawner : Node2D
 
     public override void _Process(double delta)
     {
+        UpdateFriendDepthSorting();
+
         _idleFrameTimer += delta;
         if (_idleFrameTimer >= 0.72)
         {
@@ -240,6 +242,37 @@ public partial class SchoolFriendsSpawner : Node2D
                     friend.Sprite.Frame = (friend.Sprite.Frame + 1) % 2;
             }
         }
+    }
+
+    // The player is a sibling of RoomHolder in World.tscn, not a child of the school room.
+    // Built-in Y-sort therefore cannot compare them. Use the feet/ground anchor (Node2D origin)
+    // to place friends behind or in front of the player as they cross paths.
+    private void UpdateFriendDepthSorting()
+    {
+        if (_player == null || !GodotObject.IsInstanceValid(_player))
+            return;
+
+        float playerGroundY = _player.GlobalPosition.Y;
+        int playerZ = _player.ZIndex;
+
+        foreach (FriendActor friend in _friends)
+        {
+            if (friend.Root == null || !GodotObject.IsInstanceValid(friend.Root))
+                continue;
+
+            friend.Root.ZAsRelative = false;
+            friend.Root.ZIndex = friend.Root.GlobalPosition.Y > playerGroundY
+                ? playerZ + 1
+                : playerZ - 1;
+        }
+    }
+
+    private Vector2 GetPlayerSpriteGlobalScale()
+    {
+        AnimatedSprite2D playerSprite = _player?.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+        return playerSprite != null && GodotObject.IsInstanceValid(playerSprite)
+            ? playerSprite.GlobalScale
+            : new Vector2(FriendSpriteScale, FriendSpriteScale);
     }
 
     public override void _UnhandledInput(InputEvent @event)
@@ -320,7 +353,8 @@ public partial class SchoolFriendsSpawner : Node2D
         var actorRoot = new Node2D
         {
             Name = $"Friend_{definition.Name}",
-            Position = position
+            Position = position,
+            ZAsRelative = false
         };
         AddChild(actorRoot);
 
@@ -331,18 +365,20 @@ public partial class SchoolFriendsSpawner : Node2D
             Hframes = 2,
             Vframes = 1,
             Frame = 0,
-            Scale = new Vector2(FriendSpriteScale, FriendSpriteScale),
-            Position = new Vector2(0, -16),
             TextureFilter = CanvasItem.TextureFilterEnum.Nearest
         };
         actorRoot.AddChild(sprite);
+
+        // Match the player's effective rendered scale (Player root 1.5 x sprite 0.23).
+        // The player sprite is centered at its ground anchor, so keep the same local origin.
+        sprite.GlobalScale = GetPlayerSpriteGlobalScale();
 
         // The name floats just above the character's head and uses an outline for map contrast.
         var nameLabel = new Label
         {
             Name = $"{definition.Name}Name",
             Text = definition.Name,
-            Position = new Vector2(-48, -59),
+            Position = new Vector2(-48, -44),
             Size = new Vector2(96, 20),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
