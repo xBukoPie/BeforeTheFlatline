@@ -1,18 +1,36 @@
 {
-	"challenge_progress": {},
+	"challenge_progress": {
+		"1": [
+			"final",
+			"flowchart",
+			"condition",
+			"sequence"
+		],
+		"2": [
+			"sequence",
+			"flowchart",
+			"final",
+			"condition"
+		]
+	},
 	"clock_running": true,
-	"day": 1,
+	"day": 2,
 	"first_day_special_greeting_pending": false,
-	"hour": 8.0,
+	"hour": 19.2531204223633,
 	"kind": "autosave",
-	"mystery_encounter_seen": false,
-	"player_x": 35.0,
-	"player_y": 128.0,
+	"mystery_encounter_seen": true,
+	"player_x": 86.7999877929688,
+	"player_y": -18.8999977111816,
 	"room_keys": {
 		"hidden_points": 0,
-		"keys_earned": 0
+		"keys_earned": 2,
+		"pending_key_room": "",
+		"unlocked_rooms": [
+			"Kitchen",
+			"Laundry"
+		]
 	},
-	"room_path": "res://Scenes/School/School.tscn",
+	"room_path": "res://Scenes/Home/Areas/LivingRoom.tscn",
 	"sanity_state": {
 		"current_sanity": 100,
 		"debuffs": {
@@ -30,9 +48,9 @@
 			"Pressure": 100
 		}
 	},
-	"saved_at": "2026-10-29 01:49:29",
-	"scene_path": "res://Scenes/Home/Rooms/World.tscn",
-	"school_completed": false,
+	"saved_at": "2026-10-30 16:07:31",
+	"scene_path": "res://Scenes/Home/Areas/World.tscn",
+	"school_completed": true,
 	"school_started": false,
 	"slot": 0,
 	"version": 1

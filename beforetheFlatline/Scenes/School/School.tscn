@@ -100,7 +100,6 @@ region_rect = Rect2(0, 0, 1024, 572)
 [node name="DayNightCycle" type="CanvasModulate" parent="." unique_id=1135704423]
 position = Vector2(-485, -282)
 script = ExtResource("3_xqy2q")
-DayLengthSeconds = 180.0
 
 [node name="Collisions" type="StaticBody2D" parent="." unique_id=2071613401 groups=["solid"]]
 position = Vector2(-485, -282)
@@ -400,18 +399,18 @@ Flicker = false
 
 [node name="ToHome" parent="Doors" unique_id=1210053727 instance=ExtResource("5_xqy2q")]
 position = Vector2(35, 165)
-TargetRoom = "uid://sc2d4amskj1m"
+TargetRoom = "uid://bbwc7nj6p8eco"
 TargetSpawn = "FromSchool"
 Prompt = "Home"
 Size = Vector2(30, 62)
 
 [node name="ToClassroom" parent="Doors" unique_id=1703222727 instance=ExtResource("5_xqy2q")]
 position = Vector2(-133, -62)
-TriggersFirstDayMystery = true
 TargetRoom = "uid://b2wmpq2d1fy4t"
 TargetSpawn = "FromSchool"
 Prompt = "Classroom"
 Size = Vector2(30, 62)
+TriggersFirstDayMystery = true
 
 [node name="Spawns" type="Node2D" parent="." unique_id=1813384167]
 position = Vector2(0, 1)
