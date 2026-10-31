@@ -59,9 +59,25 @@ public partial class Classroom : Control
 
     private void StartGreeting()
     {
-        var rng = new RandomNumberGenerator();
-        rng.Randomize();
-        var (name, portraitPath) = Greeters[rng.RandiRange(0, Greeters.Length - 1)];
+        string[] friendNames = { Greeters[0].Name, Greeters[1].Name, Greeters[2].Name };
+        string name = SchoolFriendSpawnHistory.GetOrAssignClassroomGreeter(friendNames);
+
+        (string Name, string PortraitPath) selectedGreeter = Greeters[0];
+        foreach (var greeter in Greeters)
+        {
+            if (string.Equals(greeter.Name, name, System.StringComparison.OrdinalIgnoreCase))
+            {
+                selectedGreeter = greeter;
+                break;
+            }
+        }
+
+        name = selectedGreeter.Name;
+        string portraitPath = selectedGreeter.PortraitPath;
+
+        // Persist the selected greeter together with the current outdoor roster.
+        if (SaveManager.Instance?.CanSaveCurrentGame == true)
+            SaveManager.Instance.SaveAutoSave();
 
         _dialogue.SetPortrait(DialogueSide.Right, GD.Load<Texture2D>(portraitPath));
 
