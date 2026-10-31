@@ -26,6 +26,7 @@ SettingsManager="*res://Scripts/GameController/SettingsManager.cs"
 StatusEffectsOverlay="*res://Scripts/UI/StatusEffectsOverlay.cs"
 PauseMenuController="*res://Scripts/UI/PauseMenuController.cs"
 SuperUserAccess="*res://Scripts/UI/SuperUserAccess.cs"
+UIFeedback="*res://Scripts/UI/UIFeedback.cs"
 
 [display]
 
