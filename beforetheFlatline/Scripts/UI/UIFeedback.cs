@@ -5,8 +5,8 @@ using System.Collections.Generic;
 namespace SchoolYardGame;
 
 /// <summary>
-/// Adds subtle, consistent mouse and keyboard focus feedback to every BaseButton,
-/// including buttons created dynamically after a scene has loaded.
+/// Adds hover, keyboard-focus, and press feedback to buttons without changing
+/// the layout of menu controls that already use a custom scale.
 /// </summary>
 public partial class UIFeedback : Node
 {
@@ -14,9 +14,15 @@ public partial class UIFeedback : Node
     private const float PressScale = 0.94f;
     private const float ReleaseOvershootScale = 1.045f;
 
+    private static readonly Color HoverTint = new(1.16f, 1.12f, 1.06f, 1f);
+    private static readonly Color PressTint = new(0.78f, 0.82f, 0.9f, 1f);
+    private static readonly Color ReleaseTint = new(1.08f, 1.05f, 1f, 1f);
+
     private readonly HashSet<ulong> _tracked = new();
     private readonly HashSet<ulong> _hovered = new();
+    private readonly HashSet<ulong> _scaleFeedback = new();
     private readonly Dictionary<ulong, Vector2> _baseScales = new();
+    private readonly Dictionary<ulong, Color> _baseModulates = new();
     private readonly Dictionary<ulong, Tween> _tweens = new();
 
     public override void _Ready()
@@ -42,10 +48,8 @@ public partial class UIFeedback : Node
 
     private void ScanExistingTree()
     {
-        if (!IsInsideTree())
-            return;
-
-        ScanNode(GetTree().Root);
+        if (IsInsideTree())
+            ScanNode(GetTree().Root);
     }
 
     private void ScanNode(Node node)
@@ -73,12 +77,23 @@ public partial class UIFeedback : Node
             return;
 
         _baseScales[id] = control.Scale;
-        control.PivotOffset = control.Size * 0.5f;
-        control.Resized += () =>
+        _baseModulates[id] = control.Modulate;
+
+        // Controls with a custom scale (notably the image-based Main Menu buttons)
+        // must keep their original top-left pivot. Centering their pivot shifts their
+        // child sprites and makes the entire menu appear to move.
+        bool hasUnitScale = Mathf.IsEqualApprox(control.Scale.X, 1f) &&
+                            Mathf.IsEqualApprox(control.Scale.Y, 1f);
+        if (hasUnitScale)
         {
-            if (GodotObject.IsInstanceValid(control))
-                control.PivotOffset = control.Size * 0.5f;
-        };
+            _scaleFeedback.Add(id);
+            control.PivotOffset = control.Size * 0.5f;
+            control.Resized += () =>
+            {
+                if (GodotObject.IsInstanceValid(control))
+                    control.PivotOffset = control.Size * 0.5f;
+            };
+        }
 
         control.MouseEntered += () => SetHovered(control, true);
         control.MouseExited += () => SetHovered(control, false);
@@ -87,8 +102,13 @@ public partial class UIFeedback : Node
 
         button.ButtonDown += () =>
         {
-            if (!button.Disabled)
+            if (button.Disabled)
+                return;
+
+            if (_scaleFeedback.Contains(id))
                 AnimateScale(control, GetBaseScale(control) * PressScale, 0.065);
+            else
+                AnimateModulate(control, GetBaseModulate(control) * PressTint, 0.065);
         };
 
         button.ButtonUp += () =>
@@ -96,14 +116,28 @@ public partial class UIFeedback : Node
             if (button.Disabled)
                 return;
 
-            AnimateScale(
-                control,
-                GetBaseScale(control) * ReleaseOvershootScale,
-                0.075,
-                () => AnimateScale(
+            if (_scaleFeedback.Contains(id))
+            {
+                AnimateScale(
                     control,
-                    GetBaseScale(control) * (_hovered.Contains(id) ? HoverScale : 1f),
-                    0.12));
+                    GetBaseScale(control) * ReleaseOvershootScale,
+                    0.075,
+                    () => AnimateScale(
+                        control,
+                        GetBaseScale(control) * (_hovered.Contains(id) ? HoverScale : 1f),
+                        0.12));
+            }
+            else
+            {
+                AnimateModulate(
+                    control,
+                    GetBaseModulate(control) * ReleaseTint,
+                    0.075,
+                    () => AnimateModulate(
+                        control,
+                        GetBaseModulate(control) * (_hovered.Contains(id) ? HoverTint : Colors.White),
+                        0.12));
+            }
         };
 
         control.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
@@ -121,10 +155,20 @@ public partial class UIFeedback : Node
         else
             _hovered.Remove(id);
 
-        AnimateScale(
-            control,
-            GetBaseScale(control) * (hovered ? HoverScale : 1f),
-            hovered ? 0.13 : 0.16);
+        if (_scaleFeedback.Contains(id))
+        {
+            AnimateScale(
+                control,
+                GetBaseScale(control) * (hovered ? HoverScale : 1f),
+                hovered ? 0.13 : 0.16);
+        }
+        else
+        {
+            AnimateModulate(
+                control,
+                GetBaseModulate(control) * (hovered ? HoverTint : Colors.White),
+                hovered ? 0.13 : 0.16);
+        }
     }
 
     private Vector2 GetBaseScale(Control control)
@@ -133,7 +177,23 @@ public partial class UIFeedback : Node
         return _baseScales.TryGetValue(id, out Vector2 scale) ? scale : control.Scale;
     }
 
+    private Color GetBaseModulate(Control control)
+    {
+        ulong id = control.GetInstanceId();
+        return _baseModulates.TryGetValue(id, out Color color) ? color : control.Modulate;
+    }
+
     private void AnimateScale(Control control, Vector2 target, double duration, Action onFinished = null)
+    {
+        AnimateProperty(control, "scale", target, duration, onFinished);
+    }
+
+    private void AnimateModulate(Control control, Color target, double duration, Action onFinished = null)
+    {
+        AnimateProperty(control, "modulate", target, duration, onFinished);
+    }
+
+    private void AnimateProperty(Control control, NodePath property, Variant target, double duration, Action onFinished)
     {
         if (!GodotObject.IsInstanceValid(control) || !control.IsInsideTree())
             return;
@@ -143,7 +203,7 @@ public partial class UIFeedback : Node
             previous.Kill();
 
         Tween tween = CreateTween();
-        tween.TweenProperty(control, "scale", target, duration)
+        tween.TweenProperty(control, property, target, duration)
             .SetTrans(Tween.TransitionType.Cubic)
             .SetEase(Tween.EaseType.Out);
 
@@ -157,7 +217,9 @@ public partial class UIFeedback : Node
     {
         _tracked.Remove(id);
         _hovered.Remove(id);
+        _scaleFeedback.Remove(id);
         _baseScales.Remove(id);
+        _baseModulates.Remove(id);
 
         if (_tweens.TryGetValue(id, out Tween tween) && tween != null && tween.IsValid())
             tween.Kill();
