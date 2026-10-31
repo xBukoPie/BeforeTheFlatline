@@ -174,7 +174,7 @@ Size = Vector2(30, 62)
 RequiresSchoolHours = true
 ClosedPrompt = "Too late for school today. Come back tomorrow morning."
 
-[node name="GroundKeyPickup" parent="." instance=ExtResource("5_key_pickup")]
+[node name="GroundKeyPickup" parent="." unique_id=953442134 instance=ExtResource("5_key_pickup")]
 position = Vector2(-370, 180)
 
 [node name="Spawns" type="Node2D" parent="." unique_id=695283417]

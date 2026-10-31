@@ -12,13 +12,16 @@ size = Vector2(241, 10)
 size = Vector2(16, 89)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_vbfqq"]
-size = Vector2(15, 41)
+size = Vector2(15, 33.571426)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_oejw2"]
-size = Vector2(102, 41)
+size = Vector2(102, 33.571426)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_8uv3r"]
-size = Vector2(82, 14)
+size = Vector2(31, 14)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_kx8p7"]
+size = Vector2(54.28572, 7.1428547)
 
 [node name="Bathroom" type="Node2D" unique_id=496616063]
 scale = Vector2(0.7, 0.7)
@@ -49,18 +52,26 @@ position = Vector2(113, 0)
 shape = SubResource("RectangleShape2D_48lxs")
 
 [node name="MiddleWall" type="CollisionShape2D" parent="Structures" unique_id=1552052469]
-position = Vector2(4.5, -24.5)
+position = Vector2(4.499999, -28.214285)
+scale = Vector2(0.99999994, 0.99999994)
 shape = SubResource("RectangleShape2D_vbfqq")
 
 [node name="Decorations" type="StaticBody2D" parent="." unique_id=1422406998]
 
 [node name="Sink" type="CollisionShape2D" parent="Decorations" unique_id=410001514]
-position = Vector2(-54, -24.5)
+position = Vector2(-53.99999, -28.214285)
+scale = Vector2(0.99999994, 0.99999994)
 shape = SubResource("RectangleShape2D_oejw2")
 
 [node name="Toilet" type="CollisionShape2D" parent="Decorations" unique_id=1003174883]
-position = Vector2(57, -17)
+position = Vector2(82.642845, -19.999996)
+scale = Vector2(0.99999994, 0.99999994)
 shape = SubResource("RectangleShape2D_8uv3r")
+
+[node name="WaterTub" type="CollisionShape2D" parent="Decorations" unique_id=596180863]
+position = Vector2(40, -27.142853)
+scale = Vector2(0.9999998, 0.9999998)
+shape = SubResource("RectangleShape2D_kx8p7")
 
 [node name="Lights" type="Node2D" parent="." unique_id=715249023]
 
