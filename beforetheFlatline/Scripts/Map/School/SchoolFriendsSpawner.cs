@@ -385,7 +385,7 @@ public partial class SchoolFriendsSpawner : Node2D
         }
 
         if (recoveredSanity)
-            _dialogueLines.Add((playerName, "That was nice. I feel a little more at ease."));
+            _dialogueLines.Add((playerName, "That was nice. I feel a little more at ease. (+2 sanity)"));
 
         _currentFriend = friend;
         _dialogueIndex = 0;
