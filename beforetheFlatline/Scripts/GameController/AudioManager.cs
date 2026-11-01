@@ -61,7 +61,7 @@ public partial class AudioManager : Node
         }
 
         _menuTrackOne = LoadSound("Menu/Menu.mp3");
-        _menuTrackTwo = LoadSound("Menu/Menu2.mp3");
+        _menuTrackTwo = LoadSound("Menu/Menu2.wav");
         _dayTrack = LoadSound("Game/dayTime.mp3");
         _nightTrack = LoadSound("Game/nightTime.mp3");
 
@@ -110,24 +110,21 @@ public partial class AudioManager : Node
         _musicMode = "world";
         AudioStream track = isNight ? _nightTrack : _dayTrack;
 
-        if (track is AudioStreamMP3 mp3)
-            mp3.Loop = true;
-
         CrossfadeToMusic(track, loop: true);
     }
 
-    public void PlayUiClick() => PlaySoundEffect("InterfaceInteraction/uiClick.mp3", -2f);
-    public void PlayUiDrag() => PlaySoundEffect("InterfaceInteraction/uiDrag.mp3", -4f);
-    public void PlayLockedDoor() => PlaySoundEffect("ObjectInteraction/doorKey.mp3", -1f);
+    public void PlayUiClick() => PlaySoundEffect("InterfaceInteraction/uiClick.wav", -2f);
+    public void PlayUiDrag() => PlaySoundEffect("InterfaceInteraction/uiDrag.wav", -4f);
+    public void PlayLockedDoor() => PlaySoundEffect("ObjectInteraction/doorKey.wav", -1f);
     public void PlayDoorUnlock() => PlaySoundEffect("ObjectInteraction/doorUnlock.mp3", -1f);
-    public void PlayObjectObtain() => PlaySoundEffect("ObjectInteraction/objectObtain.mp3", -1f);
+    public void PlayObjectObtain() => PlaySoundEffect("ObjectInteraction/objectObtain.wav", -1f);
     public void PlayAssessmentPassed() => PlaySoundEffect("Tasks/passedTask.mp3", -1f);
     public void PlayAssessmentFailed() => PlaySoundEffect("Tasks/failedTask.mp3", -1f);
 
     public void PlayGameOver()
     {
         FadeOutMusic(0.7);
-        PlaySoundEffect("Ending/gameOver.mp3", 0f);
+        PlaySoundEffect("Ending/gameOver.wav", 0f);
     }
 
     private AudioStreamPlayer CreateMusicPlayer(string playerName)
@@ -154,62 +151,19 @@ public partial class AudioManager : Node
             cached != null && GodotObject.IsInstanceValid(cached))
             return cached;
 
-        AudioStream stream = null;
+        if (!ResourceLoader.Exists(path))
+        {
+            GD.PushWarning(
+                $"AudioManager: imported audio resource not found: {path}. " +
+                "Verify the file extension and let Godot reimport the asset.");
+            return null;
+        }
 
-        // Prefer the normal imported resource when Godot has generated its .import
-        // metadata. This is the path used by exported builds.
-        if (FileAccess.FileExists(path + ".import") && ResourceLoader.Exists(path))
-            stream = ResourceLoader.Load<AudioStream>(path);
-
-        // Newly added MP3s may not have .import sidecars yet. Load their source bytes
-        // directly so playback works immediately instead of failing through GD.Load().
+        AudioStream stream = ResourceLoader.Load<AudioStream>(path);
         if (stream == null)
         {
-            using FileAccess file = FileAccess.Open(path, FileAccess.ModeFlags.Read);
-            if (file == null)
-            {
-                GD.PushWarning(
-                    $"AudioManager: unable to open sound '{path}'. FileAccess error: {FileAccess.GetOpenError()}");
-                return null;
-            }
-
-            ulong fileLength = file.GetLength();
-            if (fileLength <= 0)
-            {
-                GD.PushWarning($"AudioManager: sound file is empty: {path}");
-                return null;
-            }
-
-            // GetBuffer expects a signed long. Byte arrays are int-sized in .NET,
-            // so reject an oversized source before converting the unsigned file length.
-            if (fileLength > int.MaxValue)
-            {
-                GD.PushWarning($"AudioManager: sound file is too large to load into memory: {path}");
-                return null;
-            }
-
-            byte[] audioData = file.GetBuffer((long)fileLength);
-            if (audioData == null || audioData.Length == 0)
-            {
-                GD.PushWarning($"AudioManager: no audio data could be read from: {path}");
-                return null;
-            }
-
-            string extension = System.IO.Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
-            if (extension == "mp3")
-            {
-                var mp3 = new AudioStreamMP3
-                {
-                    Data = audioData
-                };
-                stream = mp3;
-            }
-            else
-            {
-                GD.PushWarning(
-                    $"AudioManager: direct source loading currently supports MP3 only; unsupported file: {path}");
-                return null;
-            }
+            GD.PushWarning($"AudioManager: resource exists but could not be loaded as AudioStream: {path}");
+            return null;
         }
 
         _soundCache[path] = stream;
@@ -217,9 +171,8 @@ public partial class AudioManager : Node
         return stream;
     }
 
-    // Godot resource paths are case-sensitive even when the host filesystem is not.
-    // Resolve the actual filename from the folder so minor capitalization differences
-    // such as 'uiclick.mp3' versus 'uiClick.mp3' do not break playback.
+    // Resolve the actual filename from the folder so casing differences do not break
+    // resource loading on case-sensitive filesystems.
     private static string ResolveSoundPath(string requestedPath)
     {
         int separator = requestedPath.LastIndexOf('/');
@@ -271,10 +224,23 @@ public partial class AudioManager : Node
             return;
 
         AudioStream desired = DayClock.Instance.IsNight ? _nightTrack : _dayTrack;
-        if (desired is AudioStreamMP3 mp3)
-            mp3.Loop = true;
-
         CrossfadeToMusic(desired, loop: true);
+    }
+
+    private static void ConfigureLoop(AudioStream stream, bool enabled)
+    {
+        if (stream is AudioStreamMP3 mp3)
+        {
+            mp3.Loop = enabled;
+            return;
+        }
+
+        if (stream is AudioStreamWav wav)
+        {
+            wav.LoopMode = enabled
+                ? AudioStreamWav.LoopModeEnum.Forward
+                : AudioStreamWav.LoopModeEnum.Disabled;
+        }
     }
 
     private void CrossfadeToMusic(AudioStream stream, bool loop)
@@ -282,8 +248,7 @@ public partial class AudioManager : Node
         if (stream == null)
             return;
 
-        if (stream is AudioStreamMP3 mp3)
-            mp3.Loop = loop;
+        ConfigureLoop(stream, loop);
 
         if (_activeMusicPlayer != null &&
             GodotObject.IsInstanceValid(_activeMusicPlayer) &&
