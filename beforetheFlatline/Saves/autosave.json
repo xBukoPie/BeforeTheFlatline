@@ -1,56 +1,51 @@
 {
-	"challenge_progress": {
-		"1": [
-			"final",
-			"flowchart",
-			"condition",
-			"sequence"
-		],
-		"2": [
-			"sequence",
-			"flowchart",
-			"final",
-			"condition"
-		]
-	},
+	"challenge_progress": {},
 	"clock_running": true,
-	"day": 2,
+	"day": 1,
 	"first_day_special_greeting_pending": false,
-	"hour": 19.2531204223633,
+	"hour": 20.7111587524414,
 	"kind": "autosave",
 	"mystery_encounter_seen": true,
-	"player_x": 86.7999877929688,
-	"player_y": -18.8999977111816,
+	"player_x": 56.0,
+	"player_y": 17.5,
 	"room_keys": {
 		"hidden_points": 0,
-		"keys_earned": 2,
+		"keys_earned": 0,
 		"pending_key_room": "",
-		"unlocked_rooms": [
-			"Kitchen",
-			"Laundry"
-		]
+		"unlocked_rooms": []
 	},
-	"room_path": "res://Scenes/Home/Areas/LivingRoom.tscn",
+	"room_path": "res://Scenes/Home/Areas/PlayerRoom.tscn",
 	"sanity_state": {
-		"current_sanity": 100,
+		"current_sanity": 73,
 		"debuffs": {
 			"Anxiety": 0,
 			"Confusion": 0,
-			"Dizziness": 0,
+			"Dizziness": 34,
 			"Pressure": 0
 		},
-		"difficulty_penalty": 0,
-		"failed_test_count": 0,
+		"difficulty_penalty": 1,
+		"failed_test_count": 1,
 		"recovery_targets": {
 			"Anxiety": 100,
 			"Confusion": 100,
-			"Dizziness": 100,
+			"Dizziness": 81,
 			"Pressure": 100
 		}
 	},
-	"saved_at": "2026-10-30 16:07:31",
+	"saved_at": "2026-11-01 11:19:54",
 	"scene_path": "res://Scenes/Home/Areas/World.tscn",
 	"school_completed": true,
+	"school_friend_interactions": {
+		"day": 1,
+		"friends": []
+	},
+	"school_friend_spawn_plan": {
+		"after_assessment": false,
+		"classroom_greeter": "Mich",
+		"created": true,
+		"day": 1,
+		"entries": []
+	},
 	"school_started": false,
 	"slot": 0,
 	"version": 1
