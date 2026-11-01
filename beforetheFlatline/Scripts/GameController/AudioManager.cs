@@ -83,11 +83,11 @@ public partial class AudioManager : Node
 
         // Start the next menu track just before the current one ends.
         AudioStream activeStream = _activeMusicPlayer.Stream;
-        float length = activeStream?.GetLength() ?? 0f;
-        if (length <= (float)CrossfadeSeconds + 0.25f)
+        double length = activeStream?.GetLength() ?? 0.0;
+        if (length <= CrossfadeSeconds + 0.25)
             return;
 
-        if (_activeMusicPlayer.GetPlaybackPosition() >= length - (float)CrossfadeSeconds)
+        if (_activeMusicPlayer.GetPlaybackPosition() >= length - CrossfadeSeconds)
             AdvanceMenuTrack();
     }
 
