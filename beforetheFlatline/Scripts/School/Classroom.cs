@@ -24,7 +24,10 @@ public partial class Classroom : Control
     public override void _Ready()
     {
         if (DayClock.Instance != null)
+        {
             DayClock.Instance.Running = false;
+            DayClock.Instance.MarkSchoolChallengeStartedToday();
+        }
 
         _dialogue = GetNode<VisualNovelScene>("%GreetingDialogue");
         _leaveHint = GetNode<Label>("%LeaveHint");
