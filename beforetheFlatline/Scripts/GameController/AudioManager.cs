@@ -61,7 +61,7 @@ public partial class AudioManager : Node
         }
 
         _menuTrackOne = LoadSound("Menu/Menu.mp3");
-        _menuTrackTwo = LoadSound("Menu/Menu2.wav");
+        _menuTrackTwo = LoadSound("Menu/Menu2.mp3");
         _dayTrack = LoadSound("Game/dayTime.mp3");
         _nightTrack = LoadSound("Game/nightTime.mp3");
 
