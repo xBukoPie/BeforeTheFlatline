@@ -100,6 +100,8 @@ public partial class UIFeedback : Node
         control.FocusEntered += () => SetHovered(control, true);
         control.FocusExited += () => SetHovered(control, false);
 
+        button.Pressed += () => AudioManager.Instance?.PlayUiClick();
+
         button.ButtonDown += () =>
         {
             if (button.Disabled)
@@ -139,6 +141,9 @@ public partial class UIFeedback : Node
                         0.12));
             }
         };
+
+        if (control is Slider slider)
+            slider.DragStarted += () => AudioManager.Instance?.PlayUiDrag();
 
         control.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
         control.TreeExiting += () => ForgetControl(id);
