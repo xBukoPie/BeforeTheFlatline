@@ -3,6 +3,11 @@ using SchoolYardGame;
 
 public partial class SuperUserAccess : CanvasLayer
 {
+    public static bool DeveloperAccessAvailable =>
+        SettingsManager.Instance?.SuperUserAccessEnabledThisSession == true;
+
+    public static int RequestedTimeSkipMinutes { get; private set; } = 60;
+
     private Control _root;
     private Button _toggleButton;
     private PanelContainer _panel;
@@ -11,6 +16,7 @@ public partial class SuperUserAccess : CanvasLayer
     private OptionButton _debuffType;
     private SpinBox _amount;
     private SpinBox _debuffIntensity;
+    private SpinBox _timeAdvanceMinutes;
     private OptionButton _keyRoom;
     private bool _accessAvailable;
     private bool _challengeContext;
@@ -200,6 +206,28 @@ public partial class SuperUserAccess : CanvasLayer
             SetStatus("School assessment completion condition triggered.");
         };
         _adminSection.AddChild(schoolComplete);
+
+        var timeAdvanceRow = new HBoxContainer();
+        timeAdvanceRow.AddChild(new Label
+        {
+            Text = "T time advance (minutes)",
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        _timeAdvanceMinutes = new SpinBox
+        {
+            MinValue = 1,
+            MaxValue = 1440,
+            Step = 1,
+            Rounded = true,
+            Value = RequestedTimeSkipMinutes,
+            CustomMinimumSize = new Vector2(110, 34),
+            TooltipText = "Whole number of minutes added when the developer presses T."
+        };
+        _timeAdvanceMinutes.ValueChanged += value =>
+            RequestedTimeSkipMinutes = Mathf.Clamp(Mathf.RoundToInt((float)value), 1, 1440);
+        timeAdvanceRow.AddChild(_timeAdvanceMinutes);
+        _adminSection.AddChild(timeAdvanceRow);
 
         var schoolOpen = MakeButton("Set time to 08:00");
         schoolOpen.Pressed += () =>
