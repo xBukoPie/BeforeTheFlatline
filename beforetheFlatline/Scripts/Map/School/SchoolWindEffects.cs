@@ -24,7 +24,7 @@ public partial class SchoolWindEffects : Node2D
         for (int i = 0; i < LeafCount; i++)
         {
             float alpha = _rng.RandfRange(0.68f, 0.88f);
-            Color leafColor = i % 3 switch
+            Color leafColor = (i % 3) switch
             {
                 0 => new Color(1f, 0.86f, 0.54f, alpha),
                 1 => new Color(0.82f, 0.9f, 0.57f, alpha),
