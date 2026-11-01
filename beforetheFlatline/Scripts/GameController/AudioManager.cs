@@ -114,7 +114,7 @@ public partial class AudioManager : Node
     }
 
     public void PlayUiClick() => PlaySoundEffect("InterfaceInteraction/uiClick.wav", -2f);
-    public void PlayUiDrag() => PlaySoundEffect("InterfaceInteraction/uiDrag.wav", -4f);
+    public void PlayUiDrag() => PlaySoundEffect("InterfaceInteraction/uiDrag.mp3", -4f);
     public void PlayLockedDoor() => PlaySoundEffect("ObjectInteraction/doorKey.wav", -1f);
     public void PlayDoorUnlock() => PlaySoundEffect("ObjectInteraction/doorUnlock.mp3", -1f);
     public void PlayObjectObtain() => PlaySoundEffect("ObjectInteraction/objectObtain.wav", -1f);
