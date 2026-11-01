@@ -3,47 +3,47 @@
 	"clock_running": true,
 	"day": 1,
 	"first_day_special_greeting_pending": false,
-	"hour": 20.7111587524414,
+	"hour": 8.0,
 	"kind": "autosave",
-	"mystery_encounter_seen": true,
-	"player_x": 56.0,
-	"player_y": 17.5,
+	"mystery_encounter_seen": false,
+	"player_x": -158.899993896484,
+	"player_y": 56.0,
 	"room_keys": {
 		"hidden_points": 0,
 		"keys_earned": 0,
 		"pending_key_room": "",
 		"unlocked_rooms": []
 	},
-	"room_path": "res://Scenes/Home/Areas/PlayerRoom.tscn",
+	"room_path": "res://Scenes/Home/Areas/Yard.tscn",
 	"sanity_state": {
-		"current_sanity": 73,
+		"current_sanity": 100,
 		"debuffs": {
 			"Anxiety": 0,
 			"Confusion": 0,
-			"Dizziness": 34,
+			"Dizziness": 0,
 			"Pressure": 0
 		},
-		"difficulty_penalty": 1,
-		"failed_test_count": 1,
+		"difficulty_penalty": 0,
+		"failed_test_count": 0,
 		"recovery_targets": {
 			"Anxiety": 100,
 			"Confusion": 100,
-			"Dizziness": 81,
+			"Dizziness": 100,
 			"Pressure": 100
 		}
 	},
-	"saved_at": "2026-11-01 11:19:54",
+	"saved_at": "2026-11-01 13:32:40",
 	"scene_path": "res://Scenes/Home/Areas/World.tscn",
-	"school_completed": true,
+	"school_completed": false,
 	"school_friend_interactions": {
 		"day": 1,
 		"friends": []
 	},
 	"school_friend_spawn_plan": {
 		"after_assessment": false,
-		"classroom_greeter": "Mich",
-		"created": true,
-		"day": 1,
+		"classroom_greeter": "",
+		"created": false,
+		"day": -1,
 		"entries": []
 	},
 	"school_started": false,
