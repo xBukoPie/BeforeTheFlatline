@@ -72,6 +72,8 @@ public partial class GroundKeyPickup : Area2D
         }
 
         _collected = true;
+        AudioManager.Instance?.PlayObjectObtain();
+        AudioManager.Instance?.PlayDoorUnlock();
         Monitoring = false;
         _sprite.Visible = false;
         _prompt.Text = $"KEY ACQUIRED: {roomName} unlocked!";
