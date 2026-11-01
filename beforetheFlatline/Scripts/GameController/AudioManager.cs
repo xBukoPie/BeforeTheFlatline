@@ -185,8 +185,8 @@ public partial class AudioManager : Node
         if (stream == null)
             return;
 
-        if (loop && stream is AudioStreamMP3 mp3)
-            mp3.Loop = true;
+        if (stream is AudioStreamMP3 mp3)
+            mp3.Loop = loop;
 
         if (_activeMusicPlayer != null &&
             GodotObject.IsInstanceValid(_activeMusicPlayer) &&
