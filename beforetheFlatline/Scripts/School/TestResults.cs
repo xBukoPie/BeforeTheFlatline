@@ -18,6 +18,13 @@ public partial class TestResults : Control
 
         bool alreadyFinalized = DailyTestSession.IsFinalized;
         _passed = DailyTestSession.FinalizeTest();
+        if (!alreadyFinalized)
+        {
+            if (_passed)
+                AudioManager.Instance?.PlayAssessmentPassed();
+            else
+                AudioManager.Instance?.PlayAssessmentFailed();
+        }
         if (DayClock.Instance != null) DayClock.Instance.MarkSchoolChallengeCompletedToday();
 
         int correct = DailyTestSession.CorrectCount;
