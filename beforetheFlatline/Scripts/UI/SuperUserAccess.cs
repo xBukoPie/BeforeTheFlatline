@@ -219,7 +219,6 @@ public partial class SuperUserAccess : CanvasLayer
             MinValue = 1,
             MaxValue = 1440,
             Step = 1,
-            Rounded = true,
             Value = RequestedTimeSkipMinutes,
             CustomMinimumSize = new Vector2(110, 34),
             TooltipText = "Whole number of minutes added when the developer presses T."
