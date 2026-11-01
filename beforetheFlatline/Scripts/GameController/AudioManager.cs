@@ -180,7 +180,15 @@ public partial class AudioManager : Node
                 return null;
             }
 
-            byte[] audioData = file.GetBuffer(fileLength);
+            // GetBuffer expects a signed long. Byte arrays are int-sized in .NET,
+            // so reject an oversized source before converting the unsigned file length.
+            if (fileLength > int.MaxValue)
+            {
+                GD.PushWarning($"AudioManager: sound file is too large to load into memory: {path}");
+                return null;
+            }
+
+            byte[] audioData = file.GetBuffer((long)fileLength);
             if (audioData == null || audioData.Length == 0)
             {
                 GD.PushWarning($"AudioManager: no audio data could be read from: {path}");
