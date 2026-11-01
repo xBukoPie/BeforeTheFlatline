@@ -1,7 +1,6 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace SchoolYardGame;
 
@@ -188,7 +187,7 @@ public partial class AudioManager : Node
                 return null;
             }
 
-            string extension = Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
+            string extension = System.IO.Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
             if (extension == "mp3")
             {
                 var mp3 = new AudioStreamMP3
