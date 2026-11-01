@@ -28,7 +28,6 @@ public partial class AudioManager : Node
     private AudioStream _menuTrackTwo;
     private AudioStream _dayTrack;
     private AudioStream _nightTrack;
-    private AudioStream _gameOverSound;
 
     public override void _Ready()
     {
@@ -62,7 +61,6 @@ public partial class AudioManager : Node
         _menuTrackTwo = LoadSound("Menu/Menu2.mp3");
         _dayTrack = LoadSound("Game/dayTime.mp3");
         _nightTrack = LoadSound("Game/nightTime.mp3");
-        _gameOverSound = LoadSound("Ending/gameOver.mp3");
 
         if (DayClock.Instance != null)
             DayClock.Instance.TimeChanged += OnTimeChanged;
