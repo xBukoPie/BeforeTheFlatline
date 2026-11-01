@@ -6,15 +6,17 @@
 	"hour": 8.0,
 	"kind": "autosave",
 	"mystery_encounter_seen": false,
-	"player_x": -158.899993896484,
-	"player_y": 56.0,
+	"player_x": 88.0,
+	"player_y": 28.0,
 	"room_keys": {
 		"hidden_points": 0,
-		"keys_earned": 0,
+		"keys_earned": 1,
 		"pending_key_room": "",
-		"unlocked_rooms": []
+		"unlocked_rooms": [
+			"Kitchen"
+		]
 	},
-	"room_path": "res://Scenes/Home/Areas/Yard.tscn",
+	"room_path": "res://Scenes/Home/Areas/LivingRoom.tscn",
 	"sanity_state": {
 		"current_sanity": 100,
 		"debuffs": {
@@ -32,7 +34,7 @@
 			"Pressure": 100
 		}
 	},
-	"saved_at": "2026-11-01 13:32:40",
+	"saved_at": "2026-11-01 13:40:10",
 	"scene_path": "res://Scenes/Home/Areas/World.tscn",
 	"school_completed": false,
 	"school_friend_interactions": {
