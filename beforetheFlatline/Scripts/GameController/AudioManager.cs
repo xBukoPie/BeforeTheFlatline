@@ -173,7 +173,7 @@ public partial class AudioManager : Node
                 return null;
             }
 
-            long fileLength = file.GetLength();
+            ulong fileLength = file.GetLength();
             if (fileLength <= 0)
             {
                 GD.PushWarning($"AudioManager: sound file is empty: {path}");
