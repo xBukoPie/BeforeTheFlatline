@@ -9,6 +9,10 @@ public partial class HUDController : CanvasLayer
     private Label _sanityValue;
     private Label _clockVisual;
     private Label _clockState;
+    private PanelContainer _objectivePanel;
+    private Label _objectiveTitle;
+    private Label _objectiveBody;
+    private int _lastObjectiveStage = -1;
 
     public override void _Ready()
     {
@@ -18,6 +22,7 @@ public partial class HUDController : CanvasLayer
         if (_clock != null) _clock.Visible = false;
 
         BuildVitalsPanel();
+        BuildFirstDayObjectivePanel();
 
         if (SanityManager.Instance != null)
         {
@@ -28,7 +33,11 @@ public partial class HUDController : CanvasLayer
         UpdateClock();
     }
 
-    public override void _Process(double delta) => UpdateClock();
+    public override void _Process(double delta)
+    {
+        UpdateClock();
+        UpdateFirstDayObjective();
+    }
 
     public override void _ExitTree()
     {
@@ -147,6 +156,103 @@ public partial class HUDController : CanvasLayer
         _clockState.AddThemeFontSizeOverride("font_size", 11);
         _clockState.AddThemeColorOverride("font_color", new Color("a9a0ba"));
         clockRow.AddChild(_clockState);
+    }
+
+    private void BuildFirstDayObjectivePanel()
+    {
+        _objectivePanel = new PanelContainer
+        {
+            Name = "FirstDayObjective",
+            Visible = false,
+            AnchorLeft = 1f,
+            AnchorRight = 1f,
+            AnchorTop = 0f,
+            AnchorBottom = 0f,
+            OffsetLeft = -370f,
+            OffsetRight = -14f,
+            OffsetTop = 14f,
+            OffsetBottom = 154f,
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
+        _objectivePanel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color("101827eF"),
+            BorderColor = new Color("d0a86a"),
+            BorderWidthLeft = 1,
+            BorderWidthRight = 1,
+            BorderWidthTop = 1,
+            BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 9,
+            CornerRadiusTopRight = 9,
+            CornerRadiusBottomLeft = 9,
+            CornerRadiusBottomRight = 9,
+            ContentMarginLeft = 15,
+            ContentMarginRight = 15,
+            ContentMarginTop = 11,
+            ContentMarginBottom = 11
+        });
+        AddChild(_objectivePanel);
+
+        var stack = new VBoxContainer();
+        stack.AddThemeConstantOverride("separation", 6);
+        stack.MouseFilter = Control.MouseFilterEnum.Ignore;
+        _objectivePanel.AddChild(stack);
+
+        _objectiveTitle = new Label
+        {
+            Text = "FIRST DAY  •  OBJECTIVE",
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
+        _objectiveTitle.AddThemeFontSizeOverride("font_size", 14);
+        _objectiveTitle.AddThemeColorOverride("font_color", new Color("f3c98b"));
+        stack.AddChild(_objectiveTitle);
+
+        _objectiveBody = new Label
+        {
+            Text = "",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
+        _objectiveBody.AddThemeFontSizeOverride("font_size", 15);
+        _objectiveBody.AddThemeColorOverride("font_color", new Color("edf0f6"));
+        stack.AddChild(_objectiveBody);
+    }
+
+    private void UpdateFirstDayObjective()
+    {
+        if (_objectivePanel == null || DayClock.Instance == null)
+            return;
+
+        DayClock clock = DayClock.Instance;
+        bool visible = clock.DayNumber == 1;
+        _objectivePanel.Visible = visible;
+        if (!visible)
+            return;
+
+        int stage = !clock.SchoolChallengeStartedToday
+            ? 0
+            : !clock.SchoolChallengeCompletedToday ? 1 : 2;
+
+        if (stage == _lastObjectiveStage)
+            return;
+
+        _lastObjectiveStage = stage;
+        switch (stage)
+        {
+            case 0:
+                _objectiveTitle.Text = "FIRST DAY  •  1/3";
+                _objectiveBody.Text = "Go to school and find your classroom. Interact with doors when the [E] prompt appears.";
+                break;
+            case 1:
+                _objectiveTitle.Text = "FIRST DAY  •  2/3";
+                _objectiveBody.Text = "Complete your first school assessment. Read each question carefully; failed assessments can cost sanity.";
+                break;
+            default:
+                _objectiveTitle.Text = "FIRST DAY  •  3/3";
+                _objectiveBody.Text = "School is over for today. Head home and get some rest.";
+                break;
+        }
     }
 
     private void UpdateClock()
