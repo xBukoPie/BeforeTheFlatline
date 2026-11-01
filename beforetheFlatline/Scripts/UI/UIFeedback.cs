@@ -19,6 +19,7 @@ public partial class UIFeedback : Node
     private static readonly Color ReleaseTint = new(1.08f, 1.05f, 1f, 1f);
 
     private readonly HashSet<ulong> _tracked = new();
+    private readonly HashSet<ulong> _trackedSliders = new();
     private readonly HashSet<ulong> _hovered = new();
     private readonly HashSet<ulong> _scaleFeedback = new();
     private readonly Dictionary<ulong, Vector2> _baseScales = new();
@@ -69,11 +70,16 @@ public partial class UIFeedback : Node
 
     private void AttachControl(Control control)
     {
-        if (control is not BaseButton button)
-            return;
-
         ulong id = control.GetInstanceId();
-        if (!_tracked.Add(id))
+
+        // Sliders are not BaseButtons, so wire their drag signal before the button-only path.
+        if (control is Slider slider && _trackedSliders.Add(id))
+        {
+            slider.DragStarted += () => AudioManager.Instance?.PlayUiDrag();
+            control.TreeExiting += () => _trackedSliders.Remove(id);
+        }
+
+        if (control is not BaseButton button || !_tracked.Add(id))
             return;
 
         _baseScales[id] = control.Scale;
@@ -141,9 +147,6 @@ public partial class UIFeedback : Node
                         0.12));
             }
         };
-
-        if (control is Slider slider)
-            slider.DragStarted += () => AudioManager.Instance?.PlayUiDrag();
 
         control.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
         control.TreeExiting += () => ForgetControl(id);
