@@ -1,4 +1,5 @@
 using Godot;
+using System;
 using System.Collections.Generic;
 
 namespace SchoolYardGame;
@@ -21,6 +22,8 @@ public partial class AudioManager : Node
     private AudioStreamPlayer _musicB;
     private AudioStreamPlayer _activeMusicPlayer;
     private readonly List<AudioStreamPlayer> _sfxPlayers = new();
+    private readonly Dictionary<string, AudioStream> _soundCache =
+        new(StringComparer.OrdinalIgnoreCase);
     private int _nextSfxPlayer;
     private string _musicMode = "none";
     private int _menuTrackIndex;
@@ -141,11 +144,97 @@ public partial class AudioManager : Node
 
     private AudioStream LoadSound(string relativePath)
     {
-        string path = SoundRoot + relativePath;
-        AudioStream stream = GD.Load<AudioStream>(path);
+        if (string.IsNullOrWhiteSpace(relativePath))
+            return null;
+
+        string requestedPath = SoundRoot + relativePath.Replace('\\', '/');
+        string path = ResolveSoundPath(requestedPath);
+
+        if (_soundCache.TryGetValue(path, out AudioStream cached) &&
+            cached != null && GodotObject.IsInstanceValid(cached))
+            return cached;
+
+        AudioStream stream = null;
+
+        // Prefer the normal imported resource when Godot has generated its .import
+        // metadata. This is the path used by exported builds.
+        if (FileAccess.FileExists(path + ".import") && ResourceLoader.Exists(path))
+            stream = ResourceLoader.Load<AudioStream>(path);
+
+        // Newly added MP3s may not have .import sidecars yet. Load their source bytes
+        // directly so playback works immediately instead of failing through GD.Load().
         if (stream == null)
-            GD.PushWarning($"AudioManager: sound asset could not be loaded: {path}");
+        {
+            using FileAccess file = FileAccess.Open(path, FileAccess.ModeFlags.Read);
+            if (file == null)
+            {
+                GD.PushWarning(
+                    $"AudioManager: unable to open sound '{path}'. FileAccess error: {FileAccess.GetOpenError()}");
+                return null;
+            }
+
+            long fileLength = file.GetLength();
+            if (fileLength <= 0)
+            {
+                GD.PushWarning($"AudioManager: sound file is empty: {path}");
+                return null;
+            }
+
+            byte[] audioData = file.GetBuffer(fileLength);
+            if (audioData == null || audioData.Length == 0)
+            {
+                GD.PushWarning($"AudioManager: no audio data could be read from: {path}");
+                return null;
+            }
+
+            string extension = path.GetExtension().ToLowerInvariant();
+            if (extension == "mp3")
+            {
+                var mp3 = new AudioStreamMP3
+                {
+                    Data = audioData
+                };
+                stream = mp3;
+            }
+            else
+            {
+                GD.PushWarning(
+                    $"AudioManager: direct source loading currently supports MP3 only; unsupported file: {path}");
+                return null;
+            }
+        }
+
+        _soundCache[path] = stream;
+        GD.Print($"[AudioManager] Loaded sound: {path}");
         return stream;
+    }
+
+    // Godot resource paths are case-sensitive even when the host filesystem is not.
+    // Resolve the actual filename from the folder so minor capitalization differences
+    // such as 'uiclick.mp3' versus 'uiClick.mp3' do not break playback.
+    private static string ResolveSoundPath(string requestedPath)
+    {
+        int separator = requestedPath.LastIndexOf('/');
+        if (separator < 0 || separator >= requestedPath.Length - 1)
+            return requestedPath;
+
+        string directoryPath = requestedPath[..separator];
+        string requestedFileName = requestedPath[(separator + 1)..];
+
+        using DirAccess directory = DirAccess.Open(directoryPath);
+        if (directory == null)
+            return requestedPath;
+
+        foreach (string actualFileName in directory.GetFiles())
+        {
+            if (string.Equals(
+                actualFileName, requestedFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                return directoryPath + "/" + actualFileName;
+            }
+        }
+
+        return requestedPath;
     }
 
     private void AdvanceMenuTrack()
