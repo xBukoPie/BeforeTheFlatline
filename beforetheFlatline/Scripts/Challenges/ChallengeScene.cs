@@ -304,10 +304,14 @@ public partial class ChallengeScene : Control
 
         if (correct)
         {
-            ChallengeProgress.MarkCompleted(_activeChallengeId);
-            var reward = RoomKeyProgression.Instance?.AwardTaskCompletion(_difficulty);
-            if (reward != null)
-                GD.Print($"[ChallengeScene] Correct answer earned {reward.PointsAdded} hidden story points. Total: {reward.TotalPoints}.");
+            // A retry must not farm story progress for the same challenge on the same day.
+            bool firstCompletionToday = ChallengeProgress.MarkCompleted(_activeChallengeId);
+            if (firstCompletionToday)
+            {
+                var reward = RoomKeyProgression.Instance?.AwardTaskCompletion(_difficulty);
+                if (reward != null)
+                    GD.Print($"[ChallengeScene] First correct completion earned {reward.PointsAdded} hidden story points. Total: {reward.TotalPoints}.");
+            }
         }
 
         _completed = true;
