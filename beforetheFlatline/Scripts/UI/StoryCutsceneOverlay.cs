@@ -59,8 +59,18 @@ void fragment()
     private ShaderMaterial _artMaterial;
     private VisualNovelScene _dialogue;
     private Tween _artTween;
-    private Tween _effectTween;
     private Control _introLayer;
+
+    // Shader uniforms are not ordinary Godot properties, so animate their values
+    // in _Process and push them through ShaderMaterial.SetShaderParameter().
+    private float _dizzinessCurrent;
+    private float _dizzinessTarget;
+    private float _nauseaCurrent;
+    private float _nauseaTarget;
+    private float _pressureCurrent;
+    private float _pressureTarget;
+    private float _panicCurrent;
+    private float _panicTarget;
 
     public void Configure(
         string heading,
@@ -95,8 +105,25 @@ void fragment()
 
     public override void _Process(double delta)
     {
+        float dt = (float)delta;
         _elapsed += delta;
-        _artMaterial?.SetShaderParameter("time_seconds", (float)_elapsed);
+
+        // Smoothly approach each cue target. This avoids tweening nonexistent
+        // shader_parameter/... properties on ShaderMaterial.
+        const float transitionSpeed = 1.8f;
+        _dizzinessCurrent = Mathf.MoveToward(_dizzinessCurrent, _dizzinessTarget, transitionSpeed * dt);
+        _nauseaCurrent = Mathf.MoveToward(_nauseaCurrent, _nauseaTarget, transitionSpeed * dt);
+        _pressureCurrent = Mathf.MoveToward(_pressureCurrent, _pressureTarget, transitionSpeed * dt);
+        _panicCurrent = Mathf.MoveToward(_panicCurrent, _panicTarget, transitionSpeed * dt);
+
+        if (_artMaterial == null || !GodotObject.IsInstanceValid(_artMaterial))
+            return;
+
+        _artMaterial.SetShaderParameter("time_seconds", (float)_elapsed);
+        _artMaterial.SetShaderParameter("dizziness_strength", _dizzinessCurrent);
+        _artMaterial.SetShaderParameter("nausea_strength", _nauseaCurrent);
+        _artMaterial.SetShaderParameter("pressure_strength", _pressureCurrent);
+        _artMaterial.SetShaderParameter("panic_strength", _panicCurrent);
     }
 
     public override void _ExitTree()
@@ -137,6 +164,11 @@ void fragment()
             Shader = new Shader { Code = MemoryDistortionShader }
         };
         _art.Material = _artMaterial;
+        _artMaterial.SetShaderParameter("time_seconds", 0f);
+        _artMaterial.SetShaderParameter("dizziness_strength", 0f);
+        _artMaterial.SetShaderParameter("nausea_strength", 0f);
+        _artMaterial.SetShaderParameter("pressure_strength", 0f);
+        _artMaterial.SetShaderParameter("panic_strength", 0f);
         AddChild(_art);
 
         // A restrained edge shade keeps the dialogue readable without dimming each line.
@@ -258,6 +290,9 @@ void fragment()
 
         _dialogue = dialogueScene.Instantiate<VisualNovelScene>();
         _dialogue.Name = "MemoryDialogue";
+        // The parent cutscene pauses the game tree; dialogue typing, input,
+        // Auto mode, and its tweens must still run while paused.
+        _dialogue.ProcessMode = ProcessModeEnum.Always;
         _dialogue.ShowBackground = false;
         _dialogue.ShowPlaceholders = false;
         _dialogue.ShowCharacterSlots = false;
@@ -332,63 +367,46 @@ void fragment()
     {
         string normalized = (cue ?? string.Empty).Trim().ToLowerInvariant();
 
-        float dizziness = 0f;
-        float nausea = 0f;
-        float pressure = 0f;
-        float panic = 0f;
+        _dizzinessTarget = 0f;
+        _nauseaTarget = 0f;
+        _pressureTarget = 0f;
+        _panicTarget = 0f;
 
         switch (normalized)
         {
             case "dizzy":
             case "dizziness":
-                dizziness = 0.78f;
-                nausea = 0.12f;
+                _dizzinessTarget = 0.78f;
+                _nauseaTarget = 0.12f;
                 break;
 
             case "nausea":
             case "nauseous":
-                dizziness = 0.16f;
-                nausea = 0.82f;
+                _dizzinessTarget = 0.16f;
+                _nauseaTarget = 0.82f;
                 break;
 
             case "pressure":
-                pressure = 0.78f;
+                _pressureTarget = 0.78f;
                 break;
 
             case "panic":
             case "anxiety":
-                dizziness = 0.22f;
-                pressure = 0.55f;
-                panic = 0.82f;
+                _dizzinessTarget = 0.22f;
+                _pressureTarget = 0.55f;
+                _panicTarget = 0.82f;
                 break;
 
             case "blackout":
-                dizziness = 0.36f;
-                pressure = 0.9f;
-                panic = 0.4f;
+                _dizzinessTarget = 0.36f;
+                _pressureTarget = 0.9f;
+                _panicTarget = 0.4f;
                 break;
 
             case "relief":
-                // Returning to a calmer image resets the sensory distortion.
+                // Neutral targets restore the artwork gradually.
                 break;
         }
-
-        if (_effectTween != null && _effectTween.IsValid())
-            _effectTween.Kill();
-
-        _effectTween = CreateTween().SetParallel();
-        _effectTween.TweenProperty(_artMaterial, "shader_parameter/dizziness_strength", dizziness, 0.48)
-            .SetTrans(Tween.TransitionType.Sine)
-            .SetEase(Tween.EaseType.InOut);
-        _effectTween.TweenProperty(_artMaterial, "shader_parameter/nausea_strength", nausea, 0.55)
-            .SetTrans(Tween.TransitionType.Sine)
-            .SetEase(Tween.EaseType.InOut);
-        _effectTween.TweenProperty(_artMaterial, "shader_parameter/pressure_strength", pressure, 0.5)
-            .SetTrans(Tween.TransitionType.Sine)
-            .SetEase(Tween.EaseType.InOut);
-        _effectTween.TweenProperty(_artMaterial, "shader_parameter/panic_strength", panic, 0.45)
-            .SetTrans(Tween.TransitionType.Sine)
-            .SetEase(Tween.EaseType.InOut);
     }
 
     private void OnDialogueFinished() => Finish();
