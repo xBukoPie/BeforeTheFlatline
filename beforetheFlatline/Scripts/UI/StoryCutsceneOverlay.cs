@@ -86,6 +86,8 @@ void fragment()
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
+        // Keep persistent HUD distortion from competing with the memory-specific effects.
+        StatusEffectsOverlay.Instance?.SetPauseMenuVisible(true);
         GetTree().Paused = true;
         BuildBackdrop();
         PlayMemoryOpening();
@@ -201,7 +203,9 @@ void fragment()
 
         var subtitle = new Label
         {
-            Text = "The photograph pulls you into something you thought you had forgotten.",
+            Text = _isEnding
+                ? "The final memory is waiting on the other side."
+                : "The photograph pulls you into something you thought you had forgotten.",
             HorizontalAlignment = HorizontalAlignment.Center,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             Modulate = new Color(1f, 1f, 1f, 0f)
@@ -415,6 +419,7 @@ void fragment()
         GetTree().Paused = _previousTreePaused;
         if (DayClock.Instance != null)
             DayClock.Instance.Running = _previousClockRunning;
+        StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
 
         Action callback = _onFinished;
         _onFinished = null;
