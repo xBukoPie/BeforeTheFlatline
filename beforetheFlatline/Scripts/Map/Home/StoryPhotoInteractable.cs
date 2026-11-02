@@ -188,6 +188,7 @@ public partial class StoryPhotoInteractable : Area2D
                 new(toBedroomImage, "I need to talk to my parents. I need to ask them for help."),
                 new(toBedroomImage, "Every step toward the bedroom makes the pressure heavier. The bad thoughts keep building."),
                 new(bedroomImage, "I finally reach the bedroom, but I collapse before I can say anything."),
+                new("", ""),
                 new(goodEndingImage, "A steady heart-monitor beep fills the room. I slowly open my eyes."),
                 new(goodEndingImage, "My parents are beside me, their eyes full of tears. They thank the heavens that I finally woke up."),
                 new(goodEndingImage, "We hold each other. I burst into tears. I am not alone.")
