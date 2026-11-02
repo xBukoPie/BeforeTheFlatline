@@ -182,10 +182,15 @@ public partial class StoryCutsceneOverlay : Control
         _slideIndex = Mathf.Clamp(index, 0, Math.Max(0, _slides.Count - 1));
         StoryCutsceneSlide slide = _slides[_slideIndex];
 
-        Texture2D texture = GD.Load<Texture2D>(slide.ImagePath);
-        if (texture == null)
-            GD.PushWarning($"StoryCutsceneOverlay: could not load image '{slide.ImagePath}'.");
+        Texture2D texture = null;
+        if (!string.IsNullOrWhiteSpace(slide.ImagePath))
+        {
+            texture = GD.Load<Texture2D>(slide.ImagePath);
+            if (texture == null)
+                GD.PushWarning($"StoryCutsceneOverlay: could not load image '{slide.ImagePath}'.");
+        }
 
+        // An empty image path intentionally leaves the black background visible.
         _art.Texture = texture;
         _bodyLabel.Text = slide.Text;
         _counterLabel.Text = _slides.Count > 1 ? $"{_slideIndex + 1} / {_slides.Count}" : "";
