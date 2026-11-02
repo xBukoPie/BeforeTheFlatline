@@ -29,13 +29,13 @@ public static class WorldInteractableGlow
         return glow;
     }
 
-    public static void Animate(Sprite2D glow, double elapsed, float phase = 0f)
+    public static void Animate(Sprite2D glow, double elapsed, float phase = 0f, float baseScale = 1f)
     {
         if (glow == null || !GodotObject.IsInstanceValid(glow))
             return;
 
         float pulse = (Mathf.Sin((float)elapsed * 2.8f + phase) + 1f) * 0.5f;
-        float scale = 1.0f + pulse * 0.13f;
+        float scale = Mathf.Max(1f, baseScale) * (1.0f + pulse * 0.13f);
         glow.Scale = Vector2.One * scale;
         Color tint = glow.Modulate;
         tint.A = 0.28f + pulse * 0.22f;
