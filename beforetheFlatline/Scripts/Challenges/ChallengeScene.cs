@@ -303,7 +303,12 @@ public partial class ChallengeScene : Control
         DailyTestSession.Record(_activeChallengeId, correct, gaveUp, _difficulty);
 
         if (correct)
+        {
             ChallengeProgress.MarkCompleted(_activeChallengeId);
+            var reward = RoomKeyProgression.Instance?.AwardTaskCompletion(_difficulty);
+            if (reward != null)
+                GD.Print($"[ChallengeScene] Correct answer earned {reward.PointsAdded} hidden story points. Total: {reward.TotalPoints}.");
+        }
 
         _completed = true;
         _submitButton.Disabled = true;
