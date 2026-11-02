@@ -14,8 +14,8 @@ public static class WorldInteractableGlow
         Sprite2D subject = parent.GetNodeOrNull<Sprite2D>("Sprite2D");
         if (subject?.Texture != null)
         {
-            Vector2I textureSize = subject.Texture.GetSize();
-            subjectSize = new Vector2(textureSize.X, textureSize.Y) * subject.Scale;
+            Vector2 textureSize = subject.Texture.GetSize();
+            subjectSize = textureSize * subject.Scale;
         }
 
         float subjectDiameter = Mathf.Max(subjectSize.X, subjectSize.Y);
@@ -62,7 +62,7 @@ public static class WorldInteractableGlow
             return _radialTexture;
 
         const int size = 96;
-        Image image = Image.Create(size, size, false, Image.Format.Rgba8);
+        Image image = Image.CreateEmpty(size, size, false, Image.Format.Rgba8);
         float center = (size - 1) * 0.5f;
         float radius = center;
 
