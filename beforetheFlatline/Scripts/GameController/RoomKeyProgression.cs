@@ -129,9 +129,52 @@ public partial class RoomKeyProgression : Node
         if (nextIndex < 0)
             return string.Empty;
 
+        int requiredPoints = (nextIndex + 1) * PointsPerKeyQuota;
+        if (HiddenPoints < requiredPoints)
+            return string.Empty;
+
+        // Later keys stay gated until the previous room's memory photograph has been examined.
+        if (StoryProgression.Instance?.CanOfferKeyForRoomIndex(nextIndex) != true)
+            return string.Empty;
+
         PendingKeyRoomName = LockedRooms[nextIndex].Name;
         return PendingKeyRoomName;
     }
+
+    public string GetPendingKeyLocationName() => GetKeyLocationName(PendingKeyRoomName);
+
+    public string GetNextKeyLocationName() => GetKeyLocationName(NextRoomKeyName);
+
+    public string GetPendingKeyLocationScenePath() => GetKeyLocationScenePath(PendingKeyRoomName);
+
+    public string GetPendingKeyLocationSpawn() => GetKeyLocationSpawn(PendingKeyRoomName);
+
+    private static string GetKeyLocationName(string keyRoomName) => keyRoomName switch
+    {
+        "Kitchen" => "the front yard",
+        "Laundry" => "the kitchen",
+        "Bathroom" => "the laundry room",
+        "MasterBedroom" => "the bathroom",
+        _ => "the house"
+    };
+
+    private static string GetKeyLocationScenePath(string keyRoomName) => keyRoomName switch
+    {
+        "Kitchen" => "res://Scenes/Home/Areas/Yard.tscn",
+        "Laundry" => "res://Scenes/Home/Areas/Kitchen.tscn",
+        "Bathroom" => "res://Scenes/Home/Areas/LaundryRoom.tscn",
+        "MasterBedroom" => "res://Scenes/Home/Areas/Bathroom.tscn",
+        _ => string.Empty
+    };
+
+    private static string GetKeyLocationSpawn(string keyRoomName) => keyRoomName switch
+    {
+        "Kitchen" => "FromSchool",
+        "Laundry" => "FromLivingRoom",
+        "Bathroom" => "FromLivingRoom",
+        "MasterBedroom" => "FromLaundry",
+        _ => "startSpawn"
+    };
 
     public string CollectPendingKey()
     {
