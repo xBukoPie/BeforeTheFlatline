@@ -223,6 +223,7 @@ public partial class MainMenu : Control
         DailyTestSession.Reset();
         ChallengeProgress.Reset();
         RoomKeyProgression.Instance?.ResetForNewRun();
+        StoryProgression.Instance?.ResetForNewRun();
 
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
