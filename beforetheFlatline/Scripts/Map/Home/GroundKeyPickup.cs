@@ -14,6 +14,7 @@ public partial class GroundKeyPickup : Area2D
     private float _feedbackRemaining;
     private double _elapsed;
     private bool _wasAvailable;
+    private bool _availabilityInitialized;
 
     public override void _Ready()
     {
@@ -119,9 +120,10 @@ public partial class GroundKeyPickup : Area2D
     private void RefreshAvailability()
     {
         bool available = !_collected && IsKeyAvailable();
-        if (available == _wasAvailable)
+        if (_availabilityInitialized && available == _wasAvailable)
             return;
 
+        _availabilityInitialized = true;
         _wasAvailable = available;
         Monitoring = available;
         _sprite.Visible = available;
