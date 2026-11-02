@@ -5,96 +5,86 @@ public partial class BadEnding : Control
 {
     public override void _Ready()
     {
+        ProcessMode = ProcessModeEnum.Always;
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
         BuildUi();
+
+        // The flatline track begins with the hospital cutscene, not during the transition fade.
+        AudioManager.Instance?.PlayGameOver();
     }
 
     private void BuildUi()
     {
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
-        var background = new ColorRect
+        var background = new TextureRect
         {
-            Color = new Color("090811"),
-            MouseFilter = Control.MouseFilterEnum.Ignore
+            Name = "FlatlineCutscene",
+            Texture = GD.Load<Texture2D>("res://Assets/Cutscenes/cutsceneBadEnding.jpg"),
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+            TextureFilter = TextureFilterEnum.Linear,
+            MouseFilter = MouseFilterEnum.Ignore
         };
         background.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(background);
 
-        var wash = new ColorRect
+        var darken = new ColorRect
         {
-            Color = new Color(0.36f, 0.035f, 0.11f, 0.28f),
-            MouseFilter = Control.MouseFilterEnum.Ignore
+            Color = new Color(0f, 0f, 0f, 0.55f),
+            MouseFilter = MouseFilterEnum.Ignore
         };
-        wash.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        AddChild(wash);
+        darken.AnchorLeft = 0f;
+        darken.AnchorRight = 1f;
+        darken.AnchorTop = 0.72f;
+        darken.AnchorBottom = 1f;
+        AddChild(darken);
 
-        var center = new CenterContainer();
-        center.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        var center = new CenterContainer
+        {
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        center.AnchorLeft = 0f;
+        center.AnchorRight = 1f;
+        center.AnchorTop = 0.72f;
+        center.AnchorBottom = 1f;
         AddChild(center);
 
-        var panel = new PanelContainer { CustomMinimumSize = new Vector2(700, 390) };
-        panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        var stack = new VBoxContainer
         {
-            BgColor = new Color("17121e"),
-            BorderColor = new Color("8d314d"),
-            BorderWidthLeft = 2,
-            BorderWidthRight = 2,
-            BorderWidthTop = 2,
-            BorderWidthBottom = 2,
-            CornerRadiusTopLeft = 12,
-            CornerRadiusTopRight = 12,
-            CornerRadiusBottomLeft = 12,
-            CornerRadiusBottomRight = 12,
-            ContentMarginLeft = 42,
-            ContentMarginRight = 42,
-            ContentMarginTop = 34,
-            ContentMarginBottom = 34
-        });
-        center.AddChild(panel);
-
-        var stack = new VBoxContainer();
-        stack.AddThemeConstantOverride("separation", 20);
-        panel.AddChild(stack);
-
-        var eyebrow = new Label
-        {
-            Text = "BEFORE THE FLATLINE",
-            HorizontalAlignment = HorizontalAlignment.Center
+            CustomMinimumSize = new Vector2(600, 0),
+            Alignment = BoxContainer.AlignmentMode.Center
         };
-        eyebrow.AddThemeFontSizeOverride("font_size", 14);
-        eyebrow.AddThemeColorOverride("font_color", new Color("c084fc"));
-        stack.AddChild(eyebrow);
+        stack.AddThemeConstantOverride("separation", 14);
+        center.AddChild(stack);
 
         var title = new Label
         {
-            Text = "YOU LOST YOURSELF",
-            HorizontalAlignment = HorizontalAlignment.Center,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart
+            Text = "GAME OVER",
+            HorizontalAlignment = HorizontalAlignment.Center
         };
-        title.AddThemeFontSizeOverride("font_size", 32);
-        title.AddThemeColorOverride("font_color", new Color("fb7185"));
+        title.AddThemeFontSizeOverride("font_size", 30);
+        title.AddThemeColorOverride("font_color", new Color("fca5a5"));
         title.AddThemeColorOverride("font_outline_color", Colors.Black);
         title.AddThemeConstantOverride("outline_size", 4);
         stack.AddChild(title);
 
         var message = new Label
         {
-            Text = "Your sanity has reached zero. The pressure, confusion, and exhaustion have become too much.\n\nThere is nothing left to do today.",
+            Text = "The monitor's steady rhythm has become a flatline.",
             HorizontalAlignment = HorizontalAlignment.Center,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            SizeFlagsHorizontal = SizeFlags.ExpandFill
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
         message.AddThemeFontSizeOverride("font_size", 17);
-        message.AddThemeColorOverride("font_color", new Color("e2dbe7"));
+        message.AddThemeColorOverride("font_color", Colors.White);
         stack.AddChild(message);
 
         var returnButton = new Button
         {
             Text = "Return to Title",
-            CustomMinimumSize = new Vector2(0, 50),
+            CustomMinimumSize = new Vector2(0, 48),
             SizeFlagsHorizontal = SizeFlags.ExpandFill
         };
         returnButton.Pressed += () =>
