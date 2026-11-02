@@ -1,4 +1,5 @@
 using Godot;
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
@@ -23,6 +24,8 @@ public partial class VisualNovelScene : Control
     [ExportGroup("Display")]
     [Export] public bool ShowBackground { get; set; } = true;
     [Export] public bool ShowPlaceholders { get; set; } = true;
+    [Export] public bool ShowCharacterSlots { get; set; } = true;
+    [Export] public bool AllowPauseMenu { get; set; } = true;
 
     [ExportGroup("Demo")]
     [Export] public bool PlayDemoOnReady { get; set; } = true;
@@ -58,6 +61,9 @@ public partial class VisualNovelScene : Control
     private Control _pauseMenu;
     private bool _clockWasRunningBeforePause;
 
+    // Raised whenever the active dialogue line changes; story cutscenes use this for synced visual cues.
+    public event Action<int, DialogueLine> LinePresented;
+
     public override void _Ready()
     {
         _leftSlot = GetNode<Control>("%LeftCharacter");
@@ -84,6 +90,9 @@ public partial class VisualNovelScene : Control
         _closeLogButton = GetNode<Button>("%CloseLogButton");
 
         GetNode<Control>("%Background").Visible = ShowBackground;
+        _leftSlot.Visible = ShowCharacterSlots;
+        _rightSlot.Visible = ShowCharacterSlots;
+        _optionsButton.Visible = AllowPauseMenu;
 
         _dialoguePanel.GuiInput += OnDialoguePanelGuiInput;
         _dialoguePanel.Resized += OnDialoguePanelResized;
@@ -147,7 +156,7 @@ public partial class VisualNovelScene : Control
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (@event.IsActionPressed("ui_cancel"))
+        if (@event.IsActionPressed("ui_cancel") && AllowPauseMenu)
         {
             if (_pauseMenu != null && _pauseMenu.Visible)
                 ClosePauseMenu();
@@ -160,7 +169,7 @@ public partial class VisualNovelScene : Control
             return;
         }
 
-        if (@event.IsActionPressed("ui_accept"))
+        if (@event.IsActionPressed("ui_accept") || @event.IsActionPressed("interact"))
         {
             HandleAdvanceInput();
             GetViewport().SetInputAsHandled();
@@ -195,6 +204,7 @@ public partial class VisualNovelScene : Control
         _index = index;
         var line = _lines[index];
         _lineActive = true;
+        LinePresented?.Invoke(index, line);
         _idle = 0;
         _currentSide = line.Side;
 
@@ -424,6 +434,9 @@ public partial class VisualNovelScene : Control
 
     private void OnOptionsPressed()
     {
+        if (!AllowPauseMenu)
+            return;
+
         OpenPauseMenu();
         EmitSignal(SignalName.MenuRequested);
     }
