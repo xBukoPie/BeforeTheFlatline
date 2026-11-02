@@ -3,34 +3,73 @@ using System;
 using System.Collections.Generic;
 using SchoolYardGame;
 
-public sealed record StoryCutsceneSlide(string ImagePath, string Text);
+public sealed record StoryCutsceneBeat(
+    string ImagePath,
+    DialogueLine Dialogue,
+    string EffectCue = "");
 
 public partial class StoryCutsceneOverlay : Control
 {
+    private const string MemoryDistortionShader = @"shader_type canvas_item;
+
+uniform float time_seconds = 0.0;
+uniform float dizziness_strength : hint_range(0.0, 1.0) = 0.0;
+uniform float nausea_strength : hint_range(0.0, 1.0) = 0.0;
+uniform float pressure_strength : hint_range(0.0, 1.0) = 0.0;
+uniform float panic_strength : hint_range(0.0, 1.0) = 0.0;
+
+void fragment()
+{
+    vec2 centered = UV - vec2(0.5);
+    float radius = length(centered);
+    vec2 warped_uv = UV;
+
+    float slow_wave = sin(time_seconds * 2.25 + centered.y * 13.0);
+    warped_uv.x += slow_wave * dizziness_strength * 0.012 * (0.25 + radius);
+    warped_uv.y += cos(time_seconds * 1.55 + centered.x * 9.0) * dizziness_strength * 0.004;
+
+    vec4 pixel = texture(TEXTURE, clamp(warped_uv, vec2(0.0), vec2(1.0)));
+
+    // Nausea drains warmth from the image and adds a faint sickly green cast.
+    vec3 nausea_tint = pixel.rgb * vec3(0.72, 0.92, 0.68);
+    pixel.rgb = mix(pixel.rgb, nausea_tint, nausea_strength * 0.46);
+
+    // Pressure closes in from the edges instead of shaking the whole screen.
+    float vignette = smoothstep(0.16, 0.78, radius);
+    pixel.rgb *= 1.0 - pressure_strength * vignette * 0.32;
+
+    // Panic introduces a muted red cast without a harsh full-screen flash.
+    vec3 panic_tint = vec3(pixel.r * 1.05, pixel.g * 0.60, pixel.b * 0.66);
+    pixel.rgb = mix(pixel.rgb, panic_tint, panic_strength * 0.32);
+
+    COLOR = pixel;
+}";
+
     private string _heading = "MEMORY";
-    private IReadOnlyList<StoryCutsceneSlide> _slides = Array.Empty<StoryCutsceneSlide>();
+    private IReadOnlyList<StoryCutsceneBeat> _beats = Array.Empty<StoryCutsceneBeat>();
     private Action _onFinished;
     private bool _isEnding;
-    private int _slideIndex;
-    private bool _transitioning;
     private bool _finished;
     private bool _previousTreePaused;
     private bool _previousClockRunning;
+    private double _elapsed;
+    private string _currentImagePath = null;
 
     private TextureRect _art;
-    private Label _headingLabel;
-    private Label _bodyLabel;
-    private Label _counterLabel;
-    private Button _continueButton;
+    private ShaderMaterial _artMaterial;
+    private VisualNovelScene _dialogue;
+    private Tween _artTween;
+    private Tween _effectTween;
+    private Control _introLayer;
 
     public void Configure(
         string heading,
-        IReadOnlyList<StoryCutsceneSlide> slides,
+        IReadOnlyList<StoryCutsceneBeat> beats,
         Action onFinished,
         bool isEnding = false)
     {
         _heading = string.IsNullOrWhiteSpace(heading) ? "MEMORY" : heading;
-        _slides = slides ?? Array.Empty<StoryCutsceneSlide>();
+        _beats = beats ?? Array.Empty<StoryCutsceneBeat>();
         _onFinished = onFinished;
         _isEnding = isEnding;
     }
@@ -43,41 +82,38 @@ public partial class StoryCutsceneOverlay : Control
 
         _previousTreePaused = GetTree().Paused;
         _previousClockRunning = DayClock.Instance?.Running ?? false;
+
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
+
         GetTree().Paused = true;
-
-        BuildUi();
-
-        if (_slides.Count == 0)
-        {
-            _bodyLabel.Text = "This memory is unavailable.";
-            _continueButton.Text = "Close";
-        }
-        else
-        {
-            ShowSlide(0);
-        }
+        BuildBackdrop();
+        PlayMemoryOpening();
     }
 
-    public override void _UnhandledInput(InputEvent @event)
+    public override void _Process(double delta)
     {
-        if (_transitioning || _finished)
-            return;
-
-        if (@event.IsActionPressed("ui_accept") || @event.IsActionPressed("interact"))
-        {
-            GetViewport().SetInputAsHandled();
-            Advance();
-        }
+        _elapsed += delta;
+        _artMaterial?.SetShaderParameter("time_seconds", (float)_elapsed);
     }
 
-    private void BuildUi()
+    public override void _ExitTree()
+    {
+        if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
+        {
+            _dialogue.LinePresented -= OnLinePresented;
+            _dialogue.DialogueFinished -= OnDialogueFinished;
+        }
+
+        StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
+    }
+
+    private void BuildBackdrop()
     {
         var background = new ColorRect
         {
-            Name = "BlackBackground",
-            Color = Colors.Black,
+            Name = "MemoryBackground",
+            Color = new Color("05050a"),
             MouseFilter = MouseFilterEnum.Ignore
         };
         background.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
@@ -85,148 +121,293 @@ public partial class StoryCutsceneOverlay : Control
 
         _art = new TextureRect
         {
-            Name = "CutsceneImage",
+            Name = "MemoryArtwork",
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
             TextureFilter = TextureFilterEnum.Linear,
-            MouseFilter = MouseFilterEnum.Ignore
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            Modulate = Colors.White
         };
         _art.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+
+        _artMaterial = new ShaderMaterial
+        {
+            Shader = new Shader { Code = MemoryDistortionShader }
+        };
+        _art.Material = _artMaterial;
         AddChild(_art);
 
-        var shade = new ColorRect
+        // A restrained edge shade keeps the dialogue readable without dimming each line.
+        var edgeShade = new ColorRect
         {
-            Name = "TextShade",
-            Color = new Color(0f, 0f, 0f, 0.78f),
-            MouseFilter = MouseFilterEnum.Ignore
+            Name = "MemoryEdgeShade",
+            Color = new Color(0f, 0f, 0f, 0.12f),
+            MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        shade.AnchorLeft = 0f;
-        shade.AnchorRight = 1f;
-        shade.AnchorTop = 0.66f;
-        shade.AnchorBottom = 1f;
-        shade.OffsetTop = 0f;
-        shade.OffsetBottom = 0f;
-        AddChild(shade);
+        edgeShade.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        AddChild(edgeShade);
+    }
 
-        var margin = new MarginContainer
+    private async void PlayMemoryOpening()
+    {
+        _introLayer = new Control
         {
-            Name = "TextMargin"
+            Name = "MemoryOpeningTransition",
+            MouseFilter = Control.MouseFilterEnum.Stop
         };
-        margin.AnchorLeft = 0f;
-        margin.AnchorRight = 1f;
-        margin.AnchorTop = 0.66f;
-        margin.AnchorBottom = 1f;
-        margin.OffsetLeft = 42f;
-        margin.OffsetRight = -42f;
-        margin.OffsetTop = 14f;
-        margin.OffsetBottom = -20f;
-        margin.AddThemeConstantOverride("margin_left", 18);
-        margin.AddThemeConstantOverride("margin_right", 18);
-        margin.AddThemeConstantOverride("margin_top", 12);
-        margin.AddThemeConstantOverride("margin_bottom", 12);
-        AddChild(margin);
+        _introLayer.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        AddChild(_introLayer);
+
+        var veil = new ColorRect
+        {
+            Color = new Color("030309"),
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
+        veil.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        _introLayer.AddChild(veil);
+
+        var center = new CenterContainer();
+        center.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        _introLayer.AddChild(center);
 
         var stack = new VBoxContainer();
-        stack.AddThemeConstantOverride("separation", 10);
-        margin.AddChild(stack);
+        stack.Alignment = BoxContainer.AlignmentMode.Center;
+        stack.AddThemeConstantOverride("separation", 18);
+        stack.CustomMinimumSize = new Vector2(760, 180);
+        center.AddChild(stack);
 
-        _headingLabel = new Label
+        var eyebrow = new Label
         {
             Text = _heading.ToUpperInvariant(),
-            HorizontalAlignment = HorizontalAlignment.Left
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Modulate = new Color(1f, 1f, 1f, 0f)
         };
-        _headingLabel.AddThemeFontSizeOverride("font_size", 15);
-        _headingLabel.AddThemeColorOverride("font_color", new Color("f4d58d"));
-        stack.AddChild(_headingLabel);
+        eyebrow.AddThemeFontSizeOverride("font_size", 15);
+        eyebrow.AddThemeColorOverride("font_color", new Color("c5a7f2"));
+        stack.AddChild(eyebrow);
 
-        _bodyLabel = new Label
+        var title = new Label
         {
-            Text = "",
+            Text = "MEMORY COMES FLOODING YOUR HEAD.",
+            HorizontalAlignment = HorizontalAlignment.Center,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            SizeFlagsVertical = SizeFlags.ExpandFill,
-            VerticalAlignment = VerticalAlignment.Center
+            Modulate = new Color(1f, 1f, 1f, 0f)
         };
-        _bodyLabel.AddThemeFontSizeOverride("font_size", 23);
-        _bodyLabel.AddThemeColorOverride("font_color", Colors.White);
-        _bodyLabel.AddThemeColorOverride("font_outline_color", Colors.Black);
-        _bodyLabel.AddThemeConstantOverride("outline_size", 2);
-        stack.AddChild(_bodyLabel);
+        title.AddThemeFontSizeOverride("font_size", 34);
+        title.AddThemeColorOverride("font_color", new Color("f5ebff"));
+        title.AddThemeColorOverride("font_outline_color", Colors.Black);
+        title.AddThemeConstantOverride("outline_size", 3);
+        stack.AddChild(title);
 
-        var footer = new HBoxContainer();
-        footer.AddThemeConstantOverride("separation", 14);
-        stack.AddChild(footer);
-
-        _counterLabel = new Label
+        var subtitle = new Label
         {
-            Text = "",
-            SizeFlagsHorizontal = SizeFlags.ExpandFill,
-            VerticalAlignment = VerticalAlignment.Center
+            Text = "The photograph pulls you into something you thought you had forgotten.",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            Modulate = new Color(1f, 1f, 1f, 0f)
         };
-        _counterLabel.AddThemeFontSizeOverride("font_size", 13);
-        _counterLabel.AddThemeColorOverride("font_color", new Color("cbd5e1"));
-        footer.AddChild(_counterLabel);
+        subtitle.AddThemeFontSizeOverride("font_size", 18);
+        subtitle.AddThemeColorOverride("font_color", new Color("b9b1c8"));
+        stack.AddChild(subtitle);
 
-        _continueButton = new Button
-        {
-            Text = "Continue",
-            CustomMinimumSize = new Vector2(190, 44),
-            FocusMode = FocusModeEnum.All
-        };
-        _continueButton.Pressed += Advance;
-        footer.AddChild(_continueButton);
-        _continueButton.CallDeferred(Control.MethodName.GrabFocus);
+        var tween = CreateTween();
+        tween.TweenProperty(eyebrow, "modulate:a", 1f, 0.55)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.Out);
+        tween.TweenProperty(title, "modulate:a", 1f, 0.75)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.Out);
+        tween.TweenInterval(0.7);
+        tween.TweenProperty(subtitle, "modulate:a", 1f, 0.7)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.Out);
+        tween.TweenInterval(1.1);
+        tween.TweenProperty(_introLayer, "modulate:a", 0f, 0.75)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+
+        await ToSignal(tween, Tween.SignalName.Finished);
+        if (!IsInsideTree() || _finished)
+            return;
+
+        _introLayer.QueueFree();
+        _introLayer = null;
+        StartDialogue();
     }
 
-    private void ShowSlide(int index)
+    private void StartDialogue()
     {
-        _slideIndex = Mathf.Clamp(index, 0, Math.Max(0, _slides.Count - 1));
-        StoryCutsceneSlide slide = _slides[_slideIndex];
+        if (_beats.Count == 0)
+        {
+            GD.PushWarning("StoryCutsceneOverlay: no dialogue beats were configured.");
+            Finish();
+            return;
+        }
+
+        PackedScene dialogueScene = GD.Load<PackedScene>("res://Scenes/UI/VisualNovelScene.tscn");
+        if (dialogueScene == null)
+        {
+            GD.PushError("StoryCutsceneOverlay: VisualNovelScene.tscn could not be loaded.");
+            Finish();
+            return;
+        }
+
+        _dialogue = dialogueScene.Instantiate<VisualNovelScene>();
+        _dialogue.Name = "MemoryDialogue";
+        _dialogue.ShowBackground = false;
+        _dialogue.ShowPlaceholders = false;
+        _dialogue.ShowCharacterSlots = false;
+        _dialogue.AllowPauseMenu = false;
+        _dialogue.PlayDemoOnReady = false;
+        _dialogue.LoopDemo = false;
+        _dialogue.LinePresented += OnLinePresented;
+        _dialogue.DialogueFinished += OnDialogueFinished;
+        AddChild(_dialogue);
+
+        var lines = new List<DialogueLine>(_beats.Count);
+        foreach (StoryCutsceneBeat beat in _beats)
+            lines.Add(beat.Dialogue);
+
+        _dialogue.StartDialogue(lines);
+    }
+
+    private void OnLinePresented(int index, DialogueLine line)
+    {
+        if (index < 0 || index >= _beats.Count)
+            return;
+
+        StoryCutsceneBeat beat = _beats[index];
+        SetArtwork(beat.ImagePath);
+        ApplyMemoryCue(beat.EffectCue);
+    }
+
+    private void SetArtwork(string imagePath)
+    {
+        string requested = string.IsNullOrWhiteSpace(imagePath) ? string.Empty : imagePath.Trim();
+        if (string.Equals(requested, _currentImagePath, StringComparison.OrdinalIgnoreCase))
+            return;
 
         Texture2D texture = null;
-        if (!string.IsNullOrWhiteSpace(slide.ImagePath))
+        if (!string.IsNullOrWhiteSpace(requested))
         {
-            texture = GD.Load<Texture2D>(slide.ImagePath);
+            texture = GD.Load<Texture2D>(requested);
             if (texture == null)
-                GD.PushWarning($"StoryCutsceneOverlay: could not load image '{slide.ImagePath}'.");
+                GD.PushWarning($"StoryCutsceneOverlay: could not load image '{requested}'.");
         }
 
-        // An empty image path intentionally leaves the black background visible.
-        _art.Texture = texture;
-        _bodyLabel.Text = slide.Text;
-        _counterLabel.Text = _slides.Count > 1 ? $"{_slideIndex + 1} / {_slides.Count}" : "";
-        bool lastSlide = _slideIndex >= _slides.Count - 1;
-        _continueButton.Text = lastSlide ? (_isEnding ? "Return to Title" : "Close Memory") : "Continue";
-    }
+        bool hasPreviousArtwork = _art.Texture != null;
+        _currentImagePath = requested;
 
-    private async void Advance()
-    {
-        if (_transitioning || _finished)
-            return;
-
-        if (_slides.Count == 0 || _slideIndex >= _slides.Count - 1)
+        if (!hasPreviousArtwork && texture != null)
         {
-            await Finish();
+            _art.Texture = texture;
+            _art.Modulate = Colors.White;
             return;
         }
 
-        _transitioning = true;
-        await FadeTo(0f, 0.22f);
-        if (!IsInsideTree())
-            return;
+        if (_artTween != null && _artTween.IsValid())
+            _artTween.Kill();
 
-        ShowSlide(_slideIndex + 1);
-        await FadeTo(1f, 0.32f);
-        _transitioning = false;
+        // Only the artwork crossfades when the actual image changes. Advancing dialogue
+        // on the same still never fades the whole cutscene or the dialogue interface.
+        _artTween = CreateTween();
+        _artTween.TweenProperty(_art, "modulate:a", 0f, 0.12)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        _artTween.TweenCallback(Callable.From(() =>
+        {
+            if (GodotObject.IsInstanceValid(_art))
+                _art.Texture = texture;
+        }));
+        _artTween.TweenProperty(_art, "modulate:a", 1f, 0.24)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
     }
 
-    private async System.Threading.Tasks.Task Finish()
+    private void ApplyMemoryCue(string cue)
+    {
+        string normalized = (cue ?? string.Empty).Trim().ToLowerInvariant();
+
+        float dizziness = 0f;
+        float nausea = 0f;
+        float pressure = 0f;
+        float panic = 0f;
+
+        switch (normalized)
+        {
+            case "dizzy":
+            case "dizziness":
+                dizziness = 0.78f;
+                nausea = 0.12f;
+                break;
+
+            case "nausea":
+            case "nauseous":
+                dizziness = 0.16f;
+                nausea = 0.82f;
+                break;
+
+            case "pressure":
+                pressure = 0.78f;
+                break;
+
+            case "panic":
+            case "anxiety":
+                dizziness = 0.22f;
+                pressure = 0.55f;
+                panic = 0.82f;
+                break;
+
+            case "blackout":
+                dizziness = 0.36f;
+                pressure = 0.9f;
+                panic = 0.4f;
+                break;
+
+            case "relief":
+                // Returning to a calmer image resets the sensory distortion.
+                break;
+        }
+
+        if (_effectTween != null && _effectTween.IsValid())
+            _effectTween.Kill();
+
+        _effectTween = CreateTween().SetParallel();
+        _effectTween.TweenProperty(_artMaterial, "shader_parameter/dizziness_strength", dizziness, 0.48)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        _effectTween.TweenProperty(_artMaterial, "shader_parameter/nausea_strength", nausea, 0.55)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        _effectTween.TweenProperty(_artMaterial, "shader_parameter/pressure_strength", pressure, 0.5)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        _effectTween.TweenProperty(_artMaterial, "shader_parameter/panic_strength", panic, 0.45)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+    }
+
+    private void OnDialogueFinished() => Finish();
+
+    private async void Finish()
     {
         if (_finished)
             return;
 
         _finished = true;
-        _continueButton.Disabled = true;
-        await FadeTo(0f, 0.5f);
+
+        if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
+        {
+            _dialogue.LinePresented -= OnLinePresented;
+            _dialogue.DialogueFinished -= OnDialogueFinished;
+        }
+
+        // This fade happens once when leaving the memory, never between dialogue lines.
+        Tween exitTween = CreateTween();
+        exitTween.TweenProperty(this, "modulate:a", 0f, 0.42)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(exitTween, Tween.SignalName.Finished);
 
         if (!IsInsideTree())
             return;
@@ -239,14 +420,5 @@ public partial class StoryCutsceneOverlay : Control
         _onFinished = null;
         QueueFree();
         callback?.Invoke();
-    }
-
-    private async System.Threading.Tasks.Task FadeTo(float alpha, double duration)
-    {
-        var tween = CreateTween();
-        tween.TweenProperty(this, "modulate:a", alpha, duration)
-            .SetTrans(Tween.TransitionType.Sine)
-            .SetEase(Tween.EaseType.InOut);
-        await ToSignal(tween, Tween.SignalName.Finished);
     }
 }
