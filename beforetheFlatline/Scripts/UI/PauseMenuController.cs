@@ -37,6 +37,9 @@ public partial class PauseMenuController : CanvasLayer
 
     public override void _Process(double delta)
     {
+        if (GetTree().GetNodesInGroup("story_cutscene").Count > 0)
+            return;
+
         if (!Input.IsActionJustPressed("pauseGame"))
             return;
 
