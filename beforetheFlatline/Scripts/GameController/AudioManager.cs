@@ -124,7 +124,7 @@ public partial class AudioManager : Node
     public void PlayGameOver()
     {
         FadeOutMusic(0.7);
-        PlaySoundEffect("Ending/gameOver.wav", 0f);
+        PlaySoundEffect("Ending/gameOverFlatline.mp3", 0f);
     }
 
     private AudioStreamPlayer CreateMusicPlayer(string playerName)
