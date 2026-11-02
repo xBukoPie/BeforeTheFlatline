@@ -75,7 +75,7 @@ public partial class TestResults : Control
             if (keyProgression.HasPendingKey)
                 lines.Add($"KEY WAITING IN {keyProgression.GetPendingKeyLocationName().ToUpperInvariant()}: {keyProgression.PendingKeyRoomName}. Find it to unlock the room.");
             else if (keyProgression.TotalKeysEarned < 4)
-                lines.Add($"NEXT ROOM KEY: {keyProgression.NextRoomKeyName}. {keyProgression.PointsUntilNextKey} more hidden points are needed; the key will appear in {keyProgression.GetNextKeyLocationName()} when the previous memory has been found.");
+                lines.Add($"NEXT ROOM KEY: {keyProgression.NextRoomKeyName}. Keep completing assessments and finding memory photographs; the key will appear in {keyProgression.GetNextKeyLocationName()} when it is ready.");
             else
                 lines.Add("All currently key-locked rooms have been unlocked.");
         }
