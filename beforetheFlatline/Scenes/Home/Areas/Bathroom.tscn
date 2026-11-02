@@ -116,7 +116,7 @@ position = Vector2(0, 25)
 KeyRoomId = "MasterBedroom"
 
 [node name="BathroomMemoryPhoto" type="Area2D" parent="."]
-position = Vector2(-54, -5)
+position = Vector2(-54, 10)
 collision_layer = 0
 collision_mask = 2
 script = ExtResource("99_story_photo")
