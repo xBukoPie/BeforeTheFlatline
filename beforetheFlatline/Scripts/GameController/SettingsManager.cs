@@ -64,8 +64,9 @@ public partial class SettingsManager : Node
     {
         string enteredName = (value ?? string.Empty).Trim();
 
-        // The developer trigger is consumed immediately; it is never stored as the character name.
-        if (string.Equals(enteredName, "/BFTDevMode", StringComparison.Ordinal))
+        // Accept both spellings so the command remains compatible with earlier instructions.
+        // The command is consumed immediately and is never stored as the character name.
+        if (IsSuperUserCommand(enteredName))
         {
             SuperUserAccessEnabledThisSession = true;
             PlayerName = "Default";
@@ -87,6 +88,13 @@ public partial class SettingsManager : Node
         SettingsChanged?.Invoke();
     }
 
+    private static bool IsSuperUserCommand(string value)
+    {
+        string command = (value ?? string.Empty).Trim();
+        return string.Equals(command, "/BTFDevMode", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(command, "/BFTDevMode", StringComparison.OrdinalIgnoreCase);
+    }
+
     private void LoadSettings()
     {
         var config = new ConfigFile();
@@ -98,7 +106,7 @@ public partial class SettingsManager : Node
         Fullscreen = (bool)config.GetValue("display", "fullscreen", Fullscreen);
         PlayerName = ((string)config.GetValue("player", "name", PlayerName) ?? PlayerName).Trim();
         if (string.IsNullOrWhiteSpace(PlayerName)) PlayerName = "Player";
-        if (string.Equals(PlayerName, "/BFTDevMode", StringComparison.Ordinal))
+        if (IsSuperUserCommand(PlayerName))
         {
             SuperUserAccessEnabledThisSession = true;
             PlayerName = "Default";

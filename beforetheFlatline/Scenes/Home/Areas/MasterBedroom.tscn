@@ -4,6 +4,8 @@
 [ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_obkb0"]
 [ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Lamp.tscn" id="2_0ectk"]
 [ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Door.tscn" id="3_wqje3"]
+[ext_resource type="Script" path="res://Scripts/Map/Home/StoryPhotoInteractable.cs" id="99_story_photo"]
+[ext_resource type="Texture2D" path="res://Assets/Objects/objectPolaroidPhoto.png" id="100_polaroid"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
 size = Vector2(254, 13)
@@ -19,6 +21,9 @@ size = Vector2(148, 84)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_8uv3r"]
 size = Vector2(49, 17)
+
+[sub_resource type="CircleShape2D" id="StoryPhotoShape"]
+radius = 20.0
 
 [node name="MasterBedroom" type="Node2D" unique_id=379798415]
 scale = Vector2(0.7, 0.7)
@@ -85,3 +90,18 @@ LockedPrompt = "Locked. You need a key."
 
 [node name="FromLivingRoom" type="Marker2D" parent="Spawns" unique_id=1602623943]
 position = Vector2(5, 56)
+
+[node name="MasterBedroomMemoryPhoto" type="Area2D" parent="."]
+position = Vector2(55, 50)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("99_story_photo")
+MemoryId = "MasterBedroom"
+
+[node name="Sprite2D" type="Sprite2D" parent="MasterBedroomMemoryPhoto"]
+z_index = 5
+texture = ExtResource("100_polaroid")
+scale = Vector2(0.28, 0.28)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="MasterBedroomMemoryPhoto"]
+shape = SubResource("StoryPhotoShape")

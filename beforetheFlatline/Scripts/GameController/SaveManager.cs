@@ -205,7 +205,10 @@ public partial class SaveManager : Node
                 ["pending_key_room"] = RoomKeyProgression.Instance?.PendingKeyRoomName ?? string.Empty,
                 ["unlocked_rooms"] = CreateUnlockedRoomIds()
             },
-            ["challenge_progress"] = ChallengeProgress.CreateSaveData()
+            ["challenge_progress"] = ChallengeProgress.CreateSaveData(),
+            ["school_friend_interactions"] = SchoolFriendInteractionHistory.CreateSaveData(),
+            ["school_friend_spawn_plan"] = SchoolFriendSpawnHistory.CreateSaveData(),
+            ["story_progress"] = StoryProgression.Instance?.CreateSaveData() ?? new Godot.Collections.Dictionary()
         };
 
         using var file = FileAccess.Open(path, FileAccess.ModeFlags.Write);
@@ -255,8 +258,14 @@ public partial class SaveManager : Node
         var sanityState = ReadDictionary(data, "sanity_state");
         var keyState = ReadDictionary(data, "room_keys");
         var challengeState = ReadDictionary(data, "challenge_progress");
+        var friendInteractionState = ReadDictionary(data, "school_friend_interactions");
+        var friendSpawnState = ReadDictionary(data, "school_friend_spawn_plan");
+        var storyState = ReadDictionary(data, "story_progress");
 
         DayClock.Instance?.RestoreState(day, hour, true, schoolStarted, schoolCompleted);
+        SchoolFriendInteractionHistory.RestoreFromSaveData(friendInteractionState);
+        SchoolFriendSpawnHistory.RestoreFromSaveData(friendSpawnState, day, schoolCompleted);
+        StoryProgression.Instance?.RestoreFromSaveData(storyState);
         DayClock.Instance?.RestoreFirstDayMysteryState(
             ReadBool(data, "mystery_encounter_seen", false),
             ReadBool(data, "first_day_special_greeting_pending", false));

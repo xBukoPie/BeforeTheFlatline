@@ -14,6 +14,7 @@ public partial class MainMenu : Control
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
         _fade = GetNode<ColorRect>("UI/Fade");
+        AudioManager.Instance?.PlayMenuMusic();
         if (!_openingSplashPlayed)
         {
             _openingSplashPlayed = true;
@@ -222,6 +223,7 @@ public partial class MainMenu : Control
         DailyTestSession.Reset();
         ChallengeProgress.Reset();
         RoomKeyProgression.Instance?.ResetForNewRun();
+        StoryProgression.Instance?.ResetForNewRun();
 
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;

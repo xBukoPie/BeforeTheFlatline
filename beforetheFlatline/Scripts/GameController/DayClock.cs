@@ -85,12 +85,17 @@ public partial class DayClock : Node
         if (!Running)
             return;
 
-        // Day one is the mandatory tutorial day: keep the school accessible until the assessment is finished.
+        // T is a developer-only time control. The value is entered as whole minutes
+        // in the SuperUser panel (60 minutes = 1 in-game hour).
+        if (Input.IsActionJustPressed("time_skip") &&
+            global::SuperUserAccess.DeveloperAccessAvailable)
+        {
+            AdvanceMinutes(global::SuperUserAccess.RequestedTimeSkipMinutes);
+        }
+
+        // Keep the mandatory first school day frozen for normal players.
         if (DayNumber == 1 && !SchoolChallengeCompletedToday)
             return;
-
-        if (Input.IsActionJustPressed("time_skip"))
-            AdvanceHours(3f);
 
         if (DayLengthSeconds > 0f)
             AdvanceHours((float)delta * 24f / DayLengthSeconds);
@@ -101,6 +106,14 @@ public partial class DayClock : Node
     {
         Hour = Mathf.PosMod(hour, 24f);
         EmitSignal(SignalName.TimeChanged, Hour);
+    }
+
+    public void AdvanceMinutes(int minutes)
+    {
+        if (minutes <= 0)
+            return;
+
+        AdvanceHours(minutes / 60f);
     }
 
     public void AdvanceHours(float amount)
@@ -145,6 +158,8 @@ public partial class DayClock : Node
         _skipSchoolGreetingOnNextLoad = false;
         FirstDayMysteryEncounterSeen = false;
         _firstDaySpecialGreetingPending = false;
+        SchoolFriendInteractionHistory.Reset();
+        SchoolFriendSpawnHistory.Reset();
         EmitSignal(SignalName.DayChanged, DayNumber);
         EmitSignal(SignalName.TimeChanged, Hour);
     }
