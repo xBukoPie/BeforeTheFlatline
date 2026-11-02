@@ -114,9 +114,21 @@ public partial class PostChallengeConversation : Control
                 clock.SetHourOfDay(homeTime);
         }
 
-        bool keyWaitingOnLot = RoomKeyProgression.Instance?.HasPendingKey == true;
-        string destinationRoom = keyWaitingOnLot ? LotRoomPath : HomeRoomPath;
-        string destinationSpawn = keyWaitingOnLot ? LotSpawn : HomeSpawn;
+        bool keyWaiting = RoomKeyProgression.Instance?.HasPendingKey == true;
+        string destinationRoom = keyWaiting
+            ? RoomKeyProgression.Instance.GetPendingKeyLocationScenePath()
+            : HomeRoomPath;
+        string destinationSpawn = keyWaiting
+            ? RoomKeyProgression.Instance.GetPendingKeyLocationSpawn()
+            : HomeSpawn;
+
+        if (string.IsNullOrWhiteSpace(destinationRoom))
+        {
+            destinationRoom = HomeRoomPath;
+            destinationSpawn = HomeSpawn;
+            keyWaiting = false;
+        }
+
         global::RoomManager.RequestStartRoomOnNextLoad(destinationRoom, destinationSpawn);
 
         if (!ResourceLoader.Exists(WorldScenePath))
@@ -126,7 +138,7 @@ public partial class PostChallengeConversation : Control
             return;
         }
 
-        GD.Print($"[PostChallengeConversation] Loading {WorldScenePath}; destination room: {destinationRoom}; pending key: {keyWaitingOnLot}.");
+        GD.Print($"[PostChallengeConversation] Loading {WorldScenePath}; destination room: {destinationRoom}; pending key: {keyWaiting}.");
 
         // This scene can finish immediately when the random no-conversation branch is chosen.
         // In that case the fade used to enter this scene may still be active. SceneTransition
