@@ -4,6 +4,9 @@
 [ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_murr1"]
 [ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Lamp.tscn" id="2_7u4l3"]
 [ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Door.tscn" id="3_murr1"]
+[ext_resource type="PackedScene" path="res://Scenes/Home/Areas/GroundKeyPickup.tscn" id="98_key_pickup"]
+[ext_resource type="Script" path="res://Scripts/Map/Home/StoryPhotoInteractable.cs" id="99_story_photo"]
+[ext_resource type="Texture2D" path="res://Assets/Objects/objectPolaroidPhoto.png" id="100_polaroid"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
 size = Vector2(241, 10)
@@ -22,6 +25,9 @@ size = Vector2(31, 14)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_kx8p7"]
 size = Vector2(54.28572, 7.1428547)
+
+[sub_resource type="CircleShape2D" id="StoryPhotoShape"]
+radius = 20.0
 
 [node name="Bathroom" type="Node2D" unique_id=496616063]
 scale = Vector2(0.7, 0.7)
@@ -104,3 +110,22 @@ LockedPrompt = "Locked. You need a key."
 [node name="FromLaundry" type="Marker2D" parent="Spawns" unique_id=957693243]
 position = Vector2(48, 23)
 scale = Vector2(0.7, 0.7)
+
+[node name="KeyForMasterBedroom" parent="." instance=ExtResource("98_key_pickup")]
+position = Vector2(0, 25)
+KeyRoomId = "MasterBedroom"
+
+[node name="BathroomMemoryPhoto" type="Area2D" parent="."]
+position = Vector2(-54, 10)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("99_story_photo")
+MemoryId = "Bathroom"
+
+[node name="Sprite2D" type="Sprite2D" parent="BathroomMemoryPhoto"]
+z_index = 5
+texture = ExtResource("100_polaroid")
+scale = Vector2(0.28, 0.28)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BathroomMemoryPhoto"]
+shape = SubResource("StoryPhotoShape")

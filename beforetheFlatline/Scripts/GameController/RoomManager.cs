@@ -67,6 +67,9 @@ public partial class RoomManager : Node2D
             SetNight(SchoolYardGame.DayClock.Instance.IsNight);
         }
 
+        SchoolYardGame.AudioManager.Instance?.PlayWorldMusic(
+            SchoolYardGame.DayClock.Instance?.IsNight ?? IsNight);
+
         string roomPath = string.IsNullOrWhiteSpace(_requestedStartRoom) ? StartRoom : _requestedStartRoom;
         string spawn = string.IsNullOrWhiteSpace(_requestedStartSpawn) ? StartSpawn : _requestedStartSpawn;
         _requestedStartRoom = null;

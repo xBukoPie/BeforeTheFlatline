@@ -18,19 +18,31 @@ public partial class TestResults : Control
 
         bool alreadyFinalized = DailyTestSession.IsFinalized;
         _passed = DailyTestSession.FinalizeTest();
+        if (!alreadyFinalized)
+        {
+            if (_passed)
+                AudioManager.Instance?.PlayAssessmentPassed();
+            else
+                AudioManager.Instance?.PlayAssessmentFailed();
+        }
         if (DayClock.Instance != null) DayClock.Instance.MarkSchoolChallengeCompletedToday();
 
         int correct = DailyTestSession.CorrectCount;
         int score = DailyTestSession.Score;
 
-        // A passing score queues a key on the Lot. Room ownership changes only when it is collected.
-        if (_passed && !alreadyFinalized)
+        // Correct answers add hidden points. A key appears only when its quota and prior-memory gate are met.
+        if (!alreadyFinalized)
         {
             string roomName = RoomKeyProgression.Instance?.QueueAssessmentKey() ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(roomName))
-                DailyTestSession.QueueNotification($"SCORE REWARD: A key for {roomName} is waiting in the Yard. Pick it up after school to unlock the room.");
+            {
+                string location = RoomKeyProgression.Instance?.GetPendingKeyLocationName() ?? "the house";
+                DailyTestSession.QueueNotification($"KEY AVAILABLE: The {roomName} key is waiting in {location}. Find it to unlock the room.");
+            }
             else if (RoomKeyProgression.Instance != null && RoomKeyProgression.Instance.TotalKeysEarned >= 4)
+            {
                 DailyTestSession.QueueNotification("All currently key-locked rooms have already been unlocked.");
+            }
         }
 
         _title.Text = _passed ? "ASSESSMENT PASSED" : "ASSESSMENT FAILED";
@@ -61,9 +73,9 @@ public partial class TestResults : Control
                 lines.Add($"ROOMS UNLOCKED: {string.Join(", ", unlockedKeys)}.");
 
             if (keyProgression.HasPendingKey)
-                lines.Add($"KEY WAITING IN THE YARD: {keyProgression.PendingKeyRoomName}. Find it after school.");
+                lines.Add($"KEY WAITING IN {keyProgression.GetPendingKeyLocationName().ToUpperInvariant()}: {keyProgression.PendingKeyRoomName}. Find it to unlock the room.");
             else if (keyProgression.TotalKeysEarned < 4)
-                lines.Add($"NEXT ROOM KEY: {keyProgression.NextRoomKeyName}. Earn at least {DailyTestSession.MinimumPassingScore} assessment points and collect it in the Yard.");
+                lines.Add($"NEXT ROOM KEY: {keyProgression.NextRoomKeyName}. Keep completing assessments and finding memory photographs; the key will appear in {keyProgression.GetNextKeyLocationName()} when it is ready.");
             else
                 lines.Add("All currently key-locked rooms have been unlocked.");
         }

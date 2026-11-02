@@ -303,7 +303,16 @@ public partial class ChallengeScene : Control
         DailyTestSession.Record(_activeChallengeId, correct, gaveUp, _difficulty);
 
         if (correct)
-            ChallengeProgress.MarkCompleted(_activeChallengeId);
+        {
+            // A retry must not farm story progress for the same challenge on the same day.
+            bool firstCompletionToday = ChallengeProgress.MarkCompleted(_activeChallengeId);
+            if (firstCompletionToday)
+            {
+                var reward = RoomKeyProgression.Instance?.AwardTaskCompletion(_difficulty);
+                if (reward != null)
+                    GD.Print($"[ChallengeScene] First correct completion earned {reward.PointsAdded} hidden story points. Total: {reward.TotalPoints}.");
+            }
+        }
 
         _completed = true;
         _submitButton.Disabled = true;

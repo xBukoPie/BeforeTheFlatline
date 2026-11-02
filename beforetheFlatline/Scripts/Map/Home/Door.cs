@@ -151,6 +151,7 @@ public partial class Door : Area2D
         if (!string.IsNullOrWhiteSpace(UnlockRoomId) &&
             (RoomKeyProgression.Instance == null || !RoomKeyProgression.Instance.IsRoomUnlocked(UnlockRoomId)))
         {
+            AudioManager.Instance?.PlayLockedDoor();
             ShowTemporaryPrompt(LockedPrompt);
             return;
         }
