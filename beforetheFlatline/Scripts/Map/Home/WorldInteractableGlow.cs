@@ -13,7 +13,10 @@ public static class WorldInteractableGlow
         Vector2 subjectSize = new Vector2(24f, 24f);
         Sprite2D subject = parent.GetNodeOrNull<Sprite2D>("Sprite2D");
         if (subject?.Texture != null)
-            subjectSize = subject.Texture.GetSize() * subject.Scale;
+        {
+            Vector2I textureSize = subject.Texture.GetSize();
+            subjectSize = new Vector2(textureSize.X, textureSize.Y) * subject.Scale;
+        }
 
         float subjectDiameter = Mathf.Max(subjectSize.X, subjectSize.Y);
         float textureDiameter = GetRadialTexture().GetSize().X;
