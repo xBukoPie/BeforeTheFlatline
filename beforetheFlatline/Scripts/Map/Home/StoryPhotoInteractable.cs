@@ -70,7 +70,7 @@ public partial class StoryPhotoInteractable : Area2D
     public override void _Process(double delta)
     {
         _elapsed += delta;
-        WorldInteractableGlow.Animate(_glow, _elapsed, 0.7f, 2.4f);
+        WorldInteractableGlow.Animate(_glow, _elapsed, 0.7f);
 
         bool available = StoryProgression.Instance?.CanTriggerMemory(MemoryId) == true;
         if (_triggered || !available)
