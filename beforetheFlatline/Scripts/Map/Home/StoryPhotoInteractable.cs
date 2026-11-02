@@ -139,7 +139,7 @@ public partial class StoryPhotoInteractable : Area2D
 
         StoryCutsceneOverlay overlay = new();
         bool finalMemory = MemoryId.Equals("MasterBedroom", System.StringComparison.OrdinalIgnoreCase);
-        overlay.Configure(GetHeading(), BuildSlides(), () => CompleteMemory(finalMemory), finalMemory);
+        overlay.Configure(GetHeading(), BuildBeats(), () => CompleteMemory(finalMemory), finalMemory);
         _triggered = true;
         _playerInside = false;
         _prompt.Visible = false;
@@ -155,7 +155,7 @@ public partial class StoryPhotoInteractable : Area2D
         _ => "MEMORY FRAGMENT"
     };
 
-    private List<StoryCutsceneSlide> BuildSlides()
+    private List<StoryCutsceneBeat> BuildBeats()
     {
         const string kitchenImage = "res://Assets/Cutscenes/cutsceneKitcken.jpg";
         const string laundryImage = "res://Assets/Cutscenes/cutsceneLaundry.jpg";
@@ -166,36 +166,155 @@ public partial class StoryPhotoInteractable : Area2D
 
         return MemoryId switch
         {
-            "Kitchen" => new List<StoryCutsceneSlide>
+            "Kitchen" => new List<StoryCutsceneBeat>
             {
-                new(kitchenImage, "Eat your food before you go to school today. You haven't been eating lately."),
-                new(kitchenImage, "The food tastes bland lately. I know I should eat, but I don't have an appetite."),
-                new(kitchenImage, "That felt familiar... and uncomfortable. Is this part of my memory? I feel dizzy.")
+                new(kitchenImage, new DialogueLine(
+                    "Memory",
+                    "Eat your food before you go to school today. You haven't been eating lately.",
+                    DialogueSide.Left)),
+                new(kitchenImage, new DialogueLine(
+                    "You",
+                    "I know. I'm just not hungry. Even sitting here feels harder than it should.",
+                    DialogueSide.Right,
+                    Choices: new[]
+                    {
+                        new DialogueChoice("I'll try to eat a little.", Goto: 2),
+                        new DialogueChoice("I can't. Even the smell feels wrong.", Goto: 3)
+                    })),
+                new(kitchenImage, new DialogueLine(
+                    "You",
+                    "A few bites. I can at least try that much.",
+                    DialogueSide.Right,
+                    Next: 4)),
+                new(kitchenImage, new DialogueLine(
+                    "You",
+                    "I can't force it. The smell turns my stomach, and I don't know why.",
+                    DialogueSide.Right,
+                    Next: 4),
+                    "nausea"),
+                new(kitchenImage, new DialogueLine(
+                    "Memory",
+                    "The food tastes bland lately. The kitchen is familiar, but something about it feels distant.",
+                    DialogueSide.Left),
+                    "nausea"),
+                new(kitchenImage, new DialogueLine(
+                    "You",
+                    "That felt familiar... and uncomfortable. Is this part of my memory? I feel dizzy.",
+                    DialogueSide.Right),
+                    "dizziness"),
+                new(kitchenImage, new DialogueLine(
+                    "You",
+                    "I need a moment to steady myself.",
+                    DialogueSide.Right))
             },
-            "Laundry" => new List<StoryCutsceneSlide>
+
+            "Laundry" => new List<StoryCutsceneBeat>
             {
-                new(laundryImage, "My uniform keeps spinning inside the washing machine. I don't want to go to school today."),
-                new(laundryImage, "The memory fades. I feel dizzy.")
+                new(laundryImage, new DialogueLine(
+                    "You",
+                    "My uniform keeps spinning inside the washing machine. I keep watching it go around and around.",
+                    DialogueSide.Right)),
+                new(laundryImage, new DialogueLine(
+                    "You",
+                    "I don't want to go to school today. I wish I could make the day stop before it even starts.",
+                    DialogueSide.Right)),
+                new(laundryImage, new DialogueLine(
+                    "Memory",
+                    "The machine keeps turning. The familiar sound grows louder until it is all you can focus on.",
+                    DialogueSide.Left),
+                    "dizziness"),
+                new(laundryImage, new DialogueLine(
+                    "You",
+                    "The room shifts when I look away. I feel dizzy. I need to sit down.",
+                    DialogueSide.Right),
+                    "dizziness"),
+                new(laundryImage, new DialogueLine(
+                    "You",
+                    "The memory slips away, but the uneasy feeling stays with me.",
+                    DialogueSide.Right))
             },
-            "Bathroom" => new List<StoryCutsceneSlide>
+
+            "Bathroom" => new List<StoryCutsceneBeat>
             {
-                new(bathroomImage, "This is pointless. I just want to disappear."),
-                new(bathroomImage, "My friends and classmates seem to do better than me. I keep comparing myself to them."),
-                new(bathroomImage, "The pressure and panic come rushing back. I feel nauseous and dizzy.")
+                new(bathroomImage, new DialogueLine(
+                    "You",
+                    "This is pointless. I just want to disappear.",
+                    DialogueSide.Right),
+                    "pressure"),
+                new(bathroomImage, new DialogueLine(
+                    "You",
+                    "My friends and classmates seem to do better than me. They make everything look so easy.",
+                    DialogueSide.Right)),
+                new(bathroomImage, new DialogueLine(
+                    "You",
+                    "I keep comparing myself to them. No matter what I do, I feel like I'm falling behind.",
+                    DialogueSide.Right),
+                    "pressure"),
+                new(bathroomImage, new DialogueLine(
+                    "You",
+                    "The pressure and panic come rushing back. My thoughts won't slow down.",
+                    DialogueSide.Right),
+                    "panic"),
+                new(bathroomImage, new DialogueLine(
+                    "You",
+                    "I feel nauseous and dizzy. I can barely steady myself.",
+                    DialogueSide.Right),
+                    "nausea"),
+                new(bathroomImage, new DialogueLine(
+                    "Memory",
+                    "The room is quiet again, but the feeling does not disappear with the memory.",
+                    DialogueSide.Left))
             },
-            "MasterBedroom" => new List<StoryCutsceneSlide>
+
+            "MasterBedroom" => new List<StoryCutsceneBeat>
             {
-                new(toBedroomImage, "I need to talk to my parents. I need to ask them for help."),
-                new(toBedroomImage, "Every step toward the bedroom makes the pressure heavier. The bad thoughts keep building."),
-                new(bedroomImage, "I finally reach the bedroom, but I collapse before I can say anything."),
-                new("", ""),
-                new(goodEndingImage, "A steady heart-monitor beep fills the room. I slowly open my eyes."),
-                new(goodEndingImage, "My parents are beside me, their eyes full of tears. They thank the heavens that I finally woke up."),
-                new(goodEndingImage, "We hold each other. I burst into tears. I am not alone.")
+                new(toBedroomImage, new DialogueLine(
+                    "You",
+                    "I need to talk to my parents. I need to ask them for help.",
+                    DialogueSide.Right)),
+                new(toBedroomImage, new DialogueLine(
+                    "You",
+                    "Every step toward the bedroom makes the pressure heavier. I keep trying to find the right words.",
+                    DialogueSide.Right),
+                    "pressure"),
+                new(toBedroomImage, new DialogueLine(
+                    "You",
+                    "The bad thoughts keep building. I know I need help, but I don't know how to say it.",
+                    DialogueSide.Right),
+                    "panic"),
+                new(bedroomImage, new DialogueLine(
+                    "You",
+                    "I finally reach the bedroom, but I collapse before I can say anything.",
+                    DialogueSide.Right),
+                    "blackout"),
+                new("", new DialogueLine(
+                    "You",
+                    "Everything goes quiet.",
+                    DialogueSide.Right),
+                    "blackout"),
+                new(goodEndingImage, new DialogueLine(
+                    "You",
+                    "A steady heart-monitor beep fills the room. I slowly open my eyes.",
+                    DialogueSide.Right),
+                    "relief"),
+                new(goodEndingImage, new DialogueLine(
+                    "Memory",
+                    "My parents are beside me, their eyes full of tears. They thank the heavens that I finally woke up.",
+                    DialogueSide.Left),
+                    "relief"),
+                new(goodEndingImage, new DialogueLine(
+                    "You",
+                    "We hold each other. I burst into tears. I am not alone.",
+                    DialogueSide.Right),
+                    "relief")
             },
-            _ => new List<StoryCutsceneSlide>
+
+            _ => new List<StoryCutsceneBeat>
             {
-                new(kitchenImage, "A fragment of a memory returns.")
+                new(kitchenImage, new DialogueLine(
+                    "Memory",
+                    "A fragment of a memory returns.",
+                    DialogueSide.Left))
             }
         };
     }
