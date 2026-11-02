@@ -1,27 +1,22 @@
 {
-	"challenge_progress": {
-		"1": [
-			"final",
-			"condition",
-			"flowchart",
-			"sequence"
-		]
-	},
+	"challenge_progress": {},
 	"clock_running": true,
 	"day": 1,
 	"first_day_special_greeting_pending": false,
-	"hour": 19.228687286377,
+	"hour": 8.0,
 	"kind": "autosave",
-	"mystery_encounter_seen": true,
-	"player_x": -79.7999954223633,
-	"player_y": -19.5999984741211,
+	"mystery_encounter_seen": false,
+	"player_x": 86.7999877929688,
+	"player_y": -45.5666694641113,
 	"room_keys": {
 		"hidden_points": 0,
-		"keys_earned": 2,
+		"keys_earned": 4,
 		"pending_key_room": "",
 		"unlocked_rooms": [
 			"Kitchen",
-			"Laundry"
+			"Laundry",
+			"Bathroom",
+			"MasterBedroom"
 		]
 	},
 	"room_path": "res://Scenes/Home/Areas/LivingRoom.tscn",
@@ -42,21 +37,21 @@
 			"Pressure": 100
 		}
 	},
-	"saved_at": "2026-11-01 13:47:33",
+	"saved_at": "2026-11-02 18:25:06",
 	"scene_path": "res://Scenes/Home/Areas/World.tscn",
-	"school_completed": true,
+	"school_completed": false,
 	"school_friend_interactions": {
 		"day": 1,
 		"friends": []
 	},
 	"school_friend_spawn_plan": {
 		"after_assessment": false,
-		"classroom_greeter": "Jepoy",
-		"created": true,
-		"day": 1,
+		"classroom_greeter": "",
+		"created": false,
+		"day": -1,
 		"entries": []
 	},
-	"school_started": true,
+	"school_started": false,
 	"slot": 0,
 	"version": 1
 }
