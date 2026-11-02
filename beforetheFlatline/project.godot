@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 SceneTransition="*res://Scripts/GameController/SceneTransition.cs"
 DayClock="*res://Scripts/GameController/DayClock.cs"
+StoryProgression="*res://Scripts/GameController/StoryProgression.cs"
 RoomKeyProgression="*res://Scripts/GameController/RoomKeyProgression.cs"
 SaveManager="*res://Scripts/GameController/SaveManager.cs"
 SanityManager="*res://Scripts/GameController/SanityManager.cs"
