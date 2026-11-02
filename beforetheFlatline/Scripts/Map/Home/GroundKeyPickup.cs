@@ -81,7 +81,7 @@ public partial class GroundKeyPickup : Area2D
 
         RefreshAvailability();
         if (_wasAvailable)
-            WorldInteractableGlow.Animate(_glow, _elapsed, 0f, 2.5f);
+            WorldInteractableGlow.Animate(_glow, _elapsed, 0f);
     }
 
     public override void _UnhandledInput(InputEvent @event)
