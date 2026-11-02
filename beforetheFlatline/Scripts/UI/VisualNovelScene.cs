@@ -31,7 +31,7 @@ public partial class VisualNovelScene : Control
     [Export] public bool PlayDemoOnReady { get; set; } = true;
     [Export] public bool LoopDemo { get; set; } = true;
 
-    private const string HintInteract = "Press [Space] to interact";
+    private const string HintInteract = "Press [Space] or [E] to interact";
     private const string HintReplay = "Press [Space] to replay";
     private const float NameTagInset = 40f;
     private static readonly Color DimColor = new(0.55f, 0.55f, 0.6f, 1f);
