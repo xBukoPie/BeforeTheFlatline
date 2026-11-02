@@ -66,6 +66,11 @@ public partial class VisualNovelScene : Control
 
     public override void _Ready()
     {
+        // Memory dialogue is displayed while the world tree is paused.
+        // Explicit Always mode keeps typewriter tweens and dialogue processing alive.
+        if (!AllowPauseMenu)
+            ProcessMode = ProcessModeEnum.Always;
+
         _leftSlot = GetNode<Control>("%LeftCharacter");
         _rightSlot = GetNode<Control>("%RightCharacter");
         _leftPortraitRect = GetNode<TextureRect>("%LeftPortraitRect");
@@ -90,6 +95,9 @@ public partial class VisualNovelScene : Control
         _closeLogButton = GetNode<Button>("%CloseLogButton");
 
         GetNode<Control>("%Background").Visible = ShowBackground;
+        // The dim overlay belongs to the scene background too. Leaving it visible
+        // would darken the cutscene artwork even when its background is disabled.
+        GetNode<Control>("Dim").Visible = ShowBackground;
         _leftSlot.Visible = ShowCharacterSlots;
         _rightSlot.Visible = ShowCharacterSlots;
         _optionsButton.Visible = AllowPauseMenu;
