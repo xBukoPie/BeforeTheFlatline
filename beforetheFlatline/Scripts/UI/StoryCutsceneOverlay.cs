@@ -271,7 +271,7 @@ void fragment()
         StartDialogue();
     }
 
-    private void StartDialogue()
+    private async void StartDialogue()
     {
         if (_beats.Count == 0)
         {
@@ -307,6 +307,14 @@ void fragment()
         foreach (StoryCutsceneBeat beat in _beats)
             lines.Add(beat.Dialogue);
 
+        // Wait one rendered frame so the packed scene completes layout before
+        // typing begins. The dialogue node is Always, so this also works paused.
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        if (_finished || !IsInsideTree() ||
+            _dialogue == null || !GodotObject.IsInstanceValid(_dialogue))
+            return;
+
+        GD.Print($"[StoryCutsceneOverlay] Starting {_beats.Count} dialogue beats for '{_heading}'.");
         _dialogue.StartDialogue(lines);
     }
 
@@ -316,6 +324,7 @@ void fragment()
             return;
 
         StoryCutsceneBeat beat = _beats[index];
+        GD.Print($"[StoryCutsceneOverlay] Beat {index + 1}/{_beats.Count}: {beat.Dialogue.Speaker} [{beat.EffectCue}]");
         SetArtwork(beat.ImagePath);
         ApplyMemoryCue(beat.EffectCue);
     }
