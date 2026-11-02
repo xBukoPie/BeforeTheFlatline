@@ -269,7 +269,6 @@ public partial class SanityManager : Node
             return;
 
         _badEndingQueued = true;
-        AudioManager.Instance?.PlayGameOver();
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
