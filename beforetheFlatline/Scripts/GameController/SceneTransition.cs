@@ -1,4 +1,5 @@
 using Godot;
+using System;
 using System.Threading.Tasks;
 
 public partial class SceneTransition : CanvasLayer
@@ -175,6 +176,61 @@ public partial class SceneTransition : CanvasLayer
         await HideLoadingScreen();
         _busy = false;
         return true;
+    }
+
+    public async Task<bool> RunWithLoadingScreen(
+        Action transitionAction,
+        string statusMessage = "Heading to school...",
+        double minimumDisplaySeconds = 1.35)
+    {
+        if (_busy || transitionAction == null)
+            return false;
+
+        _busy = true;
+        try
+        {
+            _loadingProgress.Value = 100;
+            _loadingStatus.Text = string.IsNullOrWhiteSpace(statusMessage)
+                ? "On your way..."
+                : statusMessage;
+            _loadingOverlay.Visible = false;
+            _loadingOverlay.Modulate = new Color(1f, 1f, 1f, 0f);
+
+            _fade.Visible = true;
+            _fade.Modulate = new Color(1f, 1f, 1f, 0f);
+            _fade.MouseFilter = Control.MouseFilterEnum.Stop;
+            await FadeTo(1f, 0.28f);
+
+            _loadingOverlay.Visible = true;
+            Tween showLoading = CreateTween();
+            showLoading.TweenProperty(_loadingOverlay, "modulate:a", 1f, 0.24f)
+                .SetTrans(Tween.TransitionType.Sine)
+                .SetEase(Tween.EaseType.InOut);
+            await ToSignal(showLoading, Tween.SignalName.Finished);
+            _fade.Visible = false;
+
+            ulong startedAt = Time.GetTicksMsec();
+            ulong minimumMs = (ulong)(Math.Max(0.2, minimumDisplaySeconds) * 1000.0);
+            while (Time.GetTicksMsec() - startedAt < minimumMs)
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+            transitionAction.Invoke();
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await HideLoadingScreen();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            GD.PushError($"SceneTransition: room loading transition failed: {ex.Message}");
+            if (_loadingOverlay.Visible)
+                await HideLoadingScreen();
+            return false;
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private void BuildLoadingOverlay()
