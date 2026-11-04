@@ -11,6 +11,7 @@ public partial class TestResults : Control
 
     public override void _Ready()
     {
+        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, true);
         if (DayClock.Instance != null)
             DayClock.Instance.Running = true;
 
@@ -116,6 +117,11 @@ public partial class TestResults : Control
     {
         int failedCount = SanityManager.Instance?.FailedTestCount ?? 0;
         return (SanityManager.DebuffType)(failedCount % 4);
+    }
+
+    public override void _ExitTree()
+    {
+        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, false);
     }
 
     private void BuildUi()
