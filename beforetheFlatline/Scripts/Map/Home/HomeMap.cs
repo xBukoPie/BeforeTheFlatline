@@ -14,6 +14,8 @@ public partial class HomeMap : Node2D
 	private SanityManager _sanityManager;
 	private Node2D _lights;
 	private bool _insideHouse;
+    private float _currentDaylight = 1f;
+    private bool _hasLightingSample;
 
 	public override void _Ready()
 	{
