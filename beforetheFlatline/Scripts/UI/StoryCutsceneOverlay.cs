@@ -58,6 +58,8 @@ void fragment()
 
     private TextureRect _art;
     private ShaderMaterial _artMaterial;
+    private CanvasLayer _transitionCanvas;
+    private Control _transitionRoot;
     private ColorRect _transitionCover;
     private Label _transitionText;
     private bool _collapseTransitionRunning;
@@ -193,6 +195,21 @@ void fragment()
         edgeShade.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(edgeShade);
 
+        _transitionCanvas = new CanvasLayer
+        {
+            Name = "MemoryTransitionCanvas",
+            Layer = 70
+        };
+        AddChild(_transitionCanvas);
+
+        _transitionRoot = new Control
+        {
+            Name = "MemoryTransitionRoot",
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
+        _transitionRoot.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        _transitionCanvas.AddChild(_transitionRoot);
+
         _transitionCover = new ColorRect
         {
             Name = "MemoryTransitionCover",
@@ -201,7 +218,7 @@ void fragment()
             Modulate = new Color(1f, 1f, 1f, 1f)
         };
         _transitionCover.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        AddChild(_transitionCover);
+        _transitionRoot.AddChild(_transitionCover);
 
         _transitionText = new Label
         {
@@ -217,7 +234,7 @@ void fragment()
         _transitionText.AddThemeColorOverride("font_color", new Color("e8e2ee"));
         _transitionText.AddThemeColorOverride("font_outline_color", new Color("08070c"));
         _transitionText.AddThemeConstantOverride("outline_size", 3);
-        AddChild(_transitionText);
+        _transitionRoot.AddChild(_transitionText);
     }
 
     private async void PlayRecollectionIntro()
@@ -347,9 +364,9 @@ void fragment()
         if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
             _dialogue.SetPresentationVisible(false);
 
-        MoveChild(_transitionCover, GetChildCount() - 1);
+        _transitionRoot.MoveChild(_transitionCover, _transitionRoot.GetChildCount() - 1);
         if (_transitionText != null && GodotObject.IsInstanceValid(_transitionText))
-            MoveChild(_transitionText, GetChildCount() - 1);
+            _transitionRoot.MoveChild(_transitionText, _transitionRoot.GetChildCount() - 1);
         _transitionCover.Modulate = new Color(1f, 1f, 1f, 0f);
 
         _collapseTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
@@ -503,7 +520,7 @@ void fragment()
         {
             _transitionCover.Visible = true;
             _transitionText.Visible = false;
-            MoveChild(_transitionCover, GetChildCount() - 1);
+            _transitionRoot.MoveChild(_transitionCover, _transitionRoot.GetChildCount() - 1);
 
             Tween coverToBlack = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
             coverToBlack.TweenProperty(_transitionCover, "modulate:a", 1f, 0.48f)
