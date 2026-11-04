@@ -318,13 +318,13 @@ public partial class VisualNovelScene : Control
         _choiceBox.AnchorRight = 1f;
         _choiceBox.AnchorTop = 0.5f;
         _choiceBox.AnchorBottom = 0.5f;
-        _choiceBox.OffsetLeft = -354f;
+        _choiceBox.OffsetLeft = -386f;
         _choiceBox.OffsetRight = -26f;
-        _choiceBox.OffsetTop = -112f;
-        _choiceBox.OffsetBottom = 112f;
+        _choiceBox.OffsetTop = -114f;
+        _choiceBox.OffsetBottom = 114f;
         _choiceBox.AddThemeConstantOverride("separation", 6);
         _choiceBox.ZIndex = 2;
-        _choiceBox.CustomMinimumSize = new Vector2(328f, 0f);
+        _choiceBox.CustomMinimumSize = new Vector2(360f, 0f);
 
         _choiceBackdrop = new PanelContainer
         {
@@ -337,10 +337,10 @@ public partial class VisualNovelScene : Control
         _choiceBackdrop.AnchorRight = 1f;
         _choiceBackdrop.AnchorTop = 0.5f;
         _choiceBackdrop.AnchorBottom = 0.5f;
-        _choiceBackdrop.OffsetLeft = -366f;
+        _choiceBackdrop.OffsetLeft = -398f;
         _choiceBackdrop.OffsetRight = -14f;
-        _choiceBackdrop.OffsetTop = -124f;
-        _choiceBackdrop.OffsetBottom = 124f;
+        _choiceBackdrop.OffsetTop = -126f;
+        _choiceBackdrop.OffsetBottom = 126f;
         _choiceBackdrop.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color(0.035f, 0.028f, 0.055f, 0.70f),
@@ -384,11 +384,11 @@ public partial class VisualNovelScene : Control
             var button = new Button
             {
                 Text = ResolvePlayerNameTokens(choices[i].Label),
-                CustomMinimumSize = new Vector2(0, CompactChoiceMode ? 46 : 100),
+                CustomMinimumSize = new Vector2(0, CompactChoiceMode ? 44 : 100),
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                 FocusMode = FocusModeEnum.All
             };
-            button.AddThemeFontSizeOverride("font_size", CompactChoiceMode ? 18 : 30);
+            button.AddThemeFontSizeOverride("font_size", CompactChoiceMode ? 17 : 30);
             if (CompactChoiceMode)
             {
                 button.AddThemeColorOverride("font_color", new Color("f3edf9"));
