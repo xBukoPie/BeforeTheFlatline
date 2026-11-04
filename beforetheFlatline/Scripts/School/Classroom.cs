@@ -20,6 +20,7 @@ public partial class Classroom : Control
     private Node2D _player;
     private bool _greetingActive;
     private bool _firstDayGreetingVariant;
+    private FirstDayMysteryIntro _firstDayMysteryIntro;
 
     public override void _Ready()
     {
@@ -36,12 +37,19 @@ public partial class Classroom : Control
         FreezePlayer();
 
         var clock = DayClock.Instance;
-        _firstDayGreetingVariant = clock != null &&
-            !clock.FirstDayMysteryEncounterSeen &&
-            clock.ConsumeFirstDaySpecialGreetingPending();
+        _firstDayGreetingVariant = false;
         _greetingActive = true;
         _dialogue.DialogueFinished += OnGreetingFinished;
-        CallDeferred(MethodName.StartGreeting);
+
+        bool showFirstDayIntro = clock != null &&
+            clock.DayNumber == 1 &&
+            !clock.FirstDayMysteryEncounterSeen;
+        _dialogue.Visible = !showFirstDayIntro;
+
+        if (showFirstDayIntro)
+            CallDeferred(nameof(BeginFirstDayMysteryIntro));
+        else
+            CallDeferred(MethodName.StartGreeting);
     }
 
     public override void _ExitTree()
@@ -58,6 +66,39 @@ public partial class Classroom : Control
                 DayClock.Instance.Running = true;
             QueueFree();
         }
+    }
+
+    private void BeginFirstDayMysteryIntro()
+    {
+        if (!IsInsideTree() || _firstDayMysteryIntro != null)
+            return;
+
+        PackedScene introScene = GD.Load<PackedScene>("res://Scenes/School/FirstDayMysteryIntro.tscn");
+        if (introScene == null)
+        {
+            GD.PushError("Classroom: FirstDayMysteryIntro.tscn could not be loaded.");
+            _dialogue.Visible = true;
+            StartGreeting();
+            return;
+        }
+
+        _firstDayMysteryIntro = introScene.Instantiate<FirstDayMysteryIntro>();
+        _firstDayMysteryIntro.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        _firstDayMysteryIntro.TreeExiting += OnFirstDayMysteryIntroExiting;
+        AddChild(_firstDayMysteryIntro);
+    }
+
+    private void OnFirstDayMysteryIntroExiting()
+    {
+        if (_firstDayMysteryIntro != null && GodotObject.IsInstanceValid(_firstDayMysteryIntro))
+            _firstDayMysteryIntro.TreeExiting -= OnFirstDayMysteryIntroExiting;
+
+        _firstDayMysteryIntro = null;
+        if (!IsInsideTree())
+            return;
+
+        _dialogue.Visible = true;
+        StartGreeting();
     }
 
     private void StartGreeting()
