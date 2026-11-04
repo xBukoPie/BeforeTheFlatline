@@ -6,6 +6,8 @@ public partial class FlowchartSymbolControl : Control
     [Export] public string InitialText { get; set; } = "";
     private LineEdit _editor;
 
+    public event Action TextChanged;
+
     public string BlockText => _editor?.Text ?? InitialText;
 
     public void Configure(string type, string text)
@@ -30,6 +32,7 @@ public partial class FlowchartSymbolControl : Control
         };
         _editor.AddThemeColorOverride("font_color", Colors.White);
         _editor.AddThemeColorOverride("font_placeholder_color", new Color("cbd5e1"));
+        _editor.TextChanged += _ => TextChanged?.Invoke();
         AddChild(_editor);
         LayoutEditor();
     }
