@@ -47,6 +47,8 @@ public partial class RoomManager : Node2D
     private ColorRect _fade;
     private Room _room;
     private bool _busy;
+    private float _currentDaylight = 1f;
+    private bool _hasLightingSample;
 
     public override void _Ready()
     {
@@ -81,16 +83,28 @@ public partial class RoomManager : Node2D
 
     public override void _Process(double delta)
     {
-        ApplyTimeOfDayLighting();
+        ApplyTimeOfDayLighting((float)delta);
     }
 
-    private void ApplyTimeOfDayLighting()
+    private void ApplyTimeOfDayLighting(float delta = 0f)
     {
         if (_ambient == null || _sun == null)
             return;
 
         float hour = SchoolYardGame.DayClock.Instance?.Hour ?? 8f;
-        float daylight = CalculateDaylightBlend(hour);
+        float targetDaylight = CalculateDaylightBlend(hour);
+        if (!_hasLightingSample)
+        {
+            _currentDaylight = targetDaylight;
+            _hasLightingSample = true;
+        }
+        else if (delta > 0f)
+        {
+            float blend = 1f - Mathf.Exp(-delta / 4f);
+            _currentDaylight = Mathf.Lerp(_currentDaylight, targetDaylight, blend);
+        }
+
+        float daylight = _currentDaylight;
         bool schoolHandlesItsOwnDayTint = _room != null &&
             string.Equals(_room.RoomName, "School", System.StringComparison.OrdinalIgnoreCase);
 
