@@ -65,6 +65,7 @@ public partial class RoomKeyProgression : Node
     {
         HiddenPoints = Math.Max(0, hiddenPoints);
         _unlockedRoomIds.Clear();
+        _roomUnlockedDays.Clear();
 
         if (unlockedRoomIds == null)
         {
