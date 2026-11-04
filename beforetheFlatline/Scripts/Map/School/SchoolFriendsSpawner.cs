@@ -20,9 +20,6 @@ public partial class SchoolFriendsSpawner : Node2D
     private bool _playerFrozen;
     private bool _conversationOpen;
 
-    private CanvasLayer _promptLayer;
-    private Control _promptRoot;
-    private Label _interactionPrompt;
     private CanvasLayer _dialogueLayer;
     private VisualNovelScene _dialogue;
 
@@ -223,7 +220,6 @@ public partial class SchoolFriendsSpawner : Node2D
         var roomManager = GetTree().GetFirstNodeInGroup("room_manager");
         _player = roomManager?.GetNodeOrNull<CharacterBody2D>("Player");
 
-        BuildInteractionUi();
         SpawnRandomFriends();
     }
 
@@ -268,7 +264,9 @@ public partial class SchoolFriendsSpawner : Node2D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (_conversationOpen || !@event.IsActionPressed("interact"))
+        if (_conversationOpen ||
+            (InteractionPromptManager.Instance != null && !InteractionPromptManager.Instance.IsPrimary(this)) ||
+            !@event.IsActionPressed("interact"))
             return;
 
         FriendActor friend = GetNearestFriend();
@@ -281,6 +279,7 @@ public partial class SchoolFriendsSpawner : Node2D
 
     public override void _ExitTree()
     {
+        InteractionPromptManager.Instance?.HidePrompt(this);
         RestorePlayerControl();
     }
 
@@ -460,13 +459,17 @@ public partial class SchoolFriendsSpawner : Node2D
 
     private void RefreshInteractionPrompt()
     {
-        if (_interactionPrompt == null || _conversationOpen)
+        if (_conversationOpen)
+        {
+            InteractionPromptManager.Instance?.HidePrompt(this);
             return;
+        }
 
         FriendActor nearest = GetNearestFriend();
-        _interactionPrompt.Visible = nearest != null;
         if (nearest != null)
-            _interactionPrompt.Text = $"[E] Talk to {nearest.Name}";
+            InteractionPromptManager.Instance?.ShowPrompt(this, $"[E] Talk to {nearest.Name}", 40);
+        else
+            InteractionPromptManager.Instance?.HidePrompt(this);
     }
 
     private void BeginConversation(FriendActor friend)
@@ -499,7 +502,7 @@ public partial class SchoolFriendsSpawner : Node2D
         var lines = BuildConversation(friend, playerName, showStoryHint, recoveredSanity);
 
         _conversationOpen = true;
-        _interactionPrompt.Visible = false;
+        InteractionPromptManager.Instance?.HidePrompt(this);
         FreezePlayerControl();
 
         _dialogueLayer = new CanvasLayer
@@ -613,47 +616,6 @@ public partial class SchoolFriendsSpawner : Node2D
         if (_player != null && GodotObject.IsInstanceValid(_player))
             _player.ProcessMode = _playerPreviousProcessMode;
         _playerFrozen = false;
-    }
-
-    private void BuildInteractionUi()
-    {
-        _promptLayer = new CanvasLayer
-        {
-            Name = "SchoolFriendsPromptLayer",
-            Layer = 107
-        };
-        AddChild(_promptLayer);
-
-        _promptRoot = new Control
-        {
-            Name = "SchoolFriendsPromptRoot",
-            MouseFilter = Control.MouseFilterEnum.Ignore
-        };
-        _promptRoot.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        _promptLayer.AddChild(_promptRoot);
-
-        _interactionPrompt = new Label
-        {
-            Name = "FriendInteractionPrompt",
-            Visible = false,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            CustomMinimumSize = new Vector2(640, 42),
-            MouseFilter = Control.MouseFilterEnum.Ignore
-        };
-        _interactionPrompt.AnchorLeft = 0.5f;
-        _interactionPrompt.AnchorRight = 0.5f;
-        _interactionPrompt.AnchorTop = 1f;
-        _interactionPrompt.AnchorBottom = 1f;
-        _interactionPrompt.OffsetLeft = -320;
-        _interactionPrompt.OffsetRight = 320;
-        _interactionPrompt.OffsetTop = -86;
-        _interactionPrompt.OffsetBottom = -44;
-        _interactionPrompt.AddThemeFontSizeOverride("font_size", 18);
-        _interactionPrompt.AddThemeColorOverride("font_color", Colors.White);
-        _interactionPrompt.AddThemeColorOverride("font_outline_color", Colors.Black);
-        _interactionPrompt.AddThemeConstantOverride("outline_size", 4);
-        _promptRoot.AddChild(_interactionPrompt);
     }
 
     private void Shuffle<T>(T[] values)
