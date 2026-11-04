@@ -40,7 +40,7 @@ public partial class DialoguePanel : Control
         _foregroundCanvas = new CanvasLayer
         {
             Name = "DialoguePanelForegroundLayer",
-            Layer = 60
+            Layer = 110
         };
         AddChild(_foregroundCanvas);
 
