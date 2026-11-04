@@ -19,7 +19,7 @@ public partial class OpeningPresents : Control
 
         var title = new Label
         {
-            Text = "VOXTEK INC. PRESENTS",
+            Text = "VoxTek INC Presents",
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             Modulate = new Color(1f, 1f, 1f, 0f),
