@@ -113,12 +113,14 @@ public partial class AudioManager : Node
 
     private static void EnsureAudioBus(string busName)
     {
-        if (AudioServer.GetBusIndex(busName) >= 0)
-            return;
+        int busIndex = AudioServer.GetBusIndex(busName);
+        if (busIndex < 0)
+        {
+            AudioServer.AddBus(-1);
+            busIndex = AudioServer.BusCount - 1;
+            AudioServer.SetBusName(busIndex, busName);
+        }
 
-        AudioServer.AddBus(-1);
-        int busIndex = AudioServer.BusCount - 1;
-        AudioServer.SetBusName(busIndex, busName);
         AudioServer.SetBusSend(busIndex, "Master");
     }
 
