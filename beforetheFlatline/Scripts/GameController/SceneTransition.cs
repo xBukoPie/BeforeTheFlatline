@@ -48,7 +48,7 @@ public partial class SceneTransition : CanvasLayer
             Instance = null;
     }
 
-    public async void ChangeSceneToFile(string path)
+    public async void ChangeSceneToFile(string path, float fadeDurationOverride = 0f)
     {
         if (_busy || string.IsNullOrWhiteSpace(path))
             return;
@@ -60,16 +60,19 @@ public partial class SceneTransition : CanvasLayer
         }
 
         _busy = true;
+        float fadeDuration = fadeDurationOverride > 0f
+            ? fadeDurationOverride
+            : DefaultFadeDuration;
         _fade.Visible = true;
         _fade.Modulate = new Color(1f, 1f, 1f, 0f);
         _fade.MouseFilter = Control.MouseFilterEnum.Stop;
-        await FadeTo(1f, DefaultFadeDuration);
+        await FadeTo(1f, fadeDuration);
 
         Error result = GetTree().ChangeSceneToFile(path);
         if (result != Error.Ok)
         {
             GD.PushError($"SceneTransition: failed to change to '{path}' ({result}).");
-            await FadeTo(0f, DefaultFadeDuration);
+            await FadeTo(0f, fadeDuration);
             _fade.MouseFilter = Control.MouseFilterEnum.Ignore;
             _fade.Visible = false;
             _busy = false;
@@ -78,7 +81,7 @@ public partial class SceneTransition : CanvasLayer
 
         await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-        await FadeTo(0f, DefaultFadeDuration);
+        await FadeTo(0f, fadeDuration);
         _fade.MouseFilter = Control.MouseFilterEnum.Ignore;
         _fade.Visible = false;
         _busy = false;
