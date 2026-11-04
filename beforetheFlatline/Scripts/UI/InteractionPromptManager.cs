@@ -14,6 +14,8 @@ public partial class InteractionPromptManager : Node
     private Control _root;
     private VBoxContainer _stack;
     private long _order;
+    private string _noticeText = string.Empty;
+    private float _noticeRemaining;
 
     public override void _Ready()
     {
@@ -26,6 +28,19 @@ public partial class InteractionPromptManager : Node
         Instance = this;
         ProcessMode = ProcessModeEnum.Always;
         BuildUi();
+    }
+
+    public override void _Process(double delta)
+    {
+        if (_noticeRemaining <= 0f)
+            return;
+
+        _noticeRemaining = Mathf.Max(0f, _noticeRemaining - (float)delta);
+        if (_noticeRemaining <= 0f)
+        {
+            _noticeText = string.Empty;
+            RefreshPrompts();
+        }
     }
 
     public override void _ExitTree()
@@ -52,6 +67,16 @@ public partial class InteractionPromptManager : Node
 
         if (_prompts.Remove(owner.GetInstanceId()))
             RefreshPrompts();
+    }
+
+    public void ShowNotice(Node owner, string message, float duration = 2.5f)
+    {
+        if (owner == null || !GodotObject.IsInstanceValid(owner) || string.IsNullOrWhiteSpace(message))
+            return;
+
+        _noticeText = message.Trim();
+        _noticeRemaining = Mathf.Max(0.5f, duration);
+        RefreshPrompts();
     }
 
     public bool IsPrimary(Node owner)
@@ -118,16 +143,59 @@ public partial class InteractionPromptManager : Node
             child.QueueFree();
         }
 
+        if (!string.IsNullOrWhiteSpace(_noticeText))
+            AddNoticeRow(_noticeText);
+
         List<PromptEntry> entries = GetOrderedPrompts().Take(3).ToList();
         for (int i = 0; i < entries.Count; i++)
         {
-            bool primary = i == 0;
+            bool primary = i == 0 && string.IsNullOrWhiteSpace(_noticeText);
             string text = RemoveKeyHint(entries[i].Text);
             AddPromptRow(primary, text);
         }
 
         if (_prompts.Count > entries.Count)
             AddPromptRow(false, $"+ {_prompts.Count - entries.Count} more nearby");
+    }
+
+    private void AddNoticeRow(string text)
+    {
+        var panel = new PanelContainer
+        {
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter
+        };
+        panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0.035f, 0.035f, 0.055f, 0.90f),
+            BorderColor = new Color("bda9df", 0.65f),
+            BorderWidthLeft = 1,
+            BorderWidthRight = 1,
+            BorderWidthTop = 1,
+            BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 7,
+            CornerRadiusTopRight = 7,
+            CornerRadiusBottomLeft = 7,
+            CornerRadiusBottomRight = 7,
+            ContentMarginLeft = 14,
+            ContentMarginRight = 14,
+            ContentMarginTop = 7,
+            ContentMarginBottom = 7
+        });
+        _stack.AddChild(panel);
+
+        var label = new Label
+        {
+            Text = text,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            CustomMinimumSize = new Vector2(320, 24),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
+        label.AddThemeFontSizeOverride("font_size", 15);
+        label.AddThemeColorOverride("font_color", Colors.White);
+        panel.AddChild(label);
     }
 
     private void AddPromptRow(bool primary, string text)
