@@ -198,7 +198,7 @@ void fragment()
         _transitionCanvas = new CanvasLayer
         {
             Name = "MemoryTransitionCanvas",
-            Layer = 70
+            Layer = 120
         };
         AddChild(_transitionCanvas);
 
