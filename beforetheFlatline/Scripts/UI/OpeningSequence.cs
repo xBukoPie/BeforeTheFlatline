@@ -30,7 +30,7 @@ public partial class OpeningSequence : Control
 
         // Keep the same black scene behind the title until the main-menu transition finishes.
         if (SceneTransition.Instance != null)
-            SceneTransition.Instance.ChangeSceneToFile(MainMenuPath);
+            SceneTransition.Instance.ChangeSceneToFile(MainMenuPath, 0.72f);
         else
             GetTree().ChangeSceneToFile(MainMenuPath);
     }
