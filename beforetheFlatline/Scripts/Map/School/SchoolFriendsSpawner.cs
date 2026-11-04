@@ -59,7 +59,6 @@ public partial class SchoolFriendsSpawner : Node2D
         new(-120f, 25f),
         new(-65f, 95f),
         new(-5f, 25f),
-        new(75f, 95f),
         new(145f, 25f),
         new(-175f, 105f),
         new(5f, 145f),
