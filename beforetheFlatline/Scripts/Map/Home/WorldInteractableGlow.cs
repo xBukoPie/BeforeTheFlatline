@@ -27,7 +27,7 @@ public static class WorldInteractableGlow
             Name = "InteractableGlow",
             Texture = GetRadialTexture(),
             Centered = true,
-            ZIndex = -1,
+            ZIndex = 0,
             Scale = Vector2.One * baseScale,
             Modulate = new Color(tint.R, tint.G, tint.B, 0.62f),
             TextureFilter = CanvasItem.TextureFilterEnum.Linear,
@@ -39,6 +39,7 @@ public static class WorldInteractableGlow
         glow.SetMeta("base_scale", baseScale);
 
         parent.AddChild(glow);
+        parent.MoveChild(glow, 0);
         return glow;
     }
 
