@@ -85,7 +85,7 @@ public partial class StoryProgression : Node
 
         int unlockedDay = RoomKeyProgression.Instance?.GetRoomUnlockedDay(roomId) ?? -1;
         int currentDay = DayClock.Instance?.DayNumber ?? 1;
-        if (!RoomKeyProgression.Instance?.IsRoomUnlocked(roomId) ?? true)
+        if (RoomKeyProgression.Instance == null || !RoomKeyProgression.Instance.IsRoomUnlocked(roomId))
             return false;
 
         // Legacy saves without an unlock date make the conversation available from day two onward.
@@ -145,6 +145,7 @@ public partial class StoryProgression : Node
     public void RestoreFromSaveData(Godot.Collections.Dictionary data)
     {
         _completedMemories.Clear();
+        _guardianStagesSeen.Clear();
 
         if (data == null || !data.ContainsKey("completed_memories") ||
             data["completed_memories"].VariantType != Variant.Type.Array)
@@ -157,7 +158,6 @@ public partial class StoryProgression : Node
                 _completedMemories.Add(value);
         }
 
-        _guardianStagesSeen.Clear();
         if (data.ContainsKey("guardian_stages_seen") &&
             data["guardian_stages_seen"].VariantType == Variant.Type.Array)
         {
