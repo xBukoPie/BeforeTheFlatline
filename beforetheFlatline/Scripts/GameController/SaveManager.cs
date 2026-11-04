@@ -131,10 +131,10 @@ public partial class SaveManager : Node
         _writingAutosave = true;
         try
         {
-            bool saved = WriteSave(GetAutoSavePath(), 0, true);
-            if (saved)
-                _autosaveElapsed = 0;
-            return saved;
+                bool saved = WriteSave(GetAutoSavePath(), 0, true);
+                if (saved)
+                    _autosaveElapsed = 0;
+                return saved;
         }
         finally
         {
@@ -233,6 +233,9 @@ public partial class SaveManager : Node
 
     private async System.Threading.Tasks.Task<bool> LoadSnapshotAsync(Godot.Collections.Dictionary data)
     {
+        if (_loadingSnapshot)
+            return false;
+
         int saveVersion = ReadSaveVersion(data);
         if (saveVersion != 1)
         {
