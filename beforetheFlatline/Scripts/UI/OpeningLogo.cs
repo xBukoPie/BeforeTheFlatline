@@ -40,13 +40,14 @@ public partial class OpeningLogo : Control
         };
         center.AddChild(logo);
 
-        Modulate = new Color(1f, 1f, 1f, 0f);
+        // Fade only the logo. Keep the black background fully opaque through scene changes.
+        logo.Modulate = new Color(1f, 1f, 1f, 0f);
         var tween = CreateTween();
-        tween.TweenProperty(this, "modulate:a", 1f, 1.15f)
+        tween.TweenProperty(logo, "modulate:a", 1f, 1.15f)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
         tween.TweenInterval(2.0f);
-        tween.TweenProperty(this, "modulate:a", 0f, 0.95f)
+        tween.TweenProperty(logo, "modulate:a", 0f, 0.95f)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
 
