@@ -44,6 +44,7 @@ public partial class Classroom : Control
         bool showFirstDayIntro = clock != null &&
             clock.DayNumber == 1 &&
             !clock.FirstDayMysteryEncounterSeen;
+        _firstDayGreetingVariant = showFirstDayIntro;
         _dialogue.Visible = !showFirstDayIntro;
 
         if (showFirstDayIntro)
