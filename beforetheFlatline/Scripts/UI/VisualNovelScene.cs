@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace SchoolYardGame;
 
@@ -67,13 +68,15 @@ public partial class VisualNovelScene : Control
     private Control _dimOverlay;
     private CanvasLayer _foregroundCanvas;
     private bool _memoryTransitionBlocked;
+    private int _showLineRequestId;
 
     public Control DialogueInterfaceRoot => _uiRoot;
+    public Func<int, DialogueLine, Task> BeforeLinePresentationAsync { get; set; }
 
     public void SetMemoryTransitionBlocked(bool blocked) =>
         _memoryTransitionBlocked = blocked;
 
-    // Raised whenever the active dialogue line changes; story cutscenes use this for synced visual cues.
+    // Raised after the next line is prepared; story cutscenes use this for synced visual cues.
     public event Action<int, DialogueLine> LinePresented;
 
     public override void _Ready()
@@ -264,7 +267,7 @@ public partial class VisualNovelScene : Control
         placeholder.Visible = texture == null && ShowPlaceholders;
     }
 
-    private void ShowLine(int index)
+    private async void ShowLine(int index)
     {
         if (_lines == null || index < 0 || index >= _lines.Count)
         {
@@ -272,10 +275,21 @@ public partial class VisualNovelScene : Control
             return;
         }
 
+        int requestId = ++_showLineRequestId;
+        DialogueLine line = _lines[index];
+        if (BeforeLinePresentationAsync != null)
+        {
+            _memoryTransitionBlocked = true;
+            await BeforeLinePresentationAsync(index, line);
+            if (!GodotObject.IsInstanceValid(this) || !IsInsideTree() ||
+                requestId != _showLineRequestId)
+                return;
+
+            _memoryTransitionBlocked = false;
+        }
+
         _index = index;
-        var line = _lines[index];
         _lineActive = true;
-        LinePresented?.Invoke(index, line);
         _idle = 0;
         _currentSide = line.Side;
 
@@ -312,6 +326,7 @@ public partial class VisualNovelScene : Control
 
         if (total <= 0)
         {
+            LinePresented?.Invoke(index, line);
             FinishTyping();
             return;
         }
@@ -320,6 +335,7 @@ public partial class VisualNovelScene : Control
         _typeTween = CreateTween();
         _typeTween.TweenProperty(_text, "visible_characters", total, duration);
         _typeTween.Finished += FinishTyping;
+        LinePresented?.Invoke(index, line);
     }
 
     // Called when the text has fully appeared (naturally or after being completed early).
