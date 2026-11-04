@@ -32,7 +32,7 @@ public partial class SchoolYard : Node2D
         {
             if (child is InteractionZone z)
             {
-                z.PromptChanged += OnPromptChanged;
+                z.PromptChanged += (text, show) => OnPromptChanged(z, text, show);
                 z.Interacted += OnInteracted;
             }
         }
@@ -58,11 +58,14 @@ public partial class SchoolYard : Node2D
         }
     }
 
-    private void OnPromptChanged(string text, bool show)
+    private void OnPromptChanged(InteractionZone zone, string text, bool show)
     {
-        _msgTween?.Kill();
-        _prompt.Text = text;
-        _prompt.Visible = show;
+        if (show)
+            InteractionPromptManager.Instance?.ShowPrompt(zone, $"[E] {text}", 20);
+        else
+            InteractionPromptManager.Instance?.HidePrompt(zone);
+
+        _prompt.Visible = false;
     }
 
     private void OnInteracted(string id)
@@ -80,11 +83,7 @@ public partial class SchoolYard : Node2D
 
     private void Say(string text)
     {
-        _prompt.Text = text;
-        _prompt.Visible = true;
         _msgTween?.Kill();
-        _msgTween = CreateTween();
-        _msgTween.TweenInterval(2.5);
-        _msgTween.TweenCallback(Callable.From(() => _prompt.Visible = false));
+        InteractionPromptManager.Instance?.ShowNotice(this, text, 2.5f);
     }
 }
