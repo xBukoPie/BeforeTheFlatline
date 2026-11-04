@@ -101,6 +101,7 @@ public partial class FlowchartDropCanvas : PanelContainer
                 i > 0 ? idx => MoveBlock(idx, -1) : null,
                 i < definitions.Count - 1 ? idx => MoveBlock(idx, 1) : null,
                 idx => RemoveBlock(idx));
+            block.TextChanged += () => ContentChanged?.Invoke();
             _placedBlocks.Add(block);
             _blocks.AddChild(block);
 
