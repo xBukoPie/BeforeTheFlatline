@@ -66,6 +66,12 @@ public partial class VisualNovelScene : Control
     private Control _uiRoot;
     private Control _dimOverlay;
     private CanvasLayer _foregroundCanvas;
+    private bool _memoryTransitionBlocked;
+
+    public Control DialogueInterfaceRoot => _uiRoot;
+
+    public void SetMemoryTransitionBlocked(bool blocked) =>
+        _memoryTransitionBlocked = blocked;
 
     // Raised whenever the active dialogue line changes; story cutscenes use this for synced visual cues.
     public event Action<int, DialogueLine> LinePresented;
@@ -360,7 +366,7 @@ public partial class VisualNovelScene : Control
     // Space / Enter / click on the dialogue panel all land here.
     private void HandleAdvanceInput()
     {
-        if (_logOpen) return;
+        if (_memoryTransitionBlocked || _logOpen) return;
 
         if (!_lineActive)
         {
@@ -621,6 +627,9 @@ public partial class VisualNovelScene : Control
 
     private void OnChoicePressed(int choiceIndex, DialogueChoice choice)
     {
+        if (_memoryTransitionBlocked)
+            return;
+
         EmitSignal(SignalName.ChoiceSelected, choiceIndex);
         AppendLog($"[color=#7a3f12]▶ {Escape(ResolvePlayerNameTokens(choice.Label))}[/color]\n\n");
         HideChoices();
