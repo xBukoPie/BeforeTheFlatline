@@ -152,10 +152,6 @@ public partial class VisualNovelScene : Control
 
     private void RaiseVisualsAboveVignette()
     {
-        var originalChildren = new List<Node>();
-        foreach (Node child in GetChildren())
-            originalChildren.Add(child);
-
         _foregroundCanvas = new CanvasLayer
         {
             Name = "DialogueForegroundLayer",
@@ -166,16 +162,15 @@ public partial class VisualNovelScene : Control
         var foregroundRoot = new Control
         {
             Name = "DialogueForegroundRoot",
-            MouseFilter = Control.MouseFilterEnum.Ignore
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            Theme = Theme
         };
         foregroundRoot.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         _foregroundCanvas.AddChild(foregroundRoot);
 
-        foreach (Node child in originalChildren)
-        {
-            RemoveChild(child);
-            foregroundRoot.AddChild(child);
-        }
+        // Keep the scene background and character art below the vignette.
+        _uiRoot.GetParent().RemoveChild(_uiRoot);
+        foregroundRoot.AddChild(_uiRoot);
     }
 
     private void OnVisibilityChanged()
