@@ -61,6 +61,7 @@ void fragment()
     private Label _transitionText;
     private bool _collapseTransitionRunning;
     private bool _collapseTransitionPlayed;
+    private Tween _collapseTween;
     private VisualNovelScene _dialogue;
     private Tween _artTween;
 
@@ -347,21 +348,21 @@ void fragment()
             MoveChild(_transitionText, GetChildCount() - 1);
         _transitionCover.Modulate = new Color(1f, 1f, 1f, 0f);
 
-        Tween fadeToBlack = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
-        fadeToBlack.TweenProperty(_transitionCover, "modulate:a", 1f, 0.85f)
+        _collapseTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        _collapseTween.TweenProperty(_transitionCover, "modulate:a", 1f, 0.85f)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
-        await ToSignal(fadeToBlack, Tween.SignalName.Finished);
+        await ToSignal(_collapseTween, Tween.SignalName.Finished);
         await WaitTransition(0.42f);
 
         if (_finished || !IsInsideTree())
             return;
 
-        Tween fadeFromBlack = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
-        fadeFromBlack.TweenProperty(_transitionCover, "modulate:a", 0f, 1.15f)
+        _collapseTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        _collapseTween.TweenProperty(_transitionCover, "modulate:a", 0f, 1.15f)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
-        await ToSignal(fadeFromBlack, Tween.SignalName.Finished);
+        await ToSignal(_collapseTween, Tween.SignalName.Finished);
 
         if (GodotObject.IsInstanceValid(_transitionCover))
             _transitionCover.Visible = false;
@@ -473,6 +474,10 @@ void fragment()
             _dialogue.LinePresented -= OnLinePresented;
             _dialogue.DialogueFinished -= OnDialogueFinished;
         }
+
+        if (_collapseTween != null && _collapseTween.IsValid())
+            _collapseTween.Kill();
+        _collapseTransitionRunning = false;
 
         // Cover the recollection before returning control to the live room.
         if (_transitionCover != null && GodotObject.IsInstanceValid(_transitionCover))
