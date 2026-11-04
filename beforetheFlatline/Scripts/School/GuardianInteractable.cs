@@ -18,7 +18,6 @@ public partial class GuardianInteractable : Node2D
     private bool _previousClockRunning;
     private VisualNovelScene _dialogue;
     private CanvasLayer _dialogueLayer;
-    private FirstDayMysteryIntro _firstDayIntro;
 
     public override void _Ready()
     {
@@ -90,8 +89,6 @@ public partial class GuardianInteractable : Node2D
     public override void _ExitTree()
     {
         InteractionPromptManager.Instance?.HidePrompt(this);
-        if (_firstDayIntro != null && GodotObject.IsInstanceValid(_firstDayIntro))
-            _firstDayIntro.TreeExiting -= OnFirstDayIntroExiting;
         if (_conversationOpen && DayClock.Instance != null)
             DayClock.Instance.Running = _previousClockRunning;
         RestorePlayer();
@@ -107,14 +104,10 @@ public partial class GuardianInteractable : Node2D
 
     private int GetAvailableStage()
     {
-        if (DayClock.Instance == null || DayClock.Instance.SchoolChallengeCompletedToday)
+        if (DayClock.Instance == null ||
+            DayClock.Instance.DayNumber <= 1 ||
+            DayClock.Instance.SchoolChallengeCompletedToday)
             return 0;
-
-        // The first-day encounter is the Guardian's controls-and-lore introduction.
-        // The classroom door retains the same encounter as a fallback if the player walks past him.
-        if (DayClock.Instance.DayNumber == 1 &&
-            DayClock.Instance.ShouldShowFirstDayMysteryEncounter)
-            return -1;
 
         if (StoryProgression.Instance == null)
             return 0;
@@ -212,12 +205,6 @@ public partial class GuardianInteractable : Node2D
         if (_activeStage == 0 || _conversationOpen)
             return;
 
-        if (_activeStage == -1)
-        {
-            BeginFirstDayEncounter();
-            return;
-        }
-
         PackedScene scene = GD.Load<PackedScene>(DialogueScenePath);
         if (scene == null)
         {
@@ -243,56 +230,13 @@ public partial class GuardianInteractable : Node2D
         _dialogue = scene.Instantiate<VisualNovelScene>();
         _dialogue.PlayDemoOnReady = false;
         _dialogue.LoopDemo = false;
+        _dialogue.ShowBackground = false;
         _dialogue.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         _dialogueLayer.AddChild(_dialogue);
         _dialogue.SetPortrait(DialogueSide.Left, null);
         _dialogue.SetPortrait(DialogueSide.Right, GD.Load<Texture2D>(PortraitPath));
         _dialogue.DialogueFinished += OnDialogueFinished;
         _dialogue.StartDialogue(BuildLines(_activeStage));
-    }
-
-    private void BeginFirstDayEncounter()
-    {
-        Node roomManager = GetTree().GetFirstNodeInGroup("room_manager");
-        Node uiRoot = roomManager?.GetNodeOrNull<Node>("UI");
-        if (uiRoot == null)
-        {
-            GD.PushError("Guardian: the room manager has no UI node for the first-day introduction.");
-            return;
-        }
-
-        PackedScene introScene = GD.Load<PackedScene>("res://Scenes/School/FirstDayMysteryIntro.tscn");
-        if (introScene == null)
-        {
-            GD.PushError("Guardian: FirstDayMysteryIntro.tscn could not be loaded.");
-            return;
-        }
-
-        _conversationOpen = true;
-        InteractionPromptManager.Instance?.HidePrompt(this);
-        _previousClockRunning = DayClock.Instance?.Running ?? false;
-        if (DayClock.Instance != null)
-            DayClock.Instance.Running = false;
-        FreezePlayer();
-
-        _firstDayIntro = introScene.Instantiate<FirstDayMysteryIntro>();
-        _firstDayIntro.DoorToContinue = null;
-        _firstDayIntro.TreeExiting += OnFirstDayIntroExiting;
-        uiRoot.AddChild(_firstDayIntro);
-    }
-
-    private void OnFirstDayIntroExiting()
-    {
-        if (_firstDayIntro != null && GodotObject.IsInstanceValid(_firstDayIntro))
-            _firstDayIntro.TreeExiting -= OnFirstDayIntroExiting;
-
-        _firstDayIntro = null;
-        _conversationOpen = false;
-        if (DayClock.Instance != null)
-            DayClock.Instance.Running = _previousClockRunning;
-
-        RestorePlayer();
-        RefreshAvailability();
     }
 
     private static IReadOnlyList<DialogueLine> BuildLines(int stage)
