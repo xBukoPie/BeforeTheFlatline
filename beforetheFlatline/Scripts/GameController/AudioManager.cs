@@ -121,10 +121,15 @@ public partial class AudioManager : Node
     public void PlayAssessmentPassed() => PlaySoundEffect("Tasks/passedTask.mp3", -1f);
     public void PlayAssessmentFailed() => PlaySoundEffect("Tasks/failedTask.mp3", -1f);
 
-    public void PlayGameOver()
+    public double PlayGameOver()
     {
         FadeOutMusic(0.7);
+        AudioStream track = LoadSound("Ending/gameOverFlatline.mp3");
+        if (track == null)
+            return 8.0;
+
         PlaySoundEffect("Ending/gameOverFlatline.mp3", 0f);
+        return track.GetLength();
     }
 
     private AudioStreamPlayer CreateMusicPlayer(string playerName)
