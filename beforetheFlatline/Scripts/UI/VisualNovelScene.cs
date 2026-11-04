@@ -87,6 +87,11 @@ public partial class VisualNovelScene : Control
         _hint = GetNode<Label>("%ContinueHint");
         _choiceBox = GetNode<VBoxContainer>("%ChoiceContainer");
         ConfigureChoiceLayout();
+        if (CompactChoiceMode)
+            ApplyMemoryDialogueTheme();
+
+        if (!ShowBackground)
+            StatusEffectsOverlay.Instance?.SetCinematicVignette(this, true);
 
         _autoButton = GetNode<Button>("%AutoButton");
         _skipButton = GetNode<Button>("%SkipButton");
@@ -132,6 +137,7 @@ public partial class VisualNovelScene : Control
     {
         // Prevent a local dialogue pause from leaving the global status overlay hidden after this scene closes.
         StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
+        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, false);
     }
 
     public override void _Process(double delta)
@@ -306,6 +312,52 @@ public partial class VisualNovelScene : Control
         if (_typing) { CompleteTyping(); return; } // first press fills the line
         if (_choicesShowing) return;               // choices must be picked
         Advance();                                 // second press goes to the next line
+    }
+
+    private void ApplyMemoryDialogueTheme()
+    {
+        _dialoguePanel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0.025f, 0.025f, 0.045f, 0.84f),
+            BorderColor = new Color("77708f", 0.62f),
+            BorderWidthLeft = 1,
+            BorderWidthRight = 1,
+            BorderWidthTop = 1,
+            BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 6,
+            CornerRadiusTopRight = 6,
+            CornerRadiusBottomLeft = 6,
+            CornerRadiusBottomRight = 6,
+            ContentMarginLeft = 24,
+            ContentMarginRight = 24,
+            ContentMarginTop = 17,
+            ContentMarginBottom = 17
+        });
+
+        _nameTag.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0.025f, 0.025f, 0.045f, 0.86f),
+            BorderColor = new Color("8c829f", 0.62f),
+            BorderWidthLeft = 1,
+            BorderWidthRight = 1,
+            BorderWidthTop = 1,
+            BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 4,
+            CornerRadiusTopRight = 4,
+            CornerRadiusBottomLeft = 4,
+            CornerRadiusBottomRight = 4,
+            ContentMarginLeft = 14,
+            ContentMarginRight = 14,
+            ContentMarginTop = 5,
+            ContentMarginBottom = 5
+        });
+
+        _nameLabel.AddThemeColorOverride("font_color", new Color("ded8e8"));
+        _nameLabel.AddThemeFontSizeOverride("font_size", 20);
+        _text.AddThemeColorOverride("default_color", new Color("eeeaf2"));
+        _text.AddThemeFontSizeOverride("normal_font_size", 24);
+        _hint.AddThemeColorOverride("font_color", new Color("cbc4d7"));
+        _hint.AddThemeFontSizeOverride("font_size", 16);
     }
 
     private void ConfigureChoiceLayout()
