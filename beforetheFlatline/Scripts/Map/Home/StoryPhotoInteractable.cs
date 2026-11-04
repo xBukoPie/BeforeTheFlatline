@@ -145,7 +145,8 @@ public partial class StoryPhotoInteractable : Area2D
                 new(kitchenImage, new DialogueLine(
                     "Memory",
                     "Eat your food before you go to school today. You haven't been eating lately.",
-                    DialogueSide.Left)),
+                    DialogueSide.Left),
+                    "dizziness"),
                 new(kitchenImage, new DialogueLine(
                     "You",
                     "I know. I'm just not hungry. Even sitting here feels harder than it should.",
@@ -187,7 +188,8 @@ public partial class StoryPhotoInteractable : Area2D
                 new(laundryImage, new DialogueLine(
                     "You",
                     "I keep watching my uniform spin inside the washing machine.",
-                    DialogueSide.Right)),
+                    DialogueSide.Right),
+                    "dizziness"),
                 new(laundryImage, new DialogueLine(
                     "You",
                     "I don't want to go to school today.",
@@ -232,7 +234,8 @@ public partial class StoryPhotoInteractable : Area2D
                 new(toBedroomImage, new DialogueLine(
                     "You",
                     "I need to talk to my parents. I need to ask them for help.",
-                    DialogueSide.Right)),
+                    DialogueSide.Right),
+                    "pressure"),
                 new(toBedroomImage, new DialogueLine(
                     "You",
                     "Every step toward the bedroom makes the pressure heavier. I keep trying to find the right words.",
