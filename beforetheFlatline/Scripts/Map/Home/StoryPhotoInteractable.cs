@@ -8,8 +8,6 @@ public partial class StoryPhotoInteractable : Area2D
 
     private Sprite2D _sprite;
     private Sprite2D _glow;
-    private Label _prompt;
-    private CanvasLayer _promptLayer;
     private bool _playerInside;
     private double _elapsed;
     private bool _triggered;
@@ -31,37 +29,6 @@ public partial class StoryPhotoInteractable : Area2D
 
         _glow = WorldInteractableGlow.AddGlow(this, new Color("f8d98a"), 2.4f);
 
-        _promptLayer = new CanvasLayer
-        {
-            Name = "InteractionPromptLayer",
-            Layer = 105
-        };
-        AddChild(_promptLayer);
-
-        _prompt = new Label
-        {
-            Text = "[E] Examine photograph",
-            Visible = false,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            CustomMinimumSize = new Vector2(640, 48),
-            MouseFilter = Control.MouseFilterEnum.Ignore
-        };
-        _prompt.AnchorLeft = 0.5f;
-        _prompt.AnchorRight = 0.5f;
-        _prompt.AnchorTop = 1f;
-        _prompt.AnchorBottom = 1f;
-        _prompt.OffsetLeft = -320;
-        _prompt.OffsetRight = 320;
-        _prompt.OffsetTop = -106;
-        _prompt.OffsetBottom = -58;
-        _prompt.AddThemeFontSizeOverride("font_size", 18);
-        _prompt.AddThemeColorOverride("font_color", Colors.White);
-        _prompt.AddThemeColorOverride("font_outline_color", Colors.Black);
-        _prompt.AddThemeConstantOverride("outline_size", 4);
-        _promptLayer.AddChild(_prompt);
-
         BodyEntered += OnBodyEntered;
         BodyExited += OnBodyExited;
         RefreshAvailability();
@@ -77,7 +44,7 @@ public partial class StoryPhotoInteractable : Area2D
         {
             if (Visible)
                 Visible = false;
-            _prompt.Visible = false;
+            InteractionPromptManager.Instance?.HidePrompt(this);
             Monitoring = false;
             _playerInside = false;
             return;
@@ -87,11 +54,16 @@ public partial class StoryPhotoInteractable : Area2D
             Visible = true;
         if (!Monitoring)
             Monitoring = true;
+
+        if (_playerInside)
+            InteractionPromptManager.Instance?.ShowPrompt(this, "[E] Examine photograph", 70);
     }
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (_triggered || !_playerInside || !@event.IsActionPressed("interact"))
+        if (_triggered || !_playerInside ||
+            (InteractionPromptManager.Instance != null && !InteractionPromptManager.Instance.IsPrimary(this)) ||
+            !@event.IsActionPressed("interact"))
             return;
 
         GetViewport().SetInputAsHandled();
@@ -103,8 +75,7 @@ public partial class StoryPhotoInteractable : Area2D
         bool available = StoryProgression.Instance?.CanTriggerMemory(MemoryId) == true;
         Visible = available;
         Monitoring = available;
-        if (_prompt != null)
-            _prompt.Visible = false;
+        InteractionPromptManager.Instance?.HidePrompt(this);
     }
 
     private void OnBodyEntered(Node2D body)
@@ -113,15 +84,13 @@ public partial class StoryPhotoInteractable : Area2D
             return;
 
         _playerInside = true;
-        _prompt.Text = "[E] Examine photograph";
-        _prompt.Visible = true;
+        InteractionPromptManager.Instance?.ShowPrompt(this, "[E] Examine photograph", 70);
     }
 
     private void OnBodyExited(Node2D body)
     {
         _playerInside = false;
-        if (_prompt != null)
-            _prompt.Visible = false;
+        InteractionPromptManager.Instance?.HidePrompt(this);
     }
 
     private void BeginMemory()
@@ -142,7 +111,7 @@ public partial class StoryPhotoInteractable : Area2D
         overlay.Configure(GetHeading(), BuildBeats(), () => CompleteMemory(finalMemory), finalMemory);
         _triggered = true;
         _playerInside = false;
-        _prompt.Visible = false;
+        InteractionPromptManager.Instance?.HidePrompt(this);
         uiRoot.AddChild(overlay);
     }
 
