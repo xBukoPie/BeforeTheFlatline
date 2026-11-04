@@ -21,6 +21,7 @@ public partial class HomeMap : Node2D
 		_sun = GetNode<DirectionalLight2D>("Sunlight");
         _lights = GetNode<Node2D>("Lights");
         _sanityManager = SanityManager.Instance;
+        _ambient.Visible = true;
 
 		var interior = GetNode<Area2D>("Zones/InteriorZone");
 		interior.BodyEntered += _ => SetInside(true);
@@ -39,7 +40,7 @@ public partial class HomeMap : Node2D
 
     public override void _Process(double delta)
     {
-        ApplyTimeOfDayLighting();
+        ApplyTimeOfDayLighting((float)delta);
     }
 
     public override void _ExitTree()
@@ -71,13 +72,25 @@ public partial class HomeMap : Node2D
 		ApplyTimeOfDayLighting();
 	}
 
-    private void ApplyTimeOfDayLighting()
+    private void ApplyTimeOfDayLighting(float delta = 0f)
     {
         if (_ambient == null || _sun == null || _lights == null)
             return;
 
         float hour = DayClock.Instance?.Hour ?? 8f;
-        float daylight = CalculateDaylightBlend(hour);
+        float targetDaylight = CalculateDaylightBlend(hour);
+        if (!_hasLightingSample)
+        {
+            _currentDaylight = targetDaylight;
+            _hasLightingSample = true;
+        }
+        else if (delta > 0f)
+        {
+            float blend = 1f - Mathf.Exp(-delta / 4f);
+            _currentDaylight = Mathf.Lerp(_currentDaylight, targetDaylight, blend);
+        }
+
+        float daylight = _currentDaylight;
         float nightBlend = 1f - daylight;
 
         _ambient.Color = NightColor.Lerp(DayColor, daylight);
