@@ -6,6 +6,7 @@ public partial class SleepInteractable : Area2D
 {
     private CharacterBody2D _player;
     private ProcessModeEnum _previousPlayerMode;
+    private bool _previousClockRunning;
     private bool _playerInside;
     private bool _sleeping;
 
@@ -86,6 +87,9 @@ public partial class SleepInteractable : Area2D
 
         _sleeping = true;
         InteractionPromptManager.Instance?.HidePrompt(this);
+        _previousClockRunning = DayClock.Instance?.Running ?? false;
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = false;
         FreezePlayer();
 
         var layer = new CanvasLayer
@@ -131,6 +135,8 @@ public partial class SleepInteractable : Area2D
         }
         else
         {
+            if (DayClock.Instance != null)
+                DayClock.Instance.Running = _previousClockRunning;
             message.Text = "You can't sleep just yet.";
         }
 
