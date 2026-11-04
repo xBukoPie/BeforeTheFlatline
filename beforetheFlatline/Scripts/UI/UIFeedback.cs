@@ -76,7 +76,7 @@ public partial class UIFeedback : Node
         if (control is Slider slider && _trackedSliders.Add(id))
         {
             slider.DragStarted += () => AudioManager.Instance?.PlayUiDrag();
-            control.TreeExiting += () => _trackedSliders.Remove(id);
+            control.TreeExiting += () => CallDeferred(MethodName.ForgetControlAfterExit, control, id);
         }
 
         if (control is not BaseButton button || !_tracked.Add(id))
@@ -149,7 +149,18 @@ public partial class UIFeedback : Node
         };
 
         control.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
-        control.TreeExiting += () => ForgetControl(id);
+        control.TreeExiting += () => CallDeferred(MethodName.ForgetControlAfterExit, control, id);
+    }
+
+    private void ForgetControlAfterExit(Control control, ulong id)
+    {
+        // Reparenting fires TreeExiting even when the control is immediately added back.
+        // Keep existing signal subscriptions in that case to avoid duplicate pressed handlers.
+        if (GodotObject.IsInstanceValid(control) && control.IsInsideTree())
+            return;
+
+        _trackedSliders.Remove(id);
+        ForgetControl(id);
     }
 
     private void SetHovered(Control control, bool hovered)
