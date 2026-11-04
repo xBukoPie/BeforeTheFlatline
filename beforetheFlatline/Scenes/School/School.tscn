@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="5_xqy2q"]
 [ext_resource type="Script" path="res://Scripts/Map/School/SchoolFriendsSpawner.cs" id="6_friends"]
 [ext_resource type="Script" path="res://Scripts/Map/School/SchoolWindEffects.cs" id="7_wind"]
+[ext_resource type="PackedScene" path="res://Scenes/School/Guardian.tscn" id="8_guardian"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_3"]
 size = Vector2(404, 184)
@@ -422,6 +423,9 @@ position = Vector2(70, 254)
 
 [node name="FromHome" type="Marker2D" parent="Spawns" unique_id=233850800]
 position = Vector2(35, 127)
+
+[node name="Guardian" parent="." instance=ExtResource("8_guardian")]
+position = Vector2(75, 95)
 
 [node name="SchoolFriends" type="Node2D" parent="."]
 y_sort_enabled = true
