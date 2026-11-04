@@ -7,8 +7,6 @@ public partial class FirstDayMysteryIntro : Control
     private const string PortraitPath = "res://Assets/Characters/Mysterious.png";
     private const string HallwayBackgroundPath = "res://Assets/Map/School/schoolHallway.jpg";
 
-    public Door DoorToContinue { get; set; }
-
     private VisualNovelScene _dialogue;
     private bool _finishing;
 
@@ -89,12 +87,7 @@ public partial class FirstDayMysteryIntro : Control
 
         DayClock.Instance?.MarkFirstDayMysteryEncounterCompleted();
         SaveManager.Instance?.RequestAutoSave();
-        Door door = DoorToContinue;
-
         GetParent()?.RemoveChild(this);
         QueueFree();
-
-        if (door != null && GodotObject.IsInstanceValid(door))
-            door.CallDeferred(nameof(Door.ContinueAfterMysteryIntro));
     }
 }
