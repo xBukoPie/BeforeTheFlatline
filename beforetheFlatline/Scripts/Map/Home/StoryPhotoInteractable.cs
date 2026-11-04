@@ -34,6 +34,11 @@ public partial class StoryPhotoInteractable : Area2D
         RefreshAvailability();
     }
 
+    public override void _ExitTree()
+    {
+        InteractionPromptManager.Instance?.HidePrompt(this);
+    }
+
     public override void _Process(double delta)
     {
         _elapsed += delta;
