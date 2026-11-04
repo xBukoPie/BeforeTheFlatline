@@ -23,7 +23,7 @@ public partial class VisualNovelScene : Control
 
     [ExportGroup("Display")]
     [Export] public bool ShowBackground { get; set; } = true;
-    [Export] public bool ShowPlaceholders { get; set; } = true;
+    [Export] public bool ShowPlaceholders { get; set; } = false;
     [Export] public bool ShowCharacterSlots { get; set; } = true;
     [Export] public bool AllowPauseMenu { get; set; } = true;
     [Export] public bool CompactChoiceMode { get; set; } = false;
@@ -155,7 +155,7 @@ public partial class VisualNovelScene : Control
         _foregroundCanvas = new CanvasLayer
         {
             Name = "DialogueForegroundLayer",
-            Layer = 60
+            Layer = 110
         };
         AddChild(_foregroundCanvas);
 
