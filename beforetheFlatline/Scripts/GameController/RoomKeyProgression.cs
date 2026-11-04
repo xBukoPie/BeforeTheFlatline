@@ -38,6 +38,7 @@ public partial class RoomKeyProgression : Node
     };
 
     private readonly HashSet<string> _unlockedRoomIds = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> _roomUnlockedDays = new(StringComparer.OrdinalIgnoreCase);
 
     public override void _Ready()
     {
@@ -86,6 +87,14 @@ public partial class RoomKeyProgression : Node
         PendingKeyRoomName = pendingIndex >= 0 && !_unlockedRoomIds.Contains(LockedRooms[pendingIndex].Id)
             ? LockedRooms[pendingIndex].Name
             : string.Empty;
+
+        // A legacy save has no unlock date; mark existing rooms as unlocked before today
+        // so their Guardian conversation can appear on the next available visit.
+        foreach (var room in LockedRooms)
+        {
+            if (_unlockedRoomIds.Contains(room.Id) && !_roomUnlockedDays.ContainsKey(room.Id))
+                _roomUnlockedDays[room.Id] = -1;
+        }
     }
 
     public string[] GetUnlockedRoomNames()
@@ -113,6 +122,35 @@ public partial class RoomKeyProgression : Node
 
         int index = FindRoomIndex(roomId);
         return index >= 0 && _unlockedRoomIds.Contains(LockedRooms[index].Id);
+    }
+
+    public int GetRoomUnlockedDay(string roomId)
+    {
+        int index = FindRoomIndex(roomId);
+        if (index < 0 || !_unlockedRoomIds.Contains(LockedRooms[index].Id))
+            return -1;
+
+        return _roomUnlockedDays.TryGetValue(LockedRooms[index].Id, out int day) ? day : -1;
+    }
+
+    // Used by SaveManager to preserve the day a room became available.
+    public void RestoreRoomUnlockedDay(string roomId, int day)
+    {
+        int index = FindRoomIndex(roomId);
+        if (index < 0 || !_unlockedRoomIds.Contains(LockedRooms[index].Id) || day < 1)
+            return;
+
+        _roomUnlockedDays[LockedRooms[index].Id] = day;
+    }
+
+    private void RecordRoomUnlockDay(string roomId)
+    {
+        int index = FindRoomIndex(roomId);
+        if (index < 0)
+            return;
+
+        int day = Math.Max(1, DayClock.Instance?.DayNumber ?? 1);
+        _roomUnlockedDays[LockedRooms[index].Id] = day;
     }
 
     public string QueueAssessmentKey()
@@ -187,6 +225,7 @@ public partial class RoomKeyProgression : Node
 
         string roomName = LockedRooms[index].Name;
         _unlockedRoomIds.Add(LockedRooms[index].Id);
+        RecordRoomUnlockDay(roomName);
         PendingKeyRoomName = string.Empty;
         EmitSignal(SignalName.RoomKeyEarned, 1, roomName);
         return roomName;
@@ -199,6 +238,7 @@ public partial class RoomKeyProgression : Node
             return string.Empty;
 
         string roomName = LockedRooms[index].Name;
+        RecordRoomUnlockDay(roomName);
         if (string.Equals(PendingKeyRoomName, roomName, StringComparison.OrdinalIgnoreCase))
             PendingKeyRoomName = string.Empty;
 
@@ -221,6 +261,7 @@ public partial class RoomKeyProgression : Node
     {
         HiddenPoints = 0;
         _unlockedRoomIds.Clear();
+        _roomUnlockedDays.Clear();
         PendingKeyRoomName = string.Empty;
     }
 
