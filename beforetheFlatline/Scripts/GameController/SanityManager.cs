@@ -287,7 +287,7 @@ public partial class SanityManager : Node
 
         // Do not let a stale or unavailable HUD fade block the actual ending scene.
         if (SceneTransition.Instance != null)
-            SceneTransition.Instance.ChangeSceneToFile(BadEndingScenePath);
+            SceneTransition.Instance.RequestCriticalSceneChange(BadEndingScenePath);
         else
             GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, BadEndingScenePath);
     }
