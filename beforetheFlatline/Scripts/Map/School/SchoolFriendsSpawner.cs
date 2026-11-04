@@ -347,6 +347,8 @@ public partial class SchoolFriendsSpawner : Node2D
         }
 
         actorRoot.Name = $"Friend_{definition.Name}";
+        if (_player != null && GodotObject.IsInstanceValid(_player))
+            actorRoot.Scale = _player.Scale;
         actorRoot.Position = position;
         actorRoot.ZAsRelative = false;
         AddChild(actorRoot);
@@ -359,10 +361,21 @@ public partial class SchoolFriendsSpawner : Node2D
             return;
         }
 
-        // Each scene crops a 256x128 sheet to 128x128 frames and matches the player's
-        // 1.5 root scale multiplied by the 0.23 sprite scale.
+        AnimatedSprite2D playerSprite = _player?.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
         sprite.Frame = 0;
+        sprite.Centered = playerSprite?.Centered ?? true;
         sprite.TextureFilter = CanvasItem.TextureFilterEnum.Nearest;
+
+        if (playerSprite != null)
+        {
+            Texture2D playerFrame = playerSprite.SpriteFrames?.GetFrameTexture(playerSprite.Animation, 0);
+            float playerVisibleHeight = GetOpaqueFrameHeight(playerFrame, 1, 1, 0);
+            float friendVisibleHeight = GetOpaqueFrameHeight(sprite.Texture, sprite.Hframes, sprite.Vframes, 0);
+            float scaleRatio = playerVisibleHeight > 0f && friendVisibleHeight > 0f
+                ? playerVisibleHeight / friendVisibleHeight
+                : 1f;
+            sprite.Scale = playerSprite.Scale * scaleRatio;
+        }
 
         var nameLabel = new Label
         {
@@ -370,8 +383,8 @@ public partial class SchoolFriendsSpawner : Node2D
             Text = definition.Name,
             // The character scene root is scaled to match the player (1.5x).
             // Counter-scale the name label so its font and offset stay in screen pixels.
-            Position = new Vector2(-32f, -29.333f),
-            Scale = Vector2.One / 1.5f,
+            Position = new Vector2(-48f / actorRoot.Scale.X, -44f / actorRoot.Scale.Y),
+            Scale = new Vector2(1f / actorRoot.Scale.X, 1f / actorRoot.Scale.Y),
             Size = new Vector2(96, 20),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
@@ -392,8 +405,8 @@ public partial class SchoolFriendsSpawner : Node2D
             Monitoring = true,
             Monitorable = false,
             InputPickable = false,
-            Position = new Vector2(0, -8f / 1.5f),
-            Scale = Vector2.One / 1.5f
+            Position = new Vector2(0, -8f / actorRoot.Scale.Y),
+            Scale = new Vector2(1f / actorRoot.Scale.X, 1f / actorRoot.Scale.Y)
         };
         actorRoot.AddChild(area);
         area.AddChild(new CollisionShape2D
@@ -413,6 +426,42 @@ public partial class SchoolFriendsSpawner : Node2D
         area.BodyEntered += body => OnFriendBodyEntered(friend, body);
         area.BodyExited += body => OnFriendBodyExited(friend, body);
         _friends.Add(friend);
+    }
+
+    private static float GetOpaqueFrameHeight(Texture2D texture, int horizontalFrames, int verticalFrames, int frame)
+    {
+        if (texture == null)
+            return 0f;
+
+        Image image = texture.GetImage();
+        if (image == null || image.GetWidth() <= 0 || image.GetHeight() <= 0)
+            return 0f;
+
+        int columns = Math.Max(1, horizontalFrames);
+        int rows = Math.Max(1, verticalFrames);
+        int frameWidth = image.GetWidth() / columns;
+        int frameHeight = image.GetHeight() / rows;
+        if (frameWidth <= 0 || frameHeight <= 0)
+            return 0f;
+
+        int frameX = (frame % columns) * frameWidth;
+        int frameY = (frame / columns) * frameHeight;
+        int top = frameHeight;
+        int bottom = -1;
+
+        for (int y = 0; y < frameHeight; y++)
+        {
+            for (int x = 0; x < frameWidth; x++)
+            {
+                if (image.GetPixel(frameX + x, frameY + y).A <= 0.05f)
+                    continue;
+
+                top = Math.Min(top, y);
+                bottom = Math.Max(bottom, y);
+            }
+        }
+
+        return bottom >= top ? bottom - top + 1 : 0f;
     }
 
     private void OnFriendBodyEntered(FriendActor friend, Node2D body)
