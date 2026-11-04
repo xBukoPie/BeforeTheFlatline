@@ -114,7 +114,7 @@ void fragment()
 
         // Smoothly approach each cue target. This avoids tweening nonexistent
         // shader_parameter/... properties on ShaderMaterial.
-        const float transitionSpeed = 1.8f;
+        const float transitionSpeed = 0.45f;
         _dizzinessCurrent = Mathf.MoveToward(_dizzinessCurrent, _dizzinessTarget, transitionSpeed * dt);
         _nauseaCurrent = Mathf.MoveToward(_nauseaCurrent, _nauseaTarget, transitionSpeed * dt);
         _pressureCurrent = Mathf.MoveToward(_pressureCurrent, _pressureTarget, transitionSpeed * dt);
@@ -296,6 +296,8 @@ void fragment()
     private void ApplyMemoryCue(string cue)
     {
         string normalized = (cue ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(normalized))
+            return;
 
         _dizzinessTarget = 0f;
         _nauseaTarget = 0f;
