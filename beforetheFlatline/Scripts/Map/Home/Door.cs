@@ -9,6 +9,8 @@ public partial class Door : Area2D
     [Export] public Vector2 Size { get; set; } = new Vector2(32, 12);
     [Export] public bool AutoEnter { get; set; } = false;    // true = no key press needed (e.g. walk down stairs)
     [Export] public bool RequiresSchoolHours { get; set; } = false;
+    [Export] public bool ShowLoadingScreen { get; set; } = false;
+    [Export] public string LoadingMessage { get; set; } = "Heading to school...";
     [Export] public string UnlockRoomId { get; set; } = "";
     [Export] public string LockedPrompt { get; set; } = "Locked. Score at least 30 points, then find the key in the Yard.";
     [Export] public string ClosedPrompt { get; set; } = "School is closed. Come back after sunrise.";
@@ -137,7 +139,8 @@ public partial class Door : Area2D
 
         if (instance is Node2D && instance is not Control)
         {
-            manager.GoTo(TargetRoom, TargetSpawn);
+            instance.QueueFree();
+            manager.GoTo(TargetRoom, TargetSpawn, ShowLoadingScreen, LoadingMessage);
             return;
         }
 
