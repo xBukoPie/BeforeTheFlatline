@@ -341,7 +341,7 @@ void fragment()
 
         // Keep the dialogue above the artwork but below the cover during the collapse.
         if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
-            MoveChild(_dialogue, GetChildIndex(_transitionCover));
+            MoveChild(_dialogue, _transitionCover.GetIndex());
         MoveChild(_transitionCover, GetChildCount() - 1);
         if (_transitionText != null && GodotObject.IsInstanceValid(_transitionText))
             MoveChild(_transitionText, GetChildCount() - 1);
