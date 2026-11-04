@@ -14,6 +14,7 @@ public partial class SceneTransition : CanvasLayer
     private ProgressBar _loadingProgress;
     private Label _loadingStatus;
     private bool _busy;
+    private string _queuedCriticalScenePath;
 
     public override void _Ready()
     {
@@ -48,9 +49,38 @@ public partial class SceneTransition : CanvasLayer
             Instance = null;
     }
 
+    public override void _Process(double delta)
+    {
+        if (_busy || string.IsNullOrWhiteSpace(_queuedCriticalScenePath))
+            return;
+
+        string criticalPath = _queuedCriticalScenePath;
+        _queuedCriticalScenePath = null;
+        ChangeSceneToFile(criticalPath);
+    }
+
+    // Critical endings must not be discarded just because a room transition is busy.
+    public void RequestCriticalSceneChange(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !ResourceLoader.Exists(path))
+        {
+            GD.PushError($"SceneTransition: critical scene was not found at '{path}'.");
+            return;
+        }
+
+        _queuedCriticalScenePath = path;
+        if (_busy)
+            return;
+
+        string criticalPath = _queuedCriticalScenePath;
+        _queuedCriticalScenePath = null;
+        ChangeSceneToFile(criticalPath);
+    }
+
     public async void ChangeSceneToFile(string path, float fadeDurationOverride = 0f)
     {
-        if (_busy || string.IsNullOrWhiteSpace(path))
+        if (_busy || !string.IsNullOrWhiteSpace(_queuedCriticalScenePath) ||
+            string.IsNullOrWhiteSpace(path))
             return;
 
         if (!ResourceLoader.Exists(path))
@@ -90,7 +120,8 @@ public partial class SceneTransition : CanvasLayer
     // Loads a scene while showing progress..
     public async Task<bool> LoadSceneWithLoadingScreen(string path)
     {
-        if (_busy || string.IsNullOrWhiteSpace(path))
+        if (_busy || !string.IsNullOrWhiteSpace(_queuedCriticalScenePath) ||
+            string.IsNullOrWhiteSpace(path))
             return false;
 
         if (!ResourceLoader.Exists(path))
@@ -186,7 +217,8 @@ public partial class SceneTransition : CanvasLayer
         string statusMessage = "Heading to school...",
         double minimumDisplaySeconds = 1.35)
     {
-        if (_busy || transitionAction == null)
+        if (_busy || !string.IsNullOrWhiteSpace(_queuedCriticalScenePath) ||
+            transitionAction == null)
             return false;
 
         _busy = true;
