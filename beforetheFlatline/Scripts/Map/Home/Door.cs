@@ -42,6 +42,11 @@ public partial class Door : Area2D
         BodyExited += OnBodyExited;
     }
 
+    public override void _ExitTree()
+    {
+        InteractionPromptManager.Instance?.HidePrompt(this);
+    }
+
     public override void _Process(double delta)
     {
         if (_closedPromptRemaining <= 0f)
