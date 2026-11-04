@@ -339,10 +339,12 @@ void fragment()
         _transitionCover.Visible = true;
         _transitionText.Visible = false;
 
-        // The dialogue is a sibling of the cover. Draw it first so the cover fades over it.
+        // Keep the dialogue above the artwork but below the cover during the collapse.
         if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
-            MoveChild(_dialogue, 0);
+            MoveChild(_dialogue, GetChildIndex(_transitionCover));
         MoveChild(_transitionCover, GetChildCount() - 1);
+        if (_transitionText != null && GodotObject.IsInstanceValid(_transitionText))
+            MoveChild(_transitionText, GetChildCount() - 1);
         _transitionCover.Modulate = new Color(1f, 1f, 1f, 0f);
 
         Tween fadeToBlack = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
