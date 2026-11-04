@@ -172,6 +172,8 @@ TargetSpawn = "FromHome"
 Prompt = "School"
 Size = Vector2(30, 62)
 RequiresSchoolHours = true
+ShowLoadingScreen = true
+LoadingMessage = "The walk to school..."
 ClosedPrompt = "Too late for school today. Come back tomorrow morning."
 
 [node name="GroundKeyPickup" parent="." unique_id=953442134 instance=ExtResource("5_key_pickup")]
