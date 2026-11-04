@@ -14,6 +14,8 @@ public partial class AudioManager : Node
     public static AudioManager Instance { get; private set; }
 
     private const string SoundRoot = "res://Assets/Sounds/";
+    private const string MusicBusName = "Music";
+    private const string EffectsBusName = "Effects";
     private const float MusicVolumeDb = -9f;
     private const float MusicSilentDb = -60f;
     private const double CrossfadeSeconds = 1.6;
@@ -44,6 +46,9 @@ public partial class AudioManager : Node
         Instance = this;
         ProcessMode = ProcessModeEnum.Always;
 
+        EnsureAudioBus(MusicBusName);
+        EnsureAudioBus(EffectsBusName);
+
         _musicA = CreateMusicPlayer("MusicPlayerA");
         _musicB = CreateMusicPlayer("MusicPlayerB");
         _musicA.Finished += () => OnMusicFinished(_musicA);
@@ -55,6 +60,7 @@ public partial class AudioManager : Node
             {
                 Name = $"SfxPlayer_{i + 1}",
                 ProcessMode = ProcessModeEnum.Always,
+                Bus = EffectsBusName,
                 VolumeDb = 0f
             };
             AddChild(player);
@@ -65,6 +71,10 @@ public partial class AudioManager : Node
         _menuTrackTwo = LoadSound("Menu/Menu2.mp3");
         _dayTrack = LoadSound("Game/dayTime.mp3");
         _nightTrack = LoadSound("Game/nightTime.mp3");
+
+        ApplyVolumeSettings(
+            SettingsManager.Instance?.MusicVolume ?? 0.8f,
+            SettingsManager.Instance?.EffectsVolume ?? 0.85f);
 
         if (DayClock.Instance != null)
             DayClock.Instance.TimeChanged += OnTimeChanged;
@@ -93,6 +103,34 @@ public partial class AudioManager : Node
 
         if (_activeMusicPlayer.GetPlaybackPosition() >= length - CrossfadeSeconds)
             AdvanceMenuTrack();
+    }
+
+    public void ApplyVolumeSettings(float musicVolume, float effectsVolume)
+    {
+        ApplyBusVolume(MusicBusName, musicVolume);
+        ApplyBusVolume(EffectsBusName, effectsVolume);
+    }
+
+    private static void EnsureAudioBus(string busName)
+    {
+        if (AudioServer.GetBusIndex(busName) >= 0)
+            return;
+
+        AudioServer.AddBus(-1);
+        int busIndex = AudioServer.BusCount - 1;
+        AudioServer.SetBusName(busIndex, busName);
+    }
+
+    private static void ApplyBusVolume(string busName, float volume)
+    {
+        int busIndex = AudioServer.GetBusIndex(busName);
+        if (busIndex < 0)
+            return;
+
+        float normalized = Mathf.Clamp(volume, 0f, 1f);
+        bool muted = normalized <= 0.001f;
+        AudioServer.SetBusMute(busIndex, muted);
+        AudioServer.SetBusVolumeDb(busIndex, muted ? -80f : Mathf.LinearToDb(normalized));
     }
 
     public void PlayMenuMusic()
@@ -156,6 +194,7 @@ public partial class AudioManager : Node
         {
             Name = playerName,
             ProcessMode = ProcessModeEnum.Always,
+            Bus = MusicBusName,
             VolumeDb = MusicSilentDb
         };
         AddChild(player);
