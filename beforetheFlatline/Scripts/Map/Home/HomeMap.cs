@@ -37,6 +37,11 @@ public partial class HomeMap : Node2D
         }
 	}
 
+    public override void _Process(double delta)
+    {
+        ApplyTimeOfDayLighting();
+    }
+
     public override void _ExitTree()
     {
         if (DayClock.Instance != null)
@@ -49,13 +54,11 @@ public partial class HomeMap : Node2D
             SetNight(DayClock.Instance.IsNight);
     }
 
-	public void SetNight(bool night)
-	{
-		IsNight = night;
-		_ambient.Color = night ? NightColor : DayColor;
-		_lights.Visible = night;   // lamps only at night
-		UpdateSun();
-	}
+    public void SetNight(bool night)
+    {
+        IsNight = night;
+        ApplyTimeOfDayLighting();
+    }
 
 	private void SetInside(bool inside)
 	{
@@ -65,12 +68,48 @@ public partial class HomeMap : Node2D
                 int amount = (int)Mathf.Floor(GD.Randi() % 10) + 1;
                 _sanityManager?.Recover(amount);
             }
-		UpdateSun();
+		ApplyTimeOfDayLighting();
 	}
 
-	private void UpdateSun()
-	{
-		float energy = IsNight ? 0f : DaySunEnergy;
-		_sun.Energy = _insideHouse ? energy * IndoorSunFactor : energy;
-	}
+    private void ApplyTimeOfDayLighting()
+    {
+        if (_ambient == null || _sun == null || _lights == null)
+            return;
+
+        float hour = DayClock.Instance?.Hour ?? 8f;
+        float daylight = CalculateDaylightBlend(hour);
+        float nightBlend = 1f - daylight;
+
+        _ambient.Color = NightColor.Lerp(DayColor, daylight);
+        _sun.Energy = DaySunEnergy * daylight * (_insideHouse ? IndoorSunFactor : 1f);
+        _lights.Visible = nightBlend > 0.005f;
+        ApplyLightEnergy(_lights, nightBlend);
+    }
+
+    private static float CalculateDaylightBlend(float hour)
+    {
+        float dawn = Mathf.Clamp((hour - 5f) / 3f, 0f, 1f);
+        dawn = dawn * dawn * (3f - 2f * dawn);
+
+        float dusk = Mathf.Clamp((hour - 16.5f) / 4f, 0f, 1f);
+        dusk = dusk * dusk * (3f - 2f * dusk);
+        return Mathf.Clamp(Mathf.Min(dawn, 1f - dusk), 0f, 1f);
+    }
+
+    private void ApplyLightEnergy(Node node, float nightBlend)
+    {
+        foreach (Node child in node.GetChildren())
+        {
+            if (child is Light2D light)
+            {
+                if (!light.HasMeta("day_night_base_energy"))
+                    light.SetMeta("day_night_base_energy", light.Energy);
+
+                float baseEnergy = (float)light.GetMeta("day_night_base_energy").AsDouble();
+                light.Energy = baseEnergy * nightBlend;
+            }
+
+            ApplyLightEnergy(child, nightBlend);
+        }
+    }
 }
