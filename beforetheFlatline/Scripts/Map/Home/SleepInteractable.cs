@@ -141,6 +141,13 @@ public partial class SleepInteractable : Area2D
                 return;
 
             slept = DayClock.Instance?.SleepUntilSchoolMorning() == true;
+
+            Tween firstMessageOut = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+            firstMessageOut.TweenProperty(message, "modulate:a", 0f, 0.28f)
+                .SetTrans(Tween.TransitionType.Sine)
+                .SetEase(Tween.EaseType.InOut);
+            await ToSignal(firstMessageOut, Tween.SignalName.Finished);
+
             if (slept)
             {
                 if (DayClock.Instance != null)
@@ -154,7 +161,7 @@ public partial class SleepInteractable : Area2D
             }
 
             Tween wakeMessageIn = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
-            wakeMessageIn.TweenProperty(message, "modulate:a", 1f, 0.45f)
+            wakeMessageIn.TweenProperty(message, "modulate:a", 1f, 0.55f)
                 .SetTrans(Tween.TransitionType.Sine)
                 .SetEase(Tween.EaseType.InOut);
             await ToSignal(wakeMessageIn, Tween.SignalName.Finished);
