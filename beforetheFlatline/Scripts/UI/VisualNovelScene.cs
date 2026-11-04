@@ -344,7 +344,7 @@ public partial class VisualNovelScene : Control
         _choiceBackdrop.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color(0.035f, 0.028f, 0.055f, 0.84f),
-            BorderColor = new Color("b6a3d8", 0.78f),
+            BorderColor = new Color(0.71f, 0.64f, 0.85f, 0.78f),
             BorderWidthLeft = 1,
             BorderWidthRight = 1,
             BorderWidthTop = 1,
