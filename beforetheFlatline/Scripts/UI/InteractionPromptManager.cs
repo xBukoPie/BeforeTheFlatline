@@ -130,10 +130,10 @@ public partial class InteractionPromptManager : Node
         _stack.AnchorRight = 0.5f;
         _stack.AnchorTop = 1f;
         _stack.AnchorBottom = 1f;
-        _stack.OffsetLeft = -440f;
-        _stack.OffsetRight = 440f;
-        _stack.OffsetTop = -190f;
-        _stack.OffsetBottom = -68f;
+        _stack.OffsetLeft = -410f;
+        _stack.OffsetRight = 410f;
+        _stack.OffsetTop = -294f;
+        _stack.OffsetBottom = -54f;
         _stack.AddThemeConstantOverride("separation", 6);
         _root.AddChild(_stack);
     }
@@ -169,7 +169,8 @@ public partial class InteractionPromptManager : Node
         var panel = new PanelContainer
         {
             MouseFilter = Control.MouseFilterEnum.Ignore,
-            SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter
+            SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
+            CustomMinimumSize = new Vector2(680, 40)
         };
         panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
@@ -194,7 +195,7 @@ public partial class InteractionPromptManager : Node
         {
             Text = text,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            CustomMinimumSize = new Vector2(320, 24),
+            CustomMinimumSize = new Vector2(620, 24),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             MouseFilter = Control.MouseFilterEnum.Ignore
@@ -210,7 +211,7 @@ public partial class InteractionPromptManager : Node
         {
             MouseFilter = Control.MouseFilterEnum.Ignore,
             SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
-            CustomMinimumSize = new Vector2(0, primary ? 40 : 32)
+            CustomMinimumSize = new Vector2(680, primary ? 44 : 36)
         };
         panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
@@ -277,8 +278,8 @@ public partial class InteractionPromptManager : Node
         {
             Text = text,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            CustomMinimumSize = new Vector2(0, primary ? 24 : 20),
-            SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
+            CustomMinimumSize = new Vector2(560, primary ? 24 : 20),
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             VerticalAlignment = VerticalAlignment.Center,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
