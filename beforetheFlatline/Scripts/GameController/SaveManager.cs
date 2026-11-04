@@ -131,10 +131,10 @@ public partial class SaveManager : Node
         _writingAutosave = true;
         try
         {
-                bool saved = WriteSave(GetAutoSavePath(), 0, true);
-                if (saved)
-                    _autosaveElapsed = 0;
-                return saved;
+            bool saved = WriteSave(GetAutoSavePath(), 0, true);
+            if (saved)
+                _autosaveElapsed = 0;
+            return saved;
         }
         finally
         {
@@ -262,106 +262,106 @@ public partial class SaveManager : Node
         _loadingSnapshot = true;
         try
         {
-        float x = ReadFloat(data, "player_x", 0f);
-        float y = ReadFloat(data, "player_y", 0f);
-        int day = Mathf.Max(1, ReadInt(data, "day", 1));
-        float hour = ReadFloat(data, "hour", 8f);
-        bool schoolStarted = ReadBool(data, "school_started", false);
-        bool schoolCompleted = ReadBool(data, "school_completed", false);
+            float x = ReadFloat(data, "player_x", 0f);
+            float y = ReadFloat(data, "player_y", 0f);
+            int day = Mathf.Max(1, ReadInt(data, "day", 1));
+            float hour = ReadFloat(data, "hour", 8f);
+            bool schoolStarted = ReadBool(data, "school_started", false);
+            bool schoolCompleted = ReadBool(data, "school_completed", false);
 
-        var sanityState = ReadDictionary(data, "sanity_state");
-        var keyState = ReadDictionary(data, "room_keys");
-        var challengeState = ReadDictionary(data, "challenge_progress");
-        var friendInteractionState = ReadDictionary(data, "school_friend_interactions");
-        var friendSpawnState = ReadDictionary(data, "school_friend_spawn_plan");
-        var storyState = ReadDictionary(data, "story_progress");
+            var sanityState = ReadDictionary(data, "sanity_state");
+            var keyState = ReadDictionary(data, "room_keys");
+            var challengeState = ReadDictionary(data, "challenge_progress");
+            var friendInteractionState = ReadDictionary(data, "school_friend_interactions");
+            var friendSpawnState = ReadDictionary(data, "school_friend_spawn_plan");
+            var storyState = ReadDictionary(data, "story_progress");
 
-        DayClock.Instance?.RestoreState(day, hour, true, schoolStarted, schoolCompleted);
-        SchoolFriendInteractionHistory.RestoreFromSaveData(friendInteractionState);
-        SchoolFriendSpawnHistory.RestoreFromSaveData(friendSpawnState, day, schoolCompleted);
-        StoryProgression.Instance?.RestoreFromSaveData(storyState);
-        DayClock.Instance?.RestoreFirstDayMysteryState(
-            ReadBool(data, "mystery_encounter_seen", false),
-            ReadBool(data, "first_day_special_greeting_pending", false));
-        int keysToRestore = Mathf.Max(0, ReadInt(keyState, "keys_earned", 0));
-        string pendingKeyRoom = ReadString(keyState, "pending_key_room", string.Empty);
-        bool hasExplicitUnlockedRooms = keyState.ContainsKey("unlocked_rooms") &&
-            keyState["unlocked_rooms"].VariantType == Variant.Type.Array;
-        string[] unlockedRoomIds = ReadStringArray(keyState, "unlocked_rooms");
+            DayClock.Instance?.RestoreState(day, hour, true, schoolStarted, schoolCompleted);
+            SchoolFriendInteractionHistory.RestoreFromSaveData(friendInteractionState);
+            SchoolFriendSpawnHistory.RestoreFromSaveData(friendSpawnState, day, schoolCompleted);
+            StoryProgression.Instance?.RestoreFromSaveData(storyState);
+            DayClock.Instance?.RestoreFirstDayMysteryState(
+                ReadBool(data, "mystery_encounter_seen", false),
+                ReadBool(data, "first_day_special_greeting_pending", false));
+            int keysToRestore = Mathf.Max(0, ReadInt(keyState, "keys_earned", 0));
+            string pendingKeyRoom = ReadString(keyState, "pending_key_room", string.Empty);
+            bool hasExplicitUnlockedRooms = keyState.ContainsKey("unlocked_rooms") &&
+                keyState["unlocked_rooms"].VariantType == Variant.Type.Array;
+            string[] unlockedRoomIds = ReadStringArray(keyState, "unlocked_rooms");
 
-        if (data.ContainsKey("challenge_progress"))
-        {
-            int passedAssessments = CountPassedAssessmentDays(challengeState);
-            if (!hasExplicitUnlockedRooms)
+            if (data.ContainsKey("challenge_progress"))
             {
-                int validKeys = Math.Min(keysToRestore, passedAssessments);
-                if (validKeys < keysToRestore)
-                    GD.PushWarning($"SaveManager: ignored {keysToRestore - validKeys} room key(s) without a matching passed assessment.");
-                keysToRestore = validKeys;
+                int passedAssessments = CountPassedAssessmentDays(challengeState);
+                if (!hasExplicitUnlockedRooms)
+                {
+                    int validKeys = Math.Min(keysToRestore, passedAssessments);
+                    if (validKeys < keysToRestore)
+                        GD.PushWarning($"SaveManager: ignored {keysToRestore - validKeys} room key(s) without a matching passed assessment.");
+                    keysToRestore = validKeys;
 
-                if (passedAssessments <= keysToRestore)
+                    if (passedAssessments <= keysToRestore)
+                        pendingKeyRoom = string.Empty;
+                }
+                else if (passedAssessments == 0)
+                {
                     pendingKeyRoom = string.Empty;
+                }
             }
-            else if (passedAssessments == 0)
+
+            RoomKeyProgression.Instance?.RestoreProgress(
+                ReadInt(keyState, "hidden_points", 0),
+                keysToRestore,
+                pendingKeyRoom,
+                hasExplicitUnlockedRooms ? unlockedRoomIds : null);
+            RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Kitchen", ReadInt(keyState, "kitchen_unlocked_day", -1));
+            RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Laundry", ReadInt(keyState, "laundry_unlocked_day", -1));
+            RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Bathroom", ReadInt(keyState, "bathroom_unlocked_day", -1));
+            RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("MasterBedroom", ReadInt(keyState, "master_bedroom_unlocked_day", -1));
+            ChallengeProgress.RestoreFromSaveData(challengeState);
+
+            RoomManager.RequestStartRoomOnNextLoad(roomPath, "startSpawn");
+            if (savedRoomExists)
+                RoomManager.RequestPlayerPositionOnNextLoad(new Vector2(x, y));
+
+            PauseMenuController.Instance?.PrepareForExternalLoad();
+            if (DayClock.Instance != null)
+                DayClock.Instance.Running = false;
+
+            if (SceneTransition.Instance != null)
             {
-                pendingKeyRoom = string.Empty;
+                bool loaded = await SceneTransition.Instance.LoadSceneWithLoadingScreen(WorldScenePath);
+                if (!loaded)
+                {
+                    if (DayClock.Instance != null)
+                        DayClock.Instance.Running = GetTree().CurrentScene?.SceneFilePath == WorldScenePath;
+                    return false;
+                }
             }
-        }
-
-        RoomKeyProgression.Instance?.RestoreProgress(
-            ReadInt(keyState, "hidden_points", 0),
-            keysToRestore,
-            pendingKeyRoom,
-            hasExplicitUnlockedRooms ? unlockedRoomIds : null);
-        RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Kitchen", ReadInt(keyState, "kitchen_unlocked_day", -1));
-        RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Laundry", ReadInt(keyState, "laundry_unlocked_day", -1));
-        RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Bathroom", ReadInt(keyState, "bathroom_unlocked_day", -1));
-        RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("MasterBedroom", ReadInt(keyState, "master_bedroom_unlocked_day", -1));
-        ChallengeProgress.RestoreFromSaveData(challengeState);
-
-        RoomManager.RequestStartRoomOnNextLoad(roomPath, "startSpawn");
-        if (savedRoomExists)
-            RoomManager.RequestPlayerPositionOnNextLoad(new Vector2(x, y));
-
-        PauseMenuController.Instance?.PrepareForExternalLoad();
-        if (DayClock.Instance != null)
-            DayClock.Instance.Running = false;
-
-        if (SceneTransition.Instance != null)
-        {
-            bool loaded = await SceneTransition.Instance.LoadSceneWithLoadingScreen(WorldScenePath);
-            if (!loaded)
+            else
             {
-                if (DayClock.Instance != null)
-                    DayClock.Instance.Running = GetTree().CurrentScene?.SceneFilePath == WorldScenePath;
-                return false;
+                Error result = GetTree().ChangeSceneToFile(WorldScenePath);
+                if (result != Error.Ok)
+                {
+                    GD.PushError($"SaveManager: failed to return to the saved world ({result}).");
+                    return false;
+                }
+
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             }
-        }
-        else
-        {
-            Error result = GetTree().ChangeSceneToFile(WorldScenePath);
-            if (result != Error.Ok)
+
+            // Re-sync HUD state after the world and room have finished loading.
+            // If the save captured zero sanity, trigger the ending only now to avoid racing
+            // the transition from the menu into the saved world.
+            if (SanityManager.Instance != null)
             {
-                GD.PushError($"SaveManager: failed to return to the saved world ({result}).");
-                return false;
+                // Apply this after the world is active so room-entry autosaves cannot overwrite the snapshot.
+                // Empty state dictionaries are treated as legacy saves with default sanity.
+                SanityManager.Instance.RestoreFromSaveData(sanityState);
+                SanityManager.Instance.CheckForBadEndingAfterLoad();
             }
 
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-        }
-
-        // Re-sync HUD state after the world and room have finished loading.
-        // If the save captured zero sanity, trigger the ending only now to avoid racing
-        // the transition from the menu into the saved world.
-        if (SanityManager.Instance != null)
-        {
-            // Apply this after the world is active so room-entry autosaves cannot overwrite the snapshot.
-            // Empty state dictionaries are treated as legacy saves with default sanity.
-            SanityManager.Instance.RestoreFromSaveData(sanityState);
-            SanityManager.Instance.CheckForBadEndingAfterLoad();
-        }
-
-        _autosaveElapsed = 0;
-        return true;
+            _autosaveElapsed = 0;
+            return true;
         }
         finally
         {
