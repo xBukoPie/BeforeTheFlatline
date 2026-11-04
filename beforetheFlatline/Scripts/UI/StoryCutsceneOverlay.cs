@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using SchoolYardGame;
 
 public sealed record StoryCutsceneBeat(
@@ -68,6 +69,7 @@ void fragment()
     private VisualNovelScene _dialogue;
     private Tween _artTween;
     private Tween _masterBedroomBeatTween;
+    private bool _masterBedroomBeatNeedsReveal;
 
     // Shader uniforms are not ordinary Godot properties, so animate their values
     // in _Process and push them through ShaderMaterial.SetShaderParameter().
@@ -144,6 +146,7 @@ void fragment()
     {
         if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
         {
+            _dialogue.BeforeLinePresentationAsync = null;
             _dialogue.LinePresented -= OnLinePresented;
             _dialogue.DialogueFinished -= OnDialogueFinished;
             _dialogue.SetMemoryTransitionBlocked(false);
@@ -320,6 +323,7 @@ void fragment()
             _dialogue.CharsPerSecond = 30f;
         _dialogue.PlayDemoOnReady = false;
         _dialogue.LoopDemo = false;
+        _dialogue.BeforeLinePresentationAsync = PrepareMasterBedroomBeatTransitionAsync;
         _dialogue.LinePresented += OnLinePresented;
         _dialogue.DialogueFinished += OnDialogueFinished;
         AddChild(_dialogue);
@@ -352,19 +356,27 @@ void fragment()
             string.Equals(beat.EffectCue, "collapse", StringComparison.OrdinalIgnoreCase);
         bool beginCollapse = collapseCue && !_collapseTransitionPlayed;
 
-        if (_isEnding && index > 0 && !beginCollapse)
-            TransitionMasterBedroomBeat(beat.ImagePath);
-        else
+        if (_isEnding && index == 0)
             SetArtwork(beat.ImagePath);
+
+        if (_masterBedroomBeatNeedsReveal)
+            RevealMasterBedroomBeat();
 
         ApplyMemoryCue(beat.EffectCue);
         if (beginCollapse)
             PlayCollapseTransition();
     }
 
-    private void TransitionMasterBedroomBeat(string imagePath)
+    private async Task PrepareMasterBedroomBeatTransitionAsync(int index, DialogueLine line)
     {
-        if (_finished || _art == null || !GodotObject.IsInstanceValid(_art))
+        if (!_isEnding || index <= 0 || index >= _beats.Count || _finished)
+            return;
+
+        StoryCutsceneBeat beat = _beats[index];
+        bool collapseCue =
+            string.Equals(beat.EffectCue, "blackout", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(beat.EffectCue, "collapse", StringComparison.OrdinalIgnoreCase);
+        if (collapseCue && !_collapseTransitionPlayed)
             return;
 
         if (_masterBedroomBeatTween != null && _masterBedroomBeatTween.IsValid())
@@ -373,28 +385,44 @@ void fragment()
             _artTween.Kill();
 
         Control dialogueUi = _dialogue?.DialogueInterfaceRoot;
-        if (dialogueUi == null || !GodotObject.IsInstanceValid(dialogueUi))
+        if (_art == null || !GodotObject.IsInstanceValid(_art) ||
+            dialogueUi == null || !GodotObject.IsInstanceValid(dialogueUi))
             return;
 
         _dialogue.SetMemoryTransitionBlocked(true);
+        _masterBedroomBeatTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 0f, 0.38f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        _masterBedroomBeatTween.Parallel().TweenProperty(dialogueUi, "modulate:a", 0f, 0.38f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+
+        await ToSignal(_masterBedroomBeatTween, Tween.SignalName.Finished);
+        if (_finished || !IsInsideTree())
+            return;
+
+        SetArtworkImmediately(beat.ImagePath);
+        _masterBedroomBeatNeedsReveal = true;
+    }
+
+    private void RevealMasterBedroomBeat()
+    {
+        _masterBedroomBeatNeedsReveal = false;
+        if (_finished || _art == null || !GodotObject.IsInstanceValid(_art))
+            return;
+
+        Control dialogueUi = _dialogue?.DialogueInterfaceRoot;
+        if (dialogueUi == null || !GodotObject.IsInstanceValid(dialogueUi))
+            return;
 
         _masterBedroomBeatTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
-        _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 0f, 0.36f)
-            .SetTrans(Tween.TransitionType.Sine)
-            .SetEase(Tween.EaseType.InOut);
-        _masterBedroomBeatTween.Parallel().TweenProperty(dialogueUi, "modulate:a", 0f, 0.36f)
-            .SetTrans(Tween.TransitionType.Sine)
-            .SetEase(Tween.EaseType.InOut);
-
-        _masterBedroomBeatTween.TweenCallback(Callable.From(() => SetArtworkImmediately(imagePath)));
-
         _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 1f, 0.62f)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
         _masterBedroomBeatTween.Parallel().TweenProperty(dialogueUi, "modulate:a", 1f, 0.62f)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
-
         _masterBedroomBeatTween.Finished += OnMasterBedroomBeatTransitionFinished;
     }
 
@@ -430,6 +458,7 @@ void fragment()
 
         _collapseTransitionRunning = true;
         _collapseTransitionPlayed = true;
+        _dialogue?.SetMemoryTransitionBlocked(true);
         _transitionCover.Visible = true;
         _transitionText.Visible = false;
 
@@ -464,7 +493,10 @@ void fragment()
             _transitionCover.Visible = false;
         if (!_finished && dialogueWasVisible &&
             _dialogue != null && GodotObject.IsInstanceValid(_dialogue))
+        {
             _dialogue.SetPresentationVisible(true);
+            _dialogue.SetMemoryTransitionBlocked(false);
+        }
         _collapseTransitionRunning = false;
     }
 
