@@ -50,6 +50,7 @@ void fragment()
     private Action _onFinished;
     private bool _isEnding;
     private bool _finished;
+    private bool _worldStateRestored;
     private bool _previousTreePaused;
     private bool _previousClockRunning;
     private double _elapsed;
@@ -340,9 +341,12 @@ void fragment()
         _transitionCover.Visible = true;
         _transitionText.Visible = false;
 
-        // Keep the dialogue above the artwork but below the cover during the collapse.
+        // Hide dialogue UI during the collapse so the transition cover can cover the full frame.
+        bool dialogueWasVisible = _dialogue != null &&
+            GodotObject.IsInstanceValid(_dialogue) && _dialogue.IsVisibleInTree();
         if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
-            MoveChild(_dialogue, _transitionCover.GetIndex());
+            _dialogue.SetPresentationVisible(false);
+
         MoveChild(_transitionCover, GetChildCount() - 1);
         if (_transitionText != null && GodotObject.IsInstanceValid(_transitionText))
             MoveChild(_transitionText, GetChildCount() - 1);
@@ -366,6 +370,9 @@ void fragment()
 
         if (GodotObject.IsInstanceValid(_transitionCover))
             _transitionCover.Visible = false;
+        if (!_finished && dialogueWasVisible &&
+            _dialogue != null && GodotObject.IsInstanceValid(_dialogue))
+            _dialogue.SetPresentationVisible(true);
         _collapseTransitionRunning = false;
     }
 
@@ -462,6 +469,18 @@ void fragment()
 
     private void OnDialogueFinished() => Finish();
 
+    private void RestoreWorldState()
+    {
+        if (_worldStateRestored)
+            return;
+
+        _worldStateRestored = true;
+        GetTree().Paused = _previousTreePaused;
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = _previousClockRunning;
+        StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
+    }
+
     private async void Finish()
     {
         if (_finished)
@@ -496,13 +515,19 @@ void fragment()
         if (!IsInsideTree())
             return;
 
-        if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
-            _dialogue.Visible = false;
+        // Remove the memory artwork before revealing the live room. Otherwise
+        // fading the cover exposes the memory image again, then QueueFree snaps to gameplay.
+        foreach (Node child in GetChildren())
+        {
+            if (child == _transitionCover)
+                continue;
 
-        GetTree().Paused = _previousTreePaused;
-        if (DayClock.Instance != null)
-            DayClock.Instance.Running = _previousClockRunning;
-        StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
+            if (child is CanvasItem visual)
+                visual.Visible = false;
+        }
+
+        if (_isEnding)
+            RestoreWorldState();
 
         Action callback = _onFinished;
         _onFinished = null;
@@ -524,6 +549,7 @@ void fragment()
             await ToSignal(revealRoom, Tween.SignalName.Finished);
         }
 
+        RestoreWorldState();
         if (IsInsideTree())
             QueueFree();
     }
