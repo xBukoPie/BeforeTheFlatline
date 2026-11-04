@@ -72,6 +72,10 @@ public partial class StoryProgression : Node
         if (stage < 1 || stage > 3 || HasSeenGuardianStage(stage))
             return false;
 
+        // The draft ends Guardian conversations once the Master Bedroom is unlocked.
+        if (RoomKeyProgression.Instance?.IsRoomUnlocked("MasterBedroom") == true)
+            return false;
+
         if (stage > 1 && !HasSeenGuardianStage(stage - 1))
             return false;
 
