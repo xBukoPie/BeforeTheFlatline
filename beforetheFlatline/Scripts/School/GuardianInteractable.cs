@@ -231,6 +231,7 @@ public partial class GuardianInteractable : Node2D
         _dialogue.PlayDemoOnReady = false;
         _dialogue.LoopDemo = false;
         _dialogue.ShowBackground = false;
+        _dialogue.ShowPlaceholders = false;
         _dialogue.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         _dialogueLayer.AddChild(_dialogue);
         _dialogue.SetPortrait(DialogueSide.Left, null);
