@@ -90,8 +90,7 @@ public partial class VisualNovelScene : Control
         if (CompactChoiceMode)
             ApplyMemoryDialogueTheme();
 
-        if (!ShowBackground)
-            StatusEffectsOverlay.Instance?.SetCinematicVignette(this, true);
+        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, true);
 
         _autoButton = GetNode<Button>("%AutoButton");
         _skipButton = GetNode<Button>("%SkipButton");
