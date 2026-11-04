@@ -5,6 +5,7 @@ using SchoolYardGame;
 public partial class FirstDayMysteryIntro : Control
 {
     private const string PortraitPath = "res://Assets/Characters/Mysterious.png";
+    private const string HallwayBackgroundPath = "res://Assets/Map/School/schoolHallway.jpg";
 
     public Door DoorToContinue { get; set; }
 
@@ -14,6 +15,7 @@ public partial class FirstDayMysteryIntro : Control
     public override void _Ready()
     {
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        BuildHallwayBackground();
         _dialogue = GetNode<VisualNovelScene>("%MysteryDialogue");
         _dialogue.PlayDemoOnReady = false;
         _dialogue.LoopDemo = false;
@@ -28,6 +30,29 @@ public partial class FirstDayMysteryIntro : Control
 
         _dialogue.DialogueFinished += OnDialogueFinished;
         _dialogue.StartDialogue(BuildLines());
+    }
+
+    private void BuildHallwayBackground()
+    {
+        Texture2D texture = GD.Load<Texture2D>(HallwayBackgroundPath);
+        if (texture == null)
+        {
+            GD.PushWarning($"FirstDayMysteryIntro: hallway background not found at '{HallwayBackgroundPath}'.");
+            return;
+        }
+
+        var background = new TextureRect
+        {
+            Name = "HallwayBackground",
+            Texture = texture,
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+            TextureFilter = CanvasItem.TextureFilterEnum.Linear,
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
+        background.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        AddChild(background);
+        MoveChild(background, 0);
     }
 
     public override void _ExitTree()
