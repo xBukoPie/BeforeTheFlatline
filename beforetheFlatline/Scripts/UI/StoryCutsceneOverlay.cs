@@ -59,7 +59,6 @@ void fragment()
     private ShaderMaterial _artMaterial;
     private VisualNovelScene _dialogue;
     private Tween _artTween;
-    private Control _introLayer;
 
     // Shader uniforms are not ordinary Godot properties, so animate their values
     // in _Process and push them through ShaderMaterial.SetShaderParameter().
@@ -100,7 +99,12 @@ void fragment()
         StatusEffectsOverlay.Instance?.SetPauseMenuVisible(true);
         GetTree().Paused = true;
         BuildBackdrop();
-        PlayMemoryOpening();
+        if (_beats.Count > 0)
+        {
+            SetArtwork(_beats[0].ImagePath);
+            ApplyMemoryCue(_beats[0].EffectCue);
+        }
+        StartDialogue();
     }
 
     public override void _Process(double delta)
@@ -180,95 +184,6 @@ void fragment()
         };
         edgeShade.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(edgeShade);
-    }
-
-    private async void PlayMemoryOpening()
-    {
-        _introLayer = new Control
-        {
-            Name = "MemoryOpeningTransition",
-            MouseFilter = Control.MouseFilterEnum.Stop
-        };
-        _introLayer.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        AddChild(_introLayer);
-
-        var veil = new ColorRect
-        {
-            Color = new Color("030309"),
-            MouseFilter = Control.MouseFilterEnum.Ignore
-        };
-        veil.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        _introLayer.AddChild(veil);
-
-        var center = new CenterContainer();
-        center.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        _introLayer.AddChild(center);
-
-        var stack = new VBoxContainer();
-        stack.Alignment = BoxContainer.AlignmentMode.Center;
-        stack.AddThemeConstantOverride("separation", 18);
-        stack.CustomMinimumSize = new Vector2(760, 180);
-        center.AddChild(stack);
-
-        var eyebrow = new Label
-        {
-            Text = _heading.ToUpperInvariant(),
-            HorizontalAlignment = HorizontalAlignment.Center,
-            Modulate = new Color(1f, 1f, 1f, 0f)
-        };
-        eyebrow.AddThemeFontSizeOverride("font_size", 15);
-        eyebrow.AddThemeColorOverride("font_color", new Color("c5a7f2"));
-        stack.AddChild(eyebrow);
-
-        var title = new Label
-        {
-            Text = "MEMORY COMES FLOODING YOUR HEAD.",
-            HorizontalAlignment = HorizontalAlignment.Center,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            Modulate = new Color(1f, 1f, 1f, 0f)
-        };
-        title.AddThemeFontSizeOverride("font_size", 34);
-        title.AddThemeColorOverride("font_color", new Color("f5ebff"));
-        title.AddThemeColorOverride("font_outline_color", Colors.Black);
-        title.AddThemeConstantOverride("outline_size", 3);
-        stack.AddChild(title);
-
-        var subtitle = new Label
-        {
-            Text = _isEnding
-                ? "The final memory is waiting on the other side."
-                : "The photograph pulls you into something you thought you had forgotten.",
-            HorizontalAlignment = HorizontalAlignment.Center,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            Modulate = new Color(1f, 1f, 1f, 0f)
-        };
-        subtitle.AddThemeFontSizeOverride("font_size", 18);
-        subtitle.AddThemeColorOverride("font_color", new Color("b9b1c8"));
-        stack.AddChild(subtitle);
-
-        var tween = CreateTween();
-        tween.TweenProperty(eyebrow, "modulate:a", 1f, 0.55)
-            .SetTrans(Tween.TransitionType.Sine)
-            .SetEase(Tween.EaseType.Out);
-        tween.TweenProperty(title, "modulate:a", 1f, 0.75)
-            .SetTrans(Tween.TransitionType.Sine)
-            .SetEase(Tween.EaseType.Out);
-        tween.TweenInterval(0.7);
-        tween.TweenProperty(subtitle, "modulate:a", 1f, 0.7)
-            .SetTrans(Tween.TransitionType.Sine)
-            .SetEase(Tween.EaseType.Out);
-        tween.TweenInterval(1.1);
-        tween.TweenProperty(_introLayer, "modulate:a", 0f, 0.75)
-            .SetTrans(Tween.TransitionType.Sine)
-            .SetEase(Tween.EaseType.InOut);
-
-        await ToSignal(tween, Tween.SignalName.Finished);
-        if (!IsInsideTree() || _finished)
-            return;
-
-        _introLayer.QueueFree();
-        _introLayer = null;
-        StartDialogue();
     }
 
     private async void StartDialogue()
