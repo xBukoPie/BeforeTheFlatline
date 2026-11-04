@@ -56,7 +56,13 @@ public partial class InteractionPromptManager : Node
             return;
 
         ulong id = owner.GetInstanceId();
-        _prompts[id] = new PromptEntry(id, text.Trim(), priority, ++_order);
+        string trimmed = text.Trim();
+        if (_prompts.TryGetValue(id, out PromptEntry existing) &&
+            existing.Priority == priority &&
+            string.Equals(existing.Text, trimmed, StringComparison.Ordinal))
+            return;
+
+        _prompts[id] = new PromptEntry(id, trimmed, priority, ++_order);
         RefreshPrompts();
     }
 
@@ -149,7 +155,7 @@ public partial class InteractionPromptManager : Node
         List<PromptEntry> entries = GetOrderedPrompts().Take(3).ToList();
         for (int i = 0; i < entries.Count; i++)
         {
-            bool primary = i == 0 && string.IsNullOrWhiteSpace(_noticeText);
+            bool primary = i == 0;
             string text = RemoveKeyHint(entries[i].Text);
             AddPromptRow(primary, text);
         }
@@ -168,7 +174,7 @@ public partial class InteractionPromptManager : Node
         panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color(0.035f, 0.035f, 0.055f, 0.90f),
-            BorderColor = new Color("bda9df", 0.65f),
+            BorderColor = new Color(0.74f, 0.66f, 0.87f, 0.65f),
             BorderWidthLeft = 1,
             BorderWidthRight = 1,
             BorderWidthTop = 1,
@@ -209,7 +215,7 @@ public partial class InteractionPromptManager : Node
         panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = primary ? new Color(0.035f, 0.035f, 0.055f, 0.88f) : new Color(0.035f, 0.035f, 0.055f, 0.74f),
-            BorderColor = primary ? new Color("c8b3f0", 0.8f) : new Color("9a90ae", 0.48f),
+            BorderColor = primary ? new Color(0.78f, 0.70f, 0.94f, 0.8f) : new Color(0.60f, 0.56f, 0.68f, 0.48f),
             BorderWidthLeft = 1,
             BorderWidthRight = 1,
             BorderWidthTop = 1,
