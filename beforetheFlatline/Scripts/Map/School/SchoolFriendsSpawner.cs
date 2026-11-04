@@ -368,7 +368,10 @@ public partial class SchoolFriendsSpawner : Node2D
         {
             Name = $"{definition.Name}Name",
             Text = definition.Name,
-            Position = new Vector2(-48, -44),
+            // The character scene root is scaled to match the player (1.5x).
+            // Counter-scale the name label so its font and offset stay in screen pixels.
+            Position = new Vector2(-32f, -29.333f),
+            Scale = Vector2.One / 1.5f,
             Size = new Vector2(96, 20),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
