@@ -11,6 +11,7 @@ public partial class StatusEffectsOverlay : CanvasLayer
     private ColorRect _brightnessWash;
     private ColorRect _screenFx;
     private ColorRect _effectWash;
+    private CanvasLayer _vignetteLayer;
     private TextureRect _vignetteOverlay;
     private readonly HashSet<ulong> _vignetteOwners = new();
     private float _vignetteAlpha;
@@ -146,6 +147,14 @@ public partial class StatusEffectsOverlay : CanvasLayer
             return;
         }
 
+        // Keep the cinematic edge treatment above world art but below dialogue and interaction UI.
+        _vignetteLayer = new CanvasLayer
+        {
+            Name = "CinematicVignetteLayer",
+            Layer = 50
+        };
+        AddChild(_vignetteLayer);
+
         _vignetteOverlay = new TextureRect
         {
             Name = "CinematicVignette",
@@ -155,11 +164,10 @@ public partial class StatusEffectsOverlay : CanvasLayer
             TextureFilter = CanvasItem.TextureFilterEnum.Linear,
             MouseFilter = Control.MouseFilterEnum.Ignore,
             Modulate = new Color(1f, 1f, 1f, 0f),
-            Visible = false,
-            ZIndex = 90
+            Visible = false
         };
         _vignetteOverlay.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        AddChild(_vignetteOverlay);
+        _vignetteLayer.AddChild(_vignetteOverlay);
     }
 
     public void Notify(string message)
