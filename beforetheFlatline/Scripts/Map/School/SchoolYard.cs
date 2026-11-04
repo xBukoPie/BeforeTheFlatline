@@ -10,6 +10,7 @@ public partial class SchoolYard : Node2D
     public override void _Ready()
     {
         _prompt = GetNode<Label>("HUD/Prompt");
+        _prompt.Visible = false;
         _prompt.AnchorLeft = 0.5f;
         _prompt.AnchorRight = 0.5f;
         _prompt.AnchorTop = 1f;
