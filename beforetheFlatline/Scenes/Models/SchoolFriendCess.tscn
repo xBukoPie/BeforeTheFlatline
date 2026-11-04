@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://Assets/Characters/pixel/cessIdle.png" id="1_sprite"]
+
+[node name="Cess" type="Node2D"]
+scale = Vector2(1.5, 1.5)
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_sprite")
+hframes = 2
+vframes = 1
+frame = 0
+scale = Vector2(0.23, 0.23)
+texture_filter = 1
