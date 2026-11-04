@@ -70,6 +70,7 @@ void fragment()
     private Tween _artTween;
     private Tween _masterBedroomBeatTween;
     private bool _masterBedroomBeatNeedsReveal;
+    private float _masterBedroomRevealDuration = 0.75f;
 
     // Shader uniforms are not ordinary Godot properties, so animate their values
     // in _Process and push them through ShaderMaterial.SetShaderParameter().
@@ -379,6 +380,12 @@ void fragment()
         if (collapseCue && !_collapseTransitionPlayed)
             return;
 
+        int textLength = line.Text?.Length ?? 0;
+        _masterBedroomRevealDuration = Mathf.Clamp(
+            textLength / Mathf.Max(_dialogue?.CharsPerSecond ?? 30f, 1f),
+            0.75f,
+            3f);
+
         if (_masterBedroomBeatTween != null && _masterBedroomBeatTween.IsValid())
             _masterBedroomBeatTween.Kill();
         if (_artTween != null && _artTween.IsValid())
@@ -417,10 +424,12 @@ void fragment()
             return;
 
         _masterBedroomBeatTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
-        _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 1f, 0.62f)
+        // Reveal duration follows the typewriter length, so the image and monologue settle together.
+        _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 1f, _masterBedroomRevealDuration)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
-        _masterBedroomBeatTween.Parallel().TweenProperty(dialogueUi, "modulate:a", 1f, 0.62f)
+        _masterBedroomBeatTween.Parallel().TweenProperty(
+            dialogueUi, "modulate:a", 1f, _masterBedroomRevealDuration)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
         _masterBedroomBeatTween.Finished += OnMasterBedroomBeatTransitionFinished;
