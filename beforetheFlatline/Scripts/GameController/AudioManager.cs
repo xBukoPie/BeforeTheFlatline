@@ -31,6 +31,7 @@ public partial class AudioManager : Node
     private AudioStream _menuTrackTwo;
     private AudioStream _dayTrack;
     private AudioStream _nightTrack;
+    private AudioStreamPlayer _gameOverPlayer;
 
     public override void _Ready()
     {
@@ -128,8 +129,25 @@ public partial class AudioManager : Node
         if (track == null)
             return 8.0;
 
-        PlaySoundEffect("Ending/gameOverFlatline.mp3", 0f);
+        _gameOverPlayer = PlaySoundEffect("Ending/gameOverFlatline.mp3", 0f);
         return track.GetLength();
+    }
+
+    public async void FadeOutGameOver(double duration = 0.65)
+    {
+        AudioStreamPlayer player = _gameOverPlayer;
+        _gameOverPlayer = null;
+        if (player == null || !GodotObject.IsInstanceValid(player) || !player.Playing)
+            return;
+
+        Tween tween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        tween.TweenProperty(player, "volume_db", MusicSilentDb, Math.Max(0.1, duration))
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(tween, Tween.SignalName.Finished);
+
+        if (GodotObject.IsInstanceValid(player))
+            player.Stop();
     }
 
     private AudioStreamPlayer CreateMusicPlayer(string playerName)
@@ -308,11 +326,11 @@ public partial class AudioManager : Node
             FadeOutAndStop(outgoing, duration);
     }
 
-    private void PlaySoundEffect(string relativePath, float volumeDb)
+    private AudioStreamPlayer PlaySoundEffect(string relativePath, float volumeDb)
     {
         AudioStream stream = LoadSound(relativePath);
         if (stream == null || _sfxPlayers.Count == 0)
-            return;
+            return null;
 
         AudioStreamPlayer player = null;
         for (int i = 0; i < _sfxPlayers.Count; i++)
@@ -336,5 +354,6 @@ public partial class AudioManager : Node
         player.Stream = stream;
         player.VolumeDb = volumeDb;
         player.Play();
+        return player;
     }
 }
