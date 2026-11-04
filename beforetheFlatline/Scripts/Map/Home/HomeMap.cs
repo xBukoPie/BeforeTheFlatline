@@ -23,7 +23,6 @@ public partial class HomeMap : Node2D
 		_sun = GetNode<DirectionalLight2D>("Sunlight");
         _lights = GetNode<Node2D>("Lights");
         _sanityManager = SanityManager.Instance;
-        _ambient.Visible = true;
 
 		var interior = GetNode<Area2D>("Zones/InteriorZone");
 		interior.BodyEntered += _ => SetInside(true);
