@@ -67,6 +67,7 @@ void fragment()
     private Tween _collapseTween;
     private VisualNovelScene _dialogue;
     private Tween _artTween;
+    private Tween _masterBedroomBeatTween;
 
     // Shader uniforms are not ordinary Godot properties, so animate their values
     // in _Process and push them through ShaderMaterial.SetShaderParameter().
@@ -145,8 +146,11 @@ void fragment()
         {
             _dialogue.LinePresented -= OnLinePresented;
             _dialogue.DialogueFinished -= OnDialogueFinished;
+            _dialogue.SetMemoryTransitionBlocked(false);
         }
 
+        if (_masterBedroomBeatTween != null && _masterBedroomBeatTween.IsValid())
+            _masterBedroomBeatTween.Kill();
         StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
         StatusEffectsOverlay.Instance?.SetCinematicVignette(this, false);
     }
@@ -312,6 +316,8 @@ void fragment()
         _dialogue.ShowCharacterSlots = false;
         _dialogue.AllowPauseMenu = false;
         _dialogue.CompactChoiceMode = true;
+        if (_isEnding)
+            _dialogue.CharsPerSecond = 30f;
         _dialogue.PlayDemoOnReady = false;
         _dialogue.LoopDemo = false;
         _dialogue.LinePresented += OnLinePresented;
@@ -340,11 +346,80 @@ void fragment()
 
         StoryCutsceneBeat beat = _beats[index];
         GD.Print($"[StoryCutsceneOverlay] Beat {index + 1}/{_beats.Count}: {beat.Dialogue.Speaker} [{beat.EffectCue}]");
-        SetArtwork(beat.ImagePath);
+
+        bool collapseCue =
+            string.Equals(beat.EffectCue, "blackout", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(beat.EffectCue, "collapse", StringComparison.OrdinalIgnoreCase);
+        bool beginCollapse = collapseCue && !_collapseTransitionPlayed;
+
+        if (_isEnding && index > 0 && !beginCollapse)
+            TransitionMasterBedroomBeat(beat.ImagePath);
+        else
+            SetArtwork(beat.ImagePath);
+
         ApplyMemoryCue(beat.EffectCue);
-        if (string.Equals(beat.EffectCue, "blackout", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(beat.EffectCue, "collapse", StringComparison.OrdinalIgnoreCase))
+        if (beginCollapse)
             PlayCollapseTransition();
+    }
+
+    private void TransitionMasterBedroomBeat(string imagePath)
+    {
+        if (_finished || _art == null || !GodotObject.IsInstanceValid(_art))
+            return;
+
+        if (_masterBedroomBeatTween != null && _masterBedroomBeatTween.IsValid())
+            _masterBedroomBeatTween.Kill();
+        if (_artTween != null && _artTween.IsValid())
+            _artTween.Kill();
+
+        Control dialogueUi = _dialogue?.DialogueInterfaceRoot;
+        if (dialogueUi == null || !GodotObject.IsInstanceValid(dialogueUi))
+            return;
+
+        _dialogue.SetMemoryTransitionBlocked(true);
+
+        _masterBedroomBeatTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 0f, 0.36f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        _masterBedroomBeatTween.Parallel().TweenProperty(dialogueUi, "modulate:a", 0f, 0.36f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+
+        _masterBedroomBeatTween.TweenCallback(Callable.From(() => SetArtworkImmediately(imagePath)));
+
+        _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 1f, 0.62f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        _masterBedroomBeatTween.Parallel().TweenProperty(dialogueUi, "modulate:a", 1f, 0.62f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+
+        _masterBedroomBeatTween.Finished += OnMasterBedroomBeatTransitionFinished;
+    }
+
+    private void OnMasterBedroomBeatTransitionFinished()
+    {
+        if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
+            _dialogue.SetMemoryTransitionBlocked(false);
+    }
+
+    private void SetArtworkImmediately(string imagePath)
+    {
+        string requested = string.IsNullOrWhiteSpace(imagePath) ? string.Empty : imagePath.Trim();
+        if (string.Equals(requested, _currentImagePath, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        Texture2D texture = null;
+        if (!string.IsNullOrWhiteSpace(requested))
+        {
+            texture = GD.Load<Texture2D>(requested);
+            if (texture == null)
+                GD.PushWarning($"StoryCutsceneOverlay: could not load image '{requested}'.");
+        }
+
+        _currentImagePath = requested;
+        _art.Texture = texture;
     }
 
     private async void PlayCollapseTransition()
@@ -513,6 +588,8 @@ void fragment()
 
         if (_collapseTween != null && _collapseTween.IsValid())
             _collapseTween.Kill();
+        if (_masterBedroomBeatTween != null && _masterBedroomBeatTween.IsValid())
+            _masterBedroomBeatTween.Kill();
         _collapseTransitionRunning = false;
 
         // Cover the recollection before returning control to the live room.
