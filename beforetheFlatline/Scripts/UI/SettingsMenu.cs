@@ -223,11 +223,12 @@ public partial class SettingsMenu : Control
             Text = label,
             SizeFlagsHorizontal = SizeFlags.ExpandFill
         });
-        valueLabel = new Label
+        var percentageLabel = new Label
         {
             Text = $"{Mathf.RoundToInt(initialValue * 100f)}%"
         };
-        heading.AddChild(valueLabel);
+        valueLabel = percentageLabel;
+        heading.AddChild(percentageLabel);
         row.AddChild(heading);
 
         slider = new HSlider
@@ -241,7 +242,7 @@ public partial class SettingsMenu : Control
         slider.ValueChanged += value =>
         {
             float normalized = (float)value;
-            valueLabel.Text = $"{Mathf.RoundToInt(normalized * 100f)}%";
+            percentageLabel.Text = $"{Mathf.RoundToInt(normalized * 100f)}%";
             onChanged?.Invoke(normalized);
         };
         row.AddChild(slider);
