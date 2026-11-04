@@ -154,7 +154,7 @@ public partial class RoomManager : Node2D
             SetNight(SchoolYardGame.DayClock.Instance.IsNight);
     }
 
-    public async void GoTo(string roomPath, string spawn)
+    public async void GoTo(string roomPath, string spawn, bool showLoadingScreen = false, string loadingMessage = "Heading to school...")
     {
         if (_busy || string.IsNullOrEmpty(roomPath))
             return;
@@ -164,11 +164,27 @@ public partial class RoomManager : Node2D
 
         try
         {
-            await FadeTo(1f);
-            LoadRoom(roomPath, spawn);
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-            _camera.ResetSmoothing();
-            await FadeTo(0f);
+            bool loadedWithScreen = false;
+            if (showLoadingScreen && SceneTransition.Instance != null)
+            {
+                loadedWithScreen = await SceneTransition.Instance.RunWithLoadingScreen(
+                    () =>
+                    {
+                        LoadRoom(roomPath, spawn);
+                        _camera.ResetSmoothing();
+                    },
+                    loadingMessage,
+                    1.55);
+            }
+
+            if (!loadedWithScreen)
+            {
+                await FadeTo(1f);
+                LoadRoom(roomPath, spawn);
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                _camera.ResetSmoothing();
+                await FadeTo(0f);
+            }
         }
         catch (System.Exception ex)
         {
