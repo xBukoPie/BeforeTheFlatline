@@ -11,6 +11,9 @@ public partial class StatusEffectsOverlay : CanvasLayer
     private ColorRect _brightnessWash;
     private ColorRect _screenFx;
     private ColorRect _effectWash;
+    private TextureRect _vignetteOverlay;
+    private readonly HashSet<ulong> _vignetteOwners = new();
+    private float _vignetteAlpha;
     private ColorRect _pressureTop;
     private ColorRect _pressureBottom;
     private Label _noticeLabel;
@@ -45,8 +48,9 @@ public partial class StatusEffectsOverlay : CanvasLayer
         _rng.Randomize();
         _nextConfusionShuffle = _rng.RandfRange(2.5f, 5.5f);
         Layer = 100;
-        ProcessMode = ProcessModeEnum.Pausable;
+        ProcessMode = ProcessModeEnum.Always;
         BuildOverlay();
+        BuildVignetteOverlay();
 
         if (SanityManager.Instance != null)
         {
@@ -64,6 +68,7 @@ public partial class StatusEffectsOverlay : CanvasLayer
 
     public override void _ExitTree()
     {
+        _vignetteOwners.Clear();
         if (SanityManager.Instance != null)
         {
             SanityManager.Instance.OnSanityChanged -= OnSanityChanged;
@@ -99,6 +104,14 @@ public partial class StatusEffectsOverlay : CanvasLayer
         _mainMenuFade = Mathf.MoveToward(_mainMenuFade, onMainMenu ? 0f : 1f, dt / 1.25f);
         _pauseFade = Mathf.MoveToward(_pauseFade, _pauseMenuVisible ? 0f : 1f, dt / 0.18f);
 
+        float vignetteTarget = _vignetteOwners.Count > 0 ? 0.68f : 0f;
+        _vignetteAlpha = Mathf.MoveToward(_vignetteAlpha, vignetteTarget, dt * 2.4f);
+        if (_vignetteOverlay != null && GodotObject.IsInstanceValid(_vignetteOverlay))
+        {
+            _vignetteOverlay.Visible = _vignetteAlpha > 0.005f;
+            _vignetteOverlay.Modulate = new Color(1f, 1f, 1f, _vignetteAlpha);
+        }
+
         RefreshEffects();
     }
 
@@ -110,6 +123,43 @@ public partial class StatusEffectsOverlay : CanvasLayer
             _pauseFade = 0f;
 
         RefreshEffects();
+    }
+
+    public void SetCinematicVignette(Node owner, bool visible)
+    {
+        if (owner == null || !GodotObject.IsInstanceValid(owner))
+            return;
+
+        ulong id = owner.GetInstanceId();
+        if (visible)
+            _vignetteOwners.Add(id);
+        else
+            _vignetteOwners.Remove(id);
+    }
+
+    private void BuildVignetteOverlay()
+    {
+        Texture2D texture = GD.Load<Texture2D>("res://Assets/Effects/vignette.png");
+        if (texture == null)
+        {
+            GD.PushWarning("StatusEffectsOverlay: Assets/Effects/vignette.png could not be loaded.");
+            return;
+        }
+
+        _vignetteOverlay = new TextureRect
+        {
+            Name = "CinematicVignette",
+            Texture = texture,
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.Scale,
+            TextureFilter = CanvasItem.TextureFilterEnum.Linear,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            Modulate = new Color(1f, 1f, 1f, 0f),
+            Visible = false,
+            ZIndex = 90
+        };
+        _vignetteOverlay.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        AddChild(_vignetteOverlay);
     }
 
     public void Notify(string message)
