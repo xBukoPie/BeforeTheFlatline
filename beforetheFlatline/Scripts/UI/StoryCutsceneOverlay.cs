@@ -280,6 +280,11 @@ void fragment()
             return;
         }
 
+        // Put the first memory artwork on screen before creating the dialogue UI.
+        // This prevents the choice buttons and dialogue panel appearing over an empty frame.
+        SetArtwork(_beats[0].ImagePath);
+        ApplyMemoryCue(_beats[0].EffectCue);
+
         PackedScene dialogueScene = GD.Load<PackedScene>("res://Scenes/UI/VisualNovelScene.tscn");
         if (dialogueScene == null)
         {
@@ -297,6 +302,7 @@ void fragment()
         _dialogue.ShowPlaceholders = false;
         _dialogue.ShowCharacterSlots = false;
         _dialogue.AllowPauseMenu = false;
+        _dialogue.CompactChoiceMode = true;
         _dialogue.PlayDemoOnReady = false;
         _dialogue.LoopDemo = false;
         _dialogue.LinePresented += OnLinePresented;
