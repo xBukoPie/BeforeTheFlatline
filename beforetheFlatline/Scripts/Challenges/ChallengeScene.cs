@@ -37,11 +37,17 @@ public partial class ChallengeScene : Control
     public override void _Ready()
     {
         AddToGroup("challenge_scene");
+        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, true);
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
         BuildShell();
         GenerateCurrentTask();
+    }
+
+    public override void _ExitTree()
+    {
+        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, false);
     }
 
     private void BuildShell()
