@@ -154,7 +154,12 @@ public partial class RoomManager : Node2D
             SetNight(SchoolYardGame.DayClock.Instance.IsNight);
     }
 
-    public async void GoTo(string roomPath, string spawn, bool showLoadingScreen = false, string loadingMessage = "Heading to school...")
+    public async void GoTo(
+        string roomPath,
+        string spawn,
+        bool showLoadingScreen = false,
+        string loadingMessage = "Heading to school...",
+        bool useSchoolTravelLoadingScreen = false)
     {
         if (_busy || string.IsNullOrEmpty(roomPath))
             return;
@@ -174,7 +179,8 @@ public partial class RoomManager : Node2D
                         _camera.ResetSmoothing();
                     },
                     loadingMessage,
-                    1.55);
+                    2.0,
+                    useSchoolTravelLoadingScreen);
             }
 
             if (!loadedWithScreen)
