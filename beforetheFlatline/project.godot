@@ -29,6 +29,7 @@ StatusEffectsOverlay="*res://Scripts/UI/StatusEffectsOverlay.cs"
 PauseMenuController="*res://Scripts/UI/PauseMenuController.cs"
 SuperUserAccess="*res://Scripts/UI/SuperUserAccess.cs"
 UIFeedback="*res://Scripts/UI/UIFeedback.cs"
+InteractionPromptManager="*res://Scripts/UI/InteractionPromptManager.cs"
 
 [display]
 
