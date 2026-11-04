@@ -60,6 +60,7 @@ void fragment()
     private ColorRect _transitionCover;
     private Label _transitionText;
     private bool _collapseTransitionRunning;
+    private bool _collapseTransitionPlayed;
     private VisualNovelScene _dialogue;
     private Tween _artTween;
 
@@ -329,12 +330,18 @@ void fragment()
 
     private async void PlayCollapseTransition()
     {
-        if (_collapseTransitionRunning || _transitionCover == null || _finished)
+        if (_collapseTransitionRunning || _collapseTransitionPlayed ||
+            _transitionCover == null || _finished)
             return;
 
         _collapseTransitionRunning = true;
+        _collapseTransitionPlayed = true;
         _transitionCover.Visible = true;
         _transitionText.Visible = false;
+
+        // The dialogue is a sibling of the cover. Draw it first so the cover fades over it.
+        if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
+            MoveChild(_dialogue, 0);
         MoveChild(_transitionCover, GetChildCount() - 1);
         _transitionCover.Modulate = new Color(1f, 1f, 1f, 0f);
 
