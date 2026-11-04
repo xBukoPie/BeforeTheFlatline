@@ -12,11 +12,17 @@ public partial class DialoguePanel : Control
 
     public override void _Ready()
     {
+        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, true);
         _nameLabel = GetNode<Label>("PanelBackground/NameLabel");
         _portrait = GetNode<TextureRect>("PanelBackground/Portrait");
         _textLabel = GetNode<RichTextLabel>("PanelBackground/TextLabel");
         _advanceButton = GetNode<Button>("PanelBackground/AdvanceButton");
         _advanceButton.Pressed += OnAdvancePressed;
+    }
+
+    public override void _ExitTree()
+    {
+        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, false);
     }
 
     // /// Set the speaker's name.
