@@ -186,26 +186,13 @@ public partial class StoryPhotoInteractable : Area2D
             {
                 new(laundryImage, new DialogueLine(
                     "You",
-                    "My uniform keeps spinning inside the washing machine. I keep watching it go around and around.",
+                    "I keep watching my uniform spin inside the washing machine.",
                     DialogueSide.Right)),
                 new(laundryImage, new DialogueLine(
                     "You",
-                    "I don't want to go to school today. I wish I could make the day stop before it even starts.",
-                    DialogueSide.Right)),
-                new(laundryImage, new DialogueLine(
-                    "Memory",
-                    "The machine keeps turning. The familiar sound grows louder until it is all you can focus on.",
-                    DialogueSide.Left),
-                    "dizziness"),
-                new(laundryImage, new DialogueLine(
-                    "You",
-                    "The room shifts when I look away. I feel dizzy. I need to sit down.",
+                    "I don't want to go to school today.",
                     DialogueSide.Right),
-                    "dizziness"),
-                new(laundryImage, new DialogueLine(
-                    "You",
-                    "The memory slips away, but the uneasy feeling stays with me.",
-                    DialogueSide.Right))
+                    "dizziness")
             },
 
             "Bathroom" => new List<StoryCutsceneBeat>
