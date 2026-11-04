@@ -57,6 +57,9 @@ void fragment()
 
     private TextureRect _art;
     private ShaderMaterial _artMaterial;
+    private ColorRect _transitionCover;
+    private Label _transitionText;
+    private bool _collapseTransitionRunning;
     private VisualNovelScene _dialogue;
     private Tween _artTween;
 
@@ -97,6 +100,7 @@ void fragment()
 
         // Keep persistent HUD distortion from competing with the memory-specific effects.
         StatusEffectsOverlay.Instance?.SetPauseMenuVisible(true);
+        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, true);
         GetTree().Paused = true;
         BuildBackdrop();
         if (_beats.Count > 0)
@@ -104,7 +108,7 @@ void fragment()
             SetArtwork(_beats[0].ImagePath);
             ApplyMemoryCue(_beats[0].EffectCue);
         }
-        StartDialogue();
+        PlayRecollectionIntro();
     }
 
     public override void _Process(double delta)
@@ -139,6 +143,7 @@ void fragment()
         }
 
         StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
+        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, false);
     }
 
     private void BuildBackdrop()
@@ -184,6 +189,75 @@ void fragment()
         };
         edgeShade.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(edgeShade);
+
+        _transitionCover = new ColorRect
+        {
+            Name = "MemoryTransitionCover",
+            Color = Colors.Black,
+            MouseFilter = Control.MouseFilterEnum.Stop,
+            Modulate = new Color(1f, 1f, 1f, 1f)
+        };
+        _transitionCover.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        AddChild(_transitionCover);
+
+        _transitionText = new Label
+        {
+            Name = "MemoryTransitionText",
+            Text = "Memory recollection...",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Modulate = new Color(1f, 1f, 1f, 0f),
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
+        _transitionText.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        _transitionText.AddThemeFontSizeOverride("font_size", 23);
+        _transitionText.AddThemeColorOverride("font_color", new Color("e8e2ee"));
+        _transitionText.AddThemeColorOverride("font_outline_color", new Color("08070c"));
+        _transitionText.AddThemeConstantOverride("outline_size", 3);
+        AddChild(_transitionText);
+    }
+
+    private async void PlayRecollectionIntro()
+    {
+        if (_beats.Count == 0)
+        {
+            StartDialogue();
+            return;
+        }
+
+        _transitionCover.Visible = true;
+        _transitionCover.Modulate = Colors.White;
+        _transitionText.Modulate = new Color(1f, 1f, 1f, 0f);
+
+        Tween fadeTextIn = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        fadeTextIn.TweenProperty(_transitionText, "modulate:a", 1f, 0.72f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(fadeTextIn, Tween.SignalName.Finished);
+        await WaitTransition(1.15f);
+
+        Tween revealMemory = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process).SetParallel();
+        revealMemory.TweenProperty(_transitionText, "modulate:a", 0f, 0.5f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        revealMemory.TweenProperty(_transitionCover, "modulate:a", 0f, 0.95f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(revealMemory, Tween.SignalName.Finished);
+
+        if (_finished || !IsInsideTree())
+            return;
+
+        _transitionCover.Visible = false;
+        _transitionText.Visible = false;
+        StartDialogue();
+    }
+
+    private async System.Threading.Tasks.Task WaitTransition(double seconds)
+    {
+        Tween tween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        tween.TweenInterval(seconds);
+        await ToSignal(tween, Tween.SignalName.Finished);
     }
 
     private async void StartDialogue()
@@ -248,6 +322,41 @@ void fragment()
         GD.Print($"[StoryCutsceneOverlay] Beat {index + 1}/{_beats.Count}: {beat.Dialogue.Speaker} [{beat.EffectCue}]");
         SetArtwork(beat.ImagePath);
         ApplyMemoryCue(beat.EffectCue);
+        if (string.Equals(beat.EffectCue, "blackout", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(beat.EffectCue, "collapse", StringComparison.OrdinalIgnoreCase))
+            PlayCollapseTransition();
+    }
+
+    private async void PlayCollapseTransition()
+    {
+        if (_collapseTransitionRunning || _transitionCover == null || _finished)
+            return;
+
+        _collapseTransitionRunning = true;
+        _transitionCover.Visible = true;
+        _transitionText.Visible = false;
+        MoveChild(_transitionCover, GetChildCount() - 1);
+        _transitionCover.Modulate = new Color(1f, 1f, 1f, 0f);
+
+        Tween fadeToBlack = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        fadeToBlack.TweenProperty(_transitionCover, "modulate:a", 1f, 0.85f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(fadeToBlack, Tween.SignalName.Finished);
+        await WaitTransition(0.42f);
+
+        if (_finished || !IsInsideTree())
+            return;
+
+        Tween fadeFromBlack = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        fadeFromBlack.TweenProperty(_transitionCover, "modulate:a", 0f, 1.15f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(fadeFromBlack, Tween.SignalName.Finished);
+
+        if (GodotObject.IsInstanceValid(_transitionCover))
+            _transitionCover.Visible = false;
+        _collapseTransitionRunning = false;
     }
 
     private void SetArtwork(string imagePath)
