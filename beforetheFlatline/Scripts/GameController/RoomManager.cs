@@ -79,6 +79,44 @@ public partial class RoomManager : Node2D
         LoadRoom(roomPath, spawn);
     }
 
+    public override void _Process(double delta)
+    {
+        ApplyTimeOfDayLighting();
+    }
+
+    private void ApplyTimeOfDayLighting()
+    {
+        if (_ambient == null || _sun == null)
+            return;
+
+        float hour = SchoolYardGame.DayClock.Instance?.Hour ?? 8f;
+        float daylight = CalculateDaylightBlend(hour);
+        bool schoolHandlesItsOwnDayTint = _room != null &&
+            string.Equals(_room.RoomName, "School", System.StringComparison.OrdinalIgnoreCase);
+
+        _ambient.Color = schoolHandlesItsOwnDayTint
+            ? Colors.White
+            : NightColor.Lerp(DayColor, daylight);
+
+        _sun.Energy = !schoolHandlesItsOwnDayTint && _room != null && _room.Outdoor
+            ? DaySunEnergy * daylight
+            : 0f;
+
+        _room?.ApplyNightBlend(1f - daylight);
+    }
+
+    private static float CalculateDaylightBlend(float hour)
+    {
+        // Dawn (05:00-08:00) and dusk (16:30-20:30) are eased over several in-game hours.
+        float dawn = Mathf.Clamp((hour - 5f) / 3f, 0f, 1f);
+        dawn = dawn * dawn * (3f - 2f * dawn);
+
+        float dusk = Mathf.Clamp((hour - 16.5f) / 4f, 0f, 1f);
+        dusk = dusk * dusk * (3f - 2f * dusk);
+
+        return Mathf.Clamp(Mathf.Min(dawn, 1f - dusk), 0f, 1f);
+    }
+
     public override void _UnhandledInput(InputEvent @event)
     {
         if (AllowNightToggleKey && @event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.N })
@@ -132,12 +170,10 @@ public partial class RoomManager : Node2D
 
     public void SetNight(bool night)
     {
+        // The boolean is retained for room and music logic. Visual lighting is updated
+        // continuously in _Process so it does not snap at the night threshold.
         IsNight = night;
-        bool schoolHandlesItsOwnDayTint = _room != null &&
-            string.Equals(_room.RoomName, "School", System.StringComparison.OrdinalIgnoreCase);
-        _ambient.Color = schoolHandlesItsOwnDayTint ? Colors.White : (night ? NightColor : DayColor);
-        _sun.Energy = (!night && _room != null && _room.Outdoor) ? DaySunEnergy : 0f;
-        _room?.ApplyTime(night);
+        ApplyTimeOfDayLighting();
     }
 
     private void LoadRoom(string path, string spawn)
@@ -176,6 +212,7 @@ public partial class RoomManager : Node2D
 
         ConfigureCamera();
         SetNight(IsNight);
+        ApplyTimeOfDayLighting();
         SaveManager.Instance?.RequestAutoSave();
     }
 
