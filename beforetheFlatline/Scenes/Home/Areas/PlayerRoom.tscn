@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_pjk0j"]
 [ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Lamp.tscn" id="2_einu6"]
 [ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Door.tscn" id="3_sh3p1"]
+[ext_resource type="Script" path="res://Scripts/Map/Home/SleepInteractable.cs" id="4_sleep"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
 size = Vector2(294, 6)
@@ -28,6 +29,9 @@ size = Vector2(46, 48)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_lmbop"]
 size = Vector2(32, 44)
+
+[sub_resource type="CircleShape2D" id="SleepRange"]
+radius = 22.0
 
 [node name="PlayerRoom" type="Node2D" unique_id=1591546294]
 scale = Vector2(0.7, 0.7)
@@ -101,6 +105,15 @@ TargetSpawn = "FromPlayerRoom"
 Prompt = "Living Room"
 Size = Vector2(44, 12)
 LockedPrompt = "Locked. You need a key."
+
+[node name="SleepInteractable" type="Area2D" parent="."]
+position = Vector2(-90, 52)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("4_sleep")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SleepInteractable"]
+shape = SubResource("SleepRange")
 
 [node name="Spawns" type="Node2D" parent="." unique_id=1667727216]
 
