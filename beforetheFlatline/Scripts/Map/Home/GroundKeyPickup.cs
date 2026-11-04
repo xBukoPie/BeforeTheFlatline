@@ -36,7 +36,7 @@ public partial class GroundKeyPickup : Area2D
         else
             GD.PushWarning($"GroundKeyPickup: key sprite could not be loaded: {texturePath}");
 
-        _glow = WorldInteractableGlow.AddGlow(this, new Color("ffd36e"), 2.5f);
+        _glow = WorldInteractableGlow.AddGlow(this, new Color("ffd36e"), 4.0f);
 
         BodyEntered += OnBodyEntered;
         BodyExited += OnBodyExited;
