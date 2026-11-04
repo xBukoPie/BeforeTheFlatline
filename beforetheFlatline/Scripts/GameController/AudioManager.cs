@@ -119,6 +119,7 @@ public partial class AudioManager : Node
         AudioServer.AddBus(-1);
         int busIndex = AudioServer.BusCount - 1;
         AudioServer.SetBusName(busIndex, busName);
+        AudioServer.SetBusSend(busIndex, "Master");
     }
 
     private static void ApplyBusVolume(string busName, float volume)
