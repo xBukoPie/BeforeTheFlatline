@@ -18,6 +18,7 @@ public partial class GroundKeyPickup : Area2D
 
     public override void _Ready()
     {
+        Visible = false;
         CollisionLayer = 0;
         CollisionMask = 2;
         Monitorable = false;
@@ -105,6 +106,7 @@ public partial class GroundKeyPickup : Area2D
 
         _availabilityInitialized = true;
         _wasAvailable = available;
+        Visible = available;
         Monitoring = available;
         _sprite.Visible = available;
         if (_glow != null)
@@ -136,8 +138,15 @@ public partial class GroundKeyPickup : Area2D
             _ => -1
         };
 
-        // A stale pending-key value must never reveal a later key before its previous memory.
-        return keyIndex >= 0 && StoryProgression.Instance?.CanOfferKeyForRoomIndex(keyIndex) == true;
+        // A stale pending-key value must never reveal a later key before its prior keys and memory.
+        if (keyIndex < 0 || RoomKeyProgression.Instance == null ||
+            RoomKeyProgression.Instance.TotalKeysEarned < keyIndex)
+            return false;
+
+        if (keyIndex == 3 && StoryProgression.Instance?.HasSeenMemory("Bathroom") != true)
+            return false;
+
+        return StoryProgression.Instance?.CanOfferKeyForRoomIndex(keyIndex) == true;
     }
 
     private static string GetKeyTexturePath(string roomId) => roomId switch
