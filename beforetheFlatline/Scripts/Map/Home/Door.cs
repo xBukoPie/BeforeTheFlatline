@@ -10,6 +10,7 @@ public partial class Door : Area2D
     [Export] public bool AutoEnter { get; set; } = false;    // true = no key press needed (e.g. walk down stairs)
     [Export] public bool RequiresSchoolHours { get; set; } = false;
     [Export] public bool ShowLoadingScreen { get; set; } = false;
+    [Export] public bool UseSchoolTravelLoadingScreen { get; set; } = false;
     [Export] public string LoadingMessage { get; set; } = "Heading to school...";
     [Export] public string UnlockRoomId { get; set; } = "";
     [Export] public string LockedPrompt { get; set; } = "Locked. Score at least 30 points, then find the key in the Yard.";
@@ -140,7 +141,7 @@ public partial class Door : Area2D
         if (instance is Node2D && instance is not Control)
         {
             instance.QueueFree();
-            manager.GoTo(TargetRoom, TargetSpawn, ShowLoadingScreen, LoadingMessage);
+            manager.GoTo(TargetRoom, TargetSpawn, ShowLoadingScreen, LoadingMessage, UseSchoolTravelLoadingScreen);
             return;
         }
 
