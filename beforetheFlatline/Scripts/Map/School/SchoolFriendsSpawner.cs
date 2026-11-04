@@ -8,7 +8,6 @@ public readonly record struct SchoolFriendSpawn(string Name, Vector2 Position);
 
 public partial class SchoolFriendsSpawner : Node2D
 {
-    private const float FriendSpriteScale = 0.345f;
     private const int PlayerCollisionMask = 2;
     private const float StoryHintChance = 0.005f; // 0.5% on the first conversation with each friend per day.
     private const string DialogueScenePath = "res://Scenes/UI/VisualNovelScene.tscn";
@@ -29,7 +28,7 @@ public partial class SchoolFriendsSpawner : Node2D
 
     private double _idleFrameTimer;
 
-    private readonly record struct FriendDefinition(string Name, string TexturePath, string PortraitPath);
+    private readonly record struct FriendDefinition(string Name, string ScenePath, string PortraitPath);
 
     private sealed record InteractionTopic(
         string Opening,
@@ -50,9 +49,9 @@ public partial class SchoolFriendsSpawner : Node2D
 
     private static readonly FriendDefinition[] FriendDefinitions =
     {
-        new("Mich", "res://Assets/Characters/pixel/michIdle.png", "res://Assets/Characters/Mich.png"),
-        new("Jepoy", "res://Assets/Characters/pixel/jepoyIdle.png", "res://Assets/Characters/Jepoy.png"),
-        new("Cess", "res://Assets/Characters/pixel/cessIdle.png", "res://Assets/Characters/Cess.png")
+        new("Mich", "res://Scenes/Models/SchoolFriendMich.tscn", "res://Assets/Characters/Mich.png"),
+        new("Jepoy", "res://Scenes/Models/SchoolFriendJepoy.tscn", "res://Assets/Characters/Jepoy.png"),
+        new("Cess", "res://Scenes/Models/SchoolFriendCess.tscn", "res://Assets/Characters/Cess.png")
     };
 
     // These are clear ground / path positions in front of the school building.
@@ -267,14 +266,6 @@ public partial class SchoolFriendsSpawner : Node2D
         }
     }
 
-    private Vector2 GetPlayerSpriteGlobalScale()
-    {
-        AnimatedSprite2D playerSprite = _player?.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
-        return playerSprite != null && GodotObject.IsInstanceValid(playerSprite)
-            ? playerSprite.GlobalScale
-            : new Vector2(FriendSpriteScale, FriendSpriteScale);
-    }
-
     public override void _UnhandledInput(InputEvent @event)
     {
         if (_conversationOpen || !@event.IsActionPressed("interact"))
@@ -343,37 +334,38 @@ public partial class SchoolFriendsSpawner : Node2D
 
     private void CreateFriend(FriendDefinition definition, Vector2 position)
     {
-        Texture2D texture = GD.Load<Texture2D>(definition.TexturePath);
-        if (texture == null)
+        PackedScene actorScene = GD.Load<PackedScene>(definition.ScenePath);
+        if (actorScene == null)
         {
-            GD.PushWarning($"SchoolFriends: character texture not found: {definition.TexturePath}");
+            GD.PushWarning($"SchoolFriends: character scene not found: {definition.ScenePath}");
             return;
         }
 
-        var actorRoot = new Node2D
+        Node2D actorRoot = actorScene.Instantiate<Node2D>();
+        if (actorRoot == null)
         {
-            Name = $"Friend_{definition.Name}",
-            Position = position,
-            ZAsRelative = false
-        };
+            GD.PushWarning($"SchoolFriends: character scene has an invalid root: {definition.ScenePath}");
+            return;
+        }
+
+        actorRoot.Name = $"Friend_{definition.Name}";
+        actorRoot.Position = position;
+        actorRoot.ZAsRelative = false;
         AddChild(actorRoot);
 
-        var sprite = new Sprite2D
+        Sprite2D sprite = actorRoot.GetNodeOrNull<Sprite2D>("Sprite2D");
+        if (sprite == null)
         {
-            Name = $"{definition.Name}Sprite",
-            Texture = texture,
-            Hframes = 2,
-            Vframes = 1,
-            Frame = 0,
-            TextureFilter = CanvasItem.TextureFilterEnum.Nearest
-        };
-        actorRoot.AddChild(sprite);
+            GD.PushWarning($"SchoolFriends: {definition.Name} scene is missing Sprite2D.");
+            actorRoot.QueueFree();
+            return;
+        }
 
-        // Match the player's effective rendered scale (Player root 1.5 x sprite 0.23).
-        // The player sprite is centered at its ground anchor, so keep the same local origin.
-        sprite.GlobalScale = GetPlayerSpriteGlobalScale();
+        // Each scene crops a 256x128 sheet to 128x128 frames and matches the player's
+        // 1.5 root scale multiplied by the 0.23 sprite scale.
+        sprite.Frame = 0;
+        sprite.TextureFilter = CanvasItem.TextureFilterEnum.Nearest;
 
-        // The name floats just above the character's head and uses an outline for map contrast.
         var nameLabel = new Label
         {
             Name = $"{definition.Name}Name",
