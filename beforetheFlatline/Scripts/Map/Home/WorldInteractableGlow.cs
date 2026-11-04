@@ -5,7 +5,7 @@ public static class WorldInteractableGlow
 {
     private static Texture2D _radialTexture;
 
-    public static Sprite2D AddGlow(Node2D parent, Color tint, float relativeSize = 2.4f)
+    public static Sprite2D AddGlow(Node2D parent, Color tint, float relativeSize = 3.3f)
     {
         if (parent == null)
             return null;
@@ -27,9 +27,9 @@ public static class WorldInteractableGlow
             Name = "InteractableGlow",
             Texture = GetRadialTexture(),
             Centered = true,
-            ZIndex = 4,
+            ZIndex = -1,
             Scale = Vector2.One * baseScale,
-            Modulate = new Color(tint.R, tint.G, tint.B, 0.48f),
+            Modulate = new Color(tint.R, tint.G, tint.B, 0.62f),
             TextureFilter = CanvasItem.TextureFilterEnum.Linear,
             Material = new CanvasItemMaterial
             {
@@ -49,10 +49,10 @@ public static class WorldInteractableGlow
 
         float baseScale = (float)glow.GetMeta("base_scale", 0.25f).AsDouble();
         float pulse = (Mathf.Sin((float)elapsed * 2.8f + phase) + 1f) * 0.5f;
-        float scale = Mathf.Max(0.01f, baseScale) * (1.0f + pulse * 0.13f);
+        float scale = Mathf.Max(0.01f, baseScale) * (1.0f + pulse * 0.18f);
         glow.Scale = Vector2.One * scale;
         Color tint = glow.Modulate;
-        tint.A = 0.28f + pulse * 0.22f;
+        tint.A = 0.42f + pulse * 0.30f;
         glow.Modulate = tint;
     }
 
@@ -74,7 +74,7 @@ public static class WorldInteractableGlow
                 float dy = (y - center) / radius;
                 float distance = Mathf.Sqrt(dx * dx + dy * dy);
                 float edge = Mathf.Clamp(1f - distance, 0f, 1f);
-                float alpha = edge * edge * 0.72f;
+                float alpha = edge * edge * 0.84f;
                 image.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
             }
         }
