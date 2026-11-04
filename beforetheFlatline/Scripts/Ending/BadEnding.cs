@@ -29,6 +29,7 @@ public partial class BadEnding : Control
             return;
 
         _returningToTitle = true;
+        AudioManager.Instance?.FadeOutGameOver(0.7);
         if (SceneTransition.Instance != null)
             SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
         else
