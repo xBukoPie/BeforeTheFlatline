@@ -5,7 +5,8 @@ using SchoolYardGame;
 public partial class SleepInteractable : Area2D
 {
     private CharacterBody2D _player;
-    private ProcessModeEnum _previousPlayerMode;
+    private ProcessModeEnum _previousPlayerMode = ProcessModeEnum.Inherit;
+    private bool _playerFrozen;
     private bool _previousClockRunning;
     private bool _playerInside;
     private bool _sleeping;
@@ -77,7 +78,9 @@ public partial class SleepInteractable : Area2D
 
         _playerInside = false;
         InteractionPromptManager.Instance?.HidePrompt(this);
-        _player = null;
+        // Keep the player reference until the sleep transition has restored control.
+        if (!_sleeping)
+            _player = null;
     }
 
     private async void BeginSleep()
@@ -90,72 +93,82 @@ public partial class SleepInteractable : Area2D
         _previousClockRunning = DayClock.Instance?.Running ?? false;
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
+
         FreezePlayer();
 
-        var layer = new CanvasLayer
+        CanvasLayer layer = null;
+        bool slept = false;
+        try
         {
-            Name = "SleepTransition",
-            Layer = 126,
-            ProcessMode = ProcessModeEnum.Always
-        };
-        GetTree().Root.AddChild(layer);
+            layer = new CanvasLayer
+            {
+                Name = "SleepTransition",
+                Layer = 126,
+                ProcessMode = ProcessModeEnum.Always
+            };
+            GetTree().Root.AddChild(layer);
 
-        var black = new ColorRect
-        {
-            Name = "SleepFade",
-            Color = Colors.Black,
-            Modulate = new Color(1f, 1f, 1f, 0f),
-            MouseFilter = Control.MouseFilterEnum.Stop
-        };
-        black.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        layer.AddChild(black);
+            var black = new ColorRect
+            {
+                Name = "SleepFade",
+                Color = Colors.Black,
+                Modulate = new Color(1f, 1f, 1f, 0f),
+                MouseFilter = Control.MouseFilterEnum.Stop
+            };
+            black.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+            layer.AddChild(black);
 
-        var message = new Label
-        {
-            Text = "You let the day slip away...",
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            Modulate = new Color(1f, 1f, 1f, 0f),
-            MouseFilter = Control.MouseFilterEnum.Ignore
-        };
-        message.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        message.AddThemeFontSizeOverride("font_size", 26);
-        message.AddThemeColorOverride("font_color", new Color("eee8f7"));
-        black.AddChild(message);
+            var message = new Label
+            {
+                Text = "You let the day slip away...",
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Modulate = new Color(1f, 1f, 1f, 0f),
+                MouseFilter = Control.MouseFilterEnum.Ignore
+            };
+            message.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+            message.AddThemeFontSizeOverride("font_size", 26);
+            message.AddThemeColorOverride("font_color", new Color("eee8f7"));
+            black.AddChild(message);
 
-        await FadeTo(black, message, 1f, 1.2);
-        if (!IsInsideTree())
-            return;
+            await FadeTo(black, message, 1f, 1.2);
+            if (!IsInsideTree())
+                return;
 
-        bool slept = DayClock.Instance?.SleepUntilSchoolMorning() == true;
-        if (slept)
-        {
-            // Hold the clock at the exact wake-up time until the fade-in is complete.
-            if (DayClock.Instance != null)
-                DayClock.Instance.Running = false;
-            message.Text = "A new morning begins. It's time to get ready for school.";
-            SaveManager.Instance?.RequestAutoSave();
+            slept = DayClock.Instance?.SleepUntilSchoolMorning() == true;
+            if (slept)
+            {
+                if (DayClock.Instance != null)
+                    DayClock.Instance.Running = false;
+                message.Text = "A new morning begins. It's time to get ready for school.";
+                SaveManager.Instance?.RequestAutoSave();
+            }
+            else
+            {
+                message.Text = "You can't sleep just yet.";
+            }
+
+            await WaitOn(layer, 0.85);
+            await FadeTo(black, message, 0f, 0.9);
         }
-        else
+        catch (System.Exception ex)
         {
-            if (DayClock.Instance != null)
-                DayClock.Instance.Running = _previousClockRunning;
-            message.Text = "You can't sleep just yet.";
+            GD.PushError($"SleepInteractable: sleep transition failed: {ex.Message}");
         }
+        finally
+        {
+            if (layer != null && GodotObject.IsInstanceValid(layer))
+                layer.QueueFree();
 
-        await WaitOn(layer, 0.85);
-        await FadeTo(black, message, 0f, 0.9);
+            if (DayClock.Instance != null)
+                DayClock.Instance.Running = slept || _previousClockRunning;
 
-        if (GodotObject.IsInstanceValid(layer))
-            layer.QueueFree();
+            RestorePlayer();
+            _sleeping = false;
 
-        if (slept && DayClock.Instance != null)
-            DayClock.Instance.Running = true;
-
-        RestorePlayer();
-        _sleeping = false;
-        if (_playerInside && DayClock.Instance?.CanSleep == true)
-            InteractionPromptManager.Instance?.ShowPrompt(this, "[E] Sleep until morning", 55);
+            if (IsInsideTree() && _playerInside && DayClock.Instance?.CanSleep == true)
+                InteractionPromptManager.Instance?.ShowPrompt(this, "[E] Sleep until morning", 55);
+        }
     }
 
     private async Task FadeTo(ColorRect background, Label label, float alpha, double duration)
@@ -180,19 +193,41 @@ public partial class SleepInteractable : Area2D
     private void FreezePlayer()
     {
         if (_player == null || !GodotObject.IsInstanceValid(_player))
+        {
+            Node roomManager = GetTree().GetFirstNodeInGroup("room_manager");
+            _player = roomManager?.GetNodeOrNull<CharacterBody2D>("Player");
+        }
+
+        if (_player == null || !GodotObject.IsInstanceValid(_player) || _playerFrozen)
             return;
 
         _previousPlayerMode = _player.ProcessMode;
         _player.Velocity = Vector2.Zero;
         _player.ProcessMode = ProcessModeEnum.Disabled;
+        _playerFrozen = true;
     }
 
     private void RestorePlayer()
     {
+        if (!_playerFrozen)
+            return;
+
+        if (_player == null || !GodotObject.IsInstanceValid(_player))
+        {
+            Node roomManager = GetTree()?.GetFirstNodeInGroup("room_manager");
+            _player = roomManager?.GetNodeOrNull<CharacterBody2D>("Player");
+        }
+
         if (_player != null && GodotObject.IsInstanceValid(_player))
         {
             _player.Velocity = Vector2.Zero;
-            _player.ProcessMode = _previousPlayerMode;
+            _player.ProcessMode = _previousPlayerMode == ProcessModeEnum.Disabled
+                ? ProcessModeEnum.Inherit
+                : _previousPlayerMode;
+            _player.SetProcess(true);
+            _player.SetPhysicsProcess(true);
         }
+
+        _playerFrozen = false;
     }
 }
