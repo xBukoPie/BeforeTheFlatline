@@ -100,7 +100,6 @@ public partial class GuardianInteractable : Node2D
     private void RefreshAvailability()
     {
         _activeStage = GetAvailableStage();
-        _isAvailable = _activeStage > 0;
         _isAvailable = _activeStage != 0;
         Visible = _isAvailable;
         _talkArea.Monitoring = _isAvailable;
