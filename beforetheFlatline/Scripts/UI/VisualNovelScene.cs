@@ -279,13 +279,10 @@ public partial class VisualNovelScene : Control
         DialogueLine line = _lines[index];
         if (BeforeLinePresentationAsync != null)
         {
-            _memoryTransitionBlocked = true;
             await BeforeLinePresentationAsync(index, line);
             if (!GodotObject.IsInstanceValid(this) || !IsInsideTree() ||
                 requestId != _showLineRequestId)
                 return;
-
-            _memoryTransitionBlocked = false;
         }
 
         _index = index;
