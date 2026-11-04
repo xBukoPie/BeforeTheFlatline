@@ -37,32 +37,6 @@ public partial class GroundKeyPickup : Area2D
 
         _glow = WorldInteractableGlow.AddGlow(this, new Color("ffd36e"), 2.5f);
 
-        var promptLayer = new CanvasLayer
-        {
-            Name = "InteractionPromptLayer",
-            Layer = 105
-        };
-        AddChild(promptLayer);
-        _prompt.GetParent()?.RemoveChild(_prompt);
-        promptLayer.AddChild(_prompt);
-        _prompt.AnchorLeft = 0.5f;
-        _prompt.AnchorRight = 0.5f;
-        _prompt.AnchorTop = 1f;
-        _prompt.AnchorBottom = 1f;
-        _prompt.OffsetLeft = -280;
-        _prompt.OffsetRight = 280;
-        _prompt.OffsetTop = -94;
-        _prompt.OffsetBottom = -50;
-        _prompt.CustomMinimumSize = new Vector2(560, 44);
-        _prompt.HorizontalAlignment = HorizontalAlignment.Center;
-        _prompt.VerticalAlignment = VerticalAlignment.Center;
-        _prompt.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        _prompt.MouseFilter = Control.MouseFilterEnum.Ignore;
-        _prompt.AddThemeFontSizeOverride("font_size", 18);
-        _prompt.AddThemeColorOverride("font_color", Colors.White);
-        _prompt.AddThemeColorOverride("font_outline_color", Colors.Black);
-        _prompt.AddThemeConstantOverride("outline_size", 4);
-
         BodyEntered += OnBodyEntered;
         BodyExited += OnBodyExited;
         RefreshAvailability();
@@ -88,6 +62,7 @@ public partial class GroundKeyPickup : Area2D
     public override void _UnhandledInput(InputEvent @event)
     {
         if (_collected || !_playerInside || !IsKeyAvailable() ||
+            (InteractionPromptManager.Instance != null && !InteractionPromptManager.Instance.IsPrimary(this)) ||
             !@event.IsActionPressed("interact"))
             return;
 
@@ -96,9 +71,9 @@ public partial class GroundKeyPickup : Area2D
         string roomName = RoomKeyProgression.Instance?.CollectPendingKey() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(roomName))
         {
-            _prompt.Text = "The key is no longer here.";
-            _prompt.Visible = true;
+            InteractionPromptManager.Instance?.ShowNotice(this, "The key is no longer available.");
             _playerInside = false;
+            InteractionPromptManager.Instance?.HidePrompt(this);
             return;
         }
 
@@ -110,8 +85,8 @@ public partial class GroundKeyPickup : Area2D
         _sprite.Visible = false;
         if (_glow != null)
             _glow.Visible = false;
-        _prompt.Text = $"KEY ACQUIRED: {roomName} unlocked!";
-        _prompt.Visible = true;
+        InteractionPromptManager.Instance?.HidePrompt(this);
+        InteractionPromptManager.Instance?.ShowNotice(this, $"KEY ACQUIRED: {roomName} unlocked!", 2.5f);
         _feedbackRemaining = 2.5f;
 
         SaveManager.Instance?.RequestAutoSave();
@@ -133,14 +108,31 @@ public partial class GroundKeyPickup : Area2D
         if (!available)
         {
             _playerInside = false;
-            _prompt.Visible = false;
+            InteractionPromptManager.Instance?.HidePrompt(this);
+        }
+        else if (_playerInside)
+        {
+            InteractionPromptManager.Instance?.ShowPrompt(this, $"[E] Pick up {KeyRoomId} key", 90);
         }
     }
 
     private bool IsKeyAvailable()
     {
         string pending = RoomKeyProgression.Instance?.PendingKeyRoomName ?? string.Empty;
-        return string.Equals(pending, KeyRoomId, StringComparison.OrdinalIgnoreCase);
+        if (!string.Equals(pending, KeyRoomId, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        int keyIndex = KeyRoomId switch
+        {
+            "Kitchen" => 0,
+            "Laundry" => 1,
+            "Bathroom" => 2,
+            "MasterBedroom" => 3,
+            _ => -1
+        };
+
+        // A stale pending-key value must never reveal a later key before its previous memory.
+        return keyIndex >= 0 && StoryProgression.Instance?.CanOfferKeyForRoomIndex(keyIndex) == true;
     }
 
     private static string GetKeyTexturePath(string roomId) => roomId switch
@@ -158,15 +150,13 @@ public partial class GroundKeyPickup : Area2D
             return;
 
         _playerInside = true;
-        _prompt.Text = $"[E] Pick up {KeyRoomId} key";
-        _prompt.Visible = true;
+        InteractionPromptManager.Instance?.ShowPrompt(this, $"[E] Pick up {KeyRoomId} key", 90);
     }
 
     private void OnBodyExited(Node2D body)
     {
         _playerInside = false;
-        if (!_collected)
-            _prompt.Visible = false;
+        InteractionPromptManager.Instance?.HidePrompt(this);
     }
 
     private static void EnsureInteractAction()
