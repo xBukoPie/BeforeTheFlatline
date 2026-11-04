@@ -27,7 +27,7 @@ public partial class StoryPhotoInteractable : Area2D
             return;
         }
 
-        _glow = WorldInteractableGlow.AddGlow(this, new Color("f8d98a"), 2.4f);
+        _glow = WorldInteractableGlow.AddGlow(this, new Color("f8d98a"), 3.3f);
 
         BodyEntered += OnBodyEntered;
         BodyExited += OnBodyExited;
