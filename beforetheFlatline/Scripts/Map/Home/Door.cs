@@ -17,8 +17,6 @@ public partial class Door : Area2D
 
     private const bool DebugLog = true;   // prints door activity to the Output panel; set to false once doors work
 
-    private Label _hint;
-    private CanvasLayer _promptLayer;
     private bool _playerInside;
     private bool _mysteryIntroOpening;
     private float _closedPromptRemaining;
@@ -40,38 +38,6 @@ public partial class Door : Area2D
             });
         }
 
-        _promptLayer = new CanvasLayer
-        {
-            Name = "InteractionPromptLayer",
-            Layer = 105
-        };
-        AddChild(_promptLayer);
-
-        _hint = new Label
-        {
-            Text = $"[E] {Prompt}",
-            Visible = false,
-            ZIndex = 100,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            CustomMinimumSize = new Vector2(640, 56),
-            MouseFilter = Control.MouseFilterEnum.Ignore
-        };
-        _hint.AnchorLeft = 0.5f;
-        _hint.AnchorRight = 0.5f;
-        _hint.AnchorTop = 1f;
-        _hint.AnchorBottom = 1f;
-        _hint.OffsetLeft = -320;
-        _hint.OffsetRight = 320;
-        _hint.OffsetTop = -106;
-        _hint.OffsetBottom = -50;
-        _hint.AddThemeFontSizeOverride("font_size", 18);
-        _hint.AddThemeColorOverride("font_color", Colors.White);
-        _hint.AddThemeColorOverride("font_outline_color", Colors.Black);
-        _hint.AddThemeConstantOverride("outline_size", 4);
-        _promptLayer.AddChild(_hint);
-
         BodyEntered += OnBodyEntered;
         BodyExited += OnBodyExited;
     }
@@ -82,16 +48,15 @@ public partial class Door : Area2D
             return;
 
         _closedPromptRemaining = Mathf.Max(0f, _closedPromptRemaining - (float)delta);
-        if (_closedPromptRemaining <= 0f && IsInstanceValid(_hint))
-        {
-            _hint.Text = $"[E] {Prompt}";
-            _hint.Visible = _playerInside;
-        }
+        if (_closedPromptRemaining <= 0f && _playerInside && !AutoEnter)
+            InteractionPromptManager.Instance?.ShowPrompt(this, $"[E] {Prompt}", 30);
     }
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (_playerInside && @event.IsActionPressed("interact"))
+        if (_playerInside && !AutoEnter &&
+            (InteractionPromptManager.Instance == null || InteractionPromptManager.Instance.IsPrimary(this)) &&
+            @event.IsActionPressed("interact"))
         {
             if (DebugLog) GD.Print($"[Door] {Name}: interact pressed -> {TargetRoom} @ {TargetSpawn}");
             GetViewport().SetInputAsHandled();
@@ -103,9 +68,11 @@ public partial class Door : Area2D
     {
         if (DebugLog) GD.Print($"[Door] {Name}: '{body.Name}' entered the trigger");
         _playerInside = true;
-        _hint.Text = $"[E] {Prompt}";
-        _hint.Visible = true;
-        if (AutoEnter) Use();
+        _closedPromptRemaining = 0f;
+        if (AutoEnter)
+            Use();
+        else
+            InteractionPromptManager.Instance?.ShowPrompt(this, $"[E] {Prompt}", 30);
     }
 
     private void OnBodyExited(Node2D body)
@@ -113,8 +80,7 @@ public partial class Door : Area2D
         if (DebugLog) GD.Print($"[Door] {Name}: '{body.Name}' left the trigger");
         _playerInside = false;
         _closedPromptRemaining = 0f;
-        _hint.Text = $"[E] {Prompt}";
-        _hint.Visible = false;
+        InteractionPromptManager.Instance?.HidePrompt(this);
     }
 
     private static void EnsureInteractAction()
@@ -130,11 +96,8 @@ public partial class Door : Area2D
 
     private void ShowTemporaryPrompt(string message)
     {
-        if (_hint == null || !IsInstanceValid(_hint))
-            return;
-
-        _hint.Text = message;
-        _hint.Visible = true;
+        InteractionPromptManager.Instance?.HidePrompt(this);
+        InteractionPromptManager.Instance?.ShowNotice(this, message, ClosedMessageDuration);
         _closedPromptRemaining = Mathf.Max(0.5f, ClosedMessageDuration);
     }
 
