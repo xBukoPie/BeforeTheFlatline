@@ -519,4 +519,5 @@ void fragment()
 
         if (IsInsideTree())
             QueueFree();
-    }}
+    }
+}
