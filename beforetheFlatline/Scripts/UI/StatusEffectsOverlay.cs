@@ -146,18 +146,48 @@ public partial class StatusEffectsOverlay : CanvasLayer
         RefreshEffects();
     }
 
-    // Fade the active effects away before loading the bad ending.
-    public async void FadeForBadEnding(string scenePath)
+    // Re-arm the ending transition when an existing save is loaded.
+    public void ResetForLoadedGame(int currentSanity)
     {
-        if (_endingTransitionStarted)
-            return;
+        _endingTransitionStarted = false;
+        _endingFade = 1f;
+        _pauseMenuVisible = false;
+        _pauseFade = 1f;
+        _sanity = Mathf.Clamp(currentSanity, 0, SanityManager.MaxSanity);
+        _flashTime = 0f;
+        _noticeTime = 0f;
+
+        if (_root != null && GodotObject.IsInstanceValid(_root))
+            _root.Modulate = Colors.White;
+        if (_noticeLabel != null && GodotObject.IsInstanceValid(_noticeLabel))
+            _noticeLabel.Visible = false;
+
+        RefreshEffects();
+    }
+
+    // Returns false when a fade cannot start, allowing SanityManager to use a direct scene transition.
+    public bool FadeForBadEnding(string scenePath)
+    {
+        if (_endingTransitionStarted || _root == null ||
+            !GodotObject.IsInstanceValid(_root) || string.IsNullOrWhiteSpace(scenePath))
+            return false;
 
         _endingTransitionStarted = true;
-        var tween = CreateTween();
+        RunBadEndingFade(scenePath);
+        return true;
+    }
+
+    private async void RunBadEndingFade(string scenePath)
+    {
+        // The bad-ending transition must complete even if another system paused the tree.
+        var tween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
         tween.TweenProperty(_root, "modulate:a", 0f, 1.6f)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
         await ToSignal(tween, Tween.SignalName.Finished);
+
+        if (!IsInsideTree())
+            return;
 
         if (SceneTransition.Instance != null)
             SceneTransition.Instance.ChangeSceneToFile(scenePath);
