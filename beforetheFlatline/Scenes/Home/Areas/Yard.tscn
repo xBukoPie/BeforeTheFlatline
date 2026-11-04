@@ -173,6 +173,7 @@ Prompt = "School"
 Size = Vector2(30, 62)
 RequiresSchoolHours = true
 ShowLoadingScreen = true
+UseSchoolTravelLoadingScreen = true
 LoadingMessage = "The walk to school..."
 ClosedPrompt = "Too late for school today. Come back tomorrow morning."
 
