@@ -63,6 +63,7 @@ public partial class FirstDayMysteryIntro : Control
         await ToSignal(tween, Tween.SignalName.Finished);
 
         DayClock.Instance?.MarkFirstDayMysteryEncounterCompleted();
+        SaveManager.Instance?.RequestAutoSave();
         Door door = DoorToContinue;
 
         GetParent()?.RemoveChild(this);
