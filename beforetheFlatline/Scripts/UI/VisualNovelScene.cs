@@ -26,6 +26,7 @@ public partial class VisualNovelScene : Control
     [Export] public bool ShowPlaceholders { get; set; } = true;
     [Export] public bool ShowCharacterSlots { get; set; } = true;
     [Export] public bool AllowPauseMenu { get; set; } = true;
+    [Export] public bool CompactChoiceMode { get; set; } = false;
 
     [ExportGroup("Demo")]
     [Export] public bool PlayDemoOnReady { get; set; } = true;
@@ -44,6 +45,7 @@ public partial class VisualNovelScene : Control
     private Label _nameLabel, _hint;
     private RichTextLabel _text, _logText;
     private VBoxContainer _choiceBox;
+    private PanelContainer _choiceBackdrop;
     private Button _autoButton, _skipButton, _logButton, _optionsButton, _closeLogButton;
 
     private IReadOnlyList<DialogueLine> _lines;
@@ -84,6 +86,7 @@ public partial class VisualNovelScene : Control
         _text = GetNode<RichTextLabel>("%DialogueText");
         _hint = GetNode<Label>("%ContinueHint");
         _choiceBox = GetNode<VBoxContainer>("%ChoiceContainer");
+        ConfigureChoiceLayout();
 
         _autoButton = GetNode<Button>("%AutoButton");
         _skipButton = GetNode<Button>("%SkipButton");
@@ -305,9 +308,66 @@ public partial class VisualNovelScene : Control
         Advance();                                 // second press goes to the next line
     }
 
+    private void ConfigureChoiceLayout()
+    {
+        if (!CompactChoiceMode)
+            return;
+
+        Control ui = GetNode<Control>("UI");
+        _choiceBox.AnchorLeft = 1f;
+        _choiceBox.AnchorRight = 1f;
+        _choiceBox.AnchorTop = 0.5f;
+        _choiceBox.AnchorBottom = 0.5f;
+        _choiceBox.OffsetLeft = -362f;
+        _choiceBox.OffsetRight = -30f;
+        _choiceBox.OffsetTop = -118f;
+        _choiceBox.OffsetBottom = 118f;
+        _choiceBox.AddThemeConstantOverride("separation", 8);
+        _choiceBox.ZIndex = 2;
+        _choiceBox.CustomMinimumSize = new Vector2(332f, 0f);
+
+        _choiceBackdrop = new PanelContainer
+        {
+            Name = "CompactChoiceBackdrop",
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            Visible = false,
+            ZIndex = 1
+        };
+        _choiceBackdrop.AnchorLeft = 1f;
+        _choiceBackdrop.AnchorRight = 1f;
+        _choiceBackdrop.AnchorTop = 0.5f;
+        _choiceBackdrop.AnchorBottom = 0.5f;
+        _choiceBackdrop.OffsetLeft = -374f;
+        _choiceBackdrop.OffsetRight = -18f;
+        _choiceBackdrop.OffsetTop = -132f;
+        _choiceBackdrop.OffsetBottom = 132f;
+        _choiceBackdrop.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0.035f, 0.028f, 0.055f, 0.84f),
+            BorderColor = new Color("b6a3d8", 0.78f),
+            BorderWidthLeft = 1,
+            BorderWidthRight = 1,
+            BorderWidthTop = 1,
+            BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 9,
+            CornerRadiusTopRight = 9,
+            CornerRadiusBottomLeft = 9,
+            CornerRadiusBottomRight = 9,
+            ContentMarginLeft = 12,
+            ContentMarginRight = 12,
+            ContentMarginTop = 10,
+            ContentMarginBottom = 10
+        });
+
+        ui.AddChild(_choiceBackdrop);
+        ui.MoveChild(_choiceBackdrop, _choiceBox.GetIndex());
+    }
+
     private void ShowChoices(DialogueChoice[] choices)
     {
         _choicesShowing = true;
+        if (_choiceBackdrop != null)
+            _choiceBackdrop.Visible = true;
         _hint.Visible = false;
 
         _idle = 0;
@@ -324,10 +384,10 @@ public partial class VisualNovelScene : Control
             var button = new Button
             {
                 Text = ResolvePlayerNameTokens(choices[i].Label),
-                CustomMinimumSize = new Vector2(0, 100),
+                CustomMinimumSize = new Vector2(0, CompactChoiceMode ? 54 : 100),
                 FocusMode = FocusModeEnum.All
             };
-            button.AddThemeFontSizeOverride("font_size", 30);
+            button.AddThemeFontSizeOverride("font_size", CompactChoiceMode ? 20 : 30);
             button.Pressed += () => OnChoicePressed(captured, choices[captured]);
             _choiceBox.AddChild(button);
         }
@@ -340,6 +400,8 @@ public partial class VisualNovelScene : Control
     {
         _choicesShowing = false;
         _choiceBox.Visible = false;
+        if (_choiceBackdrop != null)
+            _choiceBackdrop.Visible = false;
     }
 
     private void OnChoicePressed(int choiceIndex, DialogueChoice choice)
