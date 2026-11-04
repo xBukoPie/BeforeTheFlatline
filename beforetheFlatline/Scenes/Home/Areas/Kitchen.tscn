@@ -4,9 +4,9 @@
 [ext_resource type="Texture2D" uid="uid://dkvlsq5h8vai6" path="res://Assets/Map/House/NoDoor.jpg" id="1_stdmg"]
 [ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Door.tscn" id="2_lb6fg"]
 [ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Lamp.tscn" id="3_6kgnw"]
-[ext_resource type="PackedScene" path="res://Scenes/Home/Areas/GroundKeyPickup.tscn" id="98_key_pickup"]
-[ext_resource type="Script" path="res://Scripts/Map/Home/StoryPhotoInteractable.cs" id="99_story_photo"]
-[ext_resource type="Texture2D" path="res://Assets/Objects/objectPolaroidPhoto.png" id="100_polaroid"]
+[ext_resource type="PackedScene" uid="uid://df7360cbmy43x" path="res://Scenes/Home/Areas/GroundKeyPickup.tscn" id="98_key_pickup"]
+[ext_resource type="Script" uid="uid://bec3m6woguqol" path="res://Scripts/Map/Home/StoryPhotoInteractable.cs" id="99_story_photo"]
+[ext_resource type="Texture2D" uid="uid://21uxlmxn23jw" path="res://Assets/Objects/objectPolaroidPhoto.png" id="100_polaroid"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
 size = Vector2(238, 4)
@@ -124,21 +124,20 @@ LockedPrompt = "Locked. You need a key."
 position = Vector2(-27.999992, 3.000002)
 scale = Vector2(0.7, 0.7)
 
-[node name="KeyForLaundry" parent="." instance=ExtResource("98_key_pickup")]
-position = Vector2(25, 25)
+[node name="KeyForLaundry" parent="." unique_id=1682927592 instance=ExtResource("98_key_pickup")]
+position = Vector2(-7.142857, 47.142857)
 KeyRoomId = "Laundry"
 
-[node name="KitchenMemoryPhoto" type="Area2D" parent="."]
-position = Vector2(35, 20)
+[node name="KitchenMemoryPhoto" type="Area2D" parent="." unique_id=1376246517]
+position = Vector2(5.714285, -40)
 collision_layer = 0
 collision_mask = 2
 script = ExtResource("99_story_photo")
-MemoryId = "Kitchen"
 
-[node name="Sprite2D" type="Sprite2D" parent="KitchenMemoryPhoto"]
+[node name="Sprite2D" type="Sprite2D" parent="KitchenMemoryPhoto" unique_id=1625978003]
 z_index = 5
-texture = ExtResource("100_polaroid")
 scale = Vector2(0.28, 0.28)
+texture = ExtResource("100_polaroid")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="KitchenMemoryPhoto"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="KitchenMemoryPhoto" unique_id=918151912]
 shape = SubResource("StoryPhotoShape")
