@@ -63,6 +63,9 @@ public partial class VisualNovelScene : Control
     private Tween _typeTween, _nameTagTween;
     private Control _pauseMenu;
     private bool _clockWasRunningBeforePause;
+    private Control _uiRoot;
+    private Control _dimOverlay;
+    private CanvasLayer _foregroundCanvas;
 
     // Raised whenever the active dialogue line changes; story cutscenes use this for synced visual cues.
     public event Action<int, DialogueLine> LinePresented;
@@ -87,15 +90,15 @@ public partial class VisualNovelScene : Control
         _text = GetNode<RichTextLabel>("%DialogueText");
         _hint = GetNode<Label>("%ContinueHint");
         _choiceBox = GetNode<VBoxContainer>("%ChoiceContainer");
+        _uiRoot = GetNode<Control>("UI");
+        _dimOverlay = GetNode<Control>("Dim");
         ConfigureChoiceLayout();
-
-        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, true);
 
         _autoButton = GetNode<Button>("%AutoButton");
         _skipButton = GetNode<Button>("%SkipButton");
         _logButton = GetNode<Button>("%LogButton");
         _optionsButton = GetNode<Button>("%OptionsButton");
-        _sideButtons = GetNode<Control>("UI/SideButtons");
+        _sideButtons = _uiRoot.GetNode<Control>("SideButtons");
 
         _logPanel = GetNode<PanelContainer>("%LogPanel");
         _logText = GetNode<RichTextLabel>("%LogText");
@@ -107,7 +110,7 @@ public partial class VisualNovelScene : Control
         GetNode<Control>("%Background").Visible = ShowBackground;
         // The dim overlay belongs to the scene background too. Leaving it visible
         // would darken the cutscene artwork even when its background is disabled.
-        GetNode<Control>("Dim").Visible = ShowBackground;
+        _dimOverlay.Visible = ShowBackground;
         _leftSlot.Visible = ShowCharacterSlots;
         _rightSlot.Visible = ShowCharacterSlots;
         _optionsButton.Visible = AllowPauseMenu;
@@ -129,6 +132,10 @@ public partial class VisualNovelScene : Control
         _text.Text = string.Empty;
         _nameLabel.Text = string.Empty;
 
+        RaiseVisualsAboveVignette();
+        VisibilityChanged += OnVisibilityChanged;
+        OnVisibilityChanged();
+
         StartHintPulse();
 
         if (PlayDemoOnReady)
@@ -137,9 +144,53 @@ public partial class VisualNovelScene : Control
 
     public override void _ExitTree()
     {
+        VisibilityChanged -= OnVisibilityChanged;
         // Prevent a local dialogue pause from leaving the global status overlay hidden after this scene closes.
         StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
         StatusEffectsOverlay.Instance?.SetCinematicVignette(this, false);
+    }
+
+    private void RaiseVisualsAboveVignette()
+    {
+        var originalChildren = new List<Node>();
+        foreach (Node child in GetChildren())
+            originalChildren.Add(child);
+
+        _foregroundCanvas = new CanvasLayer
+        {
+            Name = "DialogueForegroundLayer",
+            Layer = 60
+        };
+        AddChild(_foregroundCanvas);
+
+        var foregroundRoot = new Control
+        {
+            Name = "DialogueForegroundRoot",
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
+        foregroundRoot.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        _foregroundCanvas.AddChild(foregroundRoot);
+
+        foreach (Node child in originalChildren)
+        {
+            RemoveChild(child);
+            foregroundRoot.AddChild(child);
+        }
+    }
+
+    private void OnVisibilityChanged()
+    {
+        bool visible = IsVisibleInTree();
+        if (_foregroundCanvas != null && GodotObject.IsInstanceValid(_foregroundCanvas))
+            _foregroundCanvas.Visible = visible;
+
+        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, visible);
+    }
+
+    public void SetPresentationVisible(bool visible)
+    {
+        Visible = visible;
+        OnVisibilityChanged();
     }
 
     public override void _Process(double delta)
@@ -233,13 +284,24 @@ public partial class VisualNovelScene : Control
 
         string resolvedSpeaker = ResolvePlayerNameTokens(line.Speaker);
         string resolvedText = ResolvePlayerNameTokens(line.Text);
-        _nameLabel.Text = resolvedSpeaker;
-        _nameTag.ResetSize();
-        PlaceNameTag(line.Side, animate: _nameTagPlaced);
+        bool hideMemoryPointOfView = CompactChoiceMode &&
+            (string.Equals(line.Speaker, "Memory", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(line.Speaker, "You", StringComparison.OrdinalIgnoreCase));
+
+        _nameTag.Visible = !hideMemoryPointOfView;
+        _nameLabel.Text = hideMemoryPointOfView ? string.Empty : resolvedSpeaker;
+        if (!hideMemoryPointOfView)
+        {
+            _nameTag.ResetSize();
+            PlaceNameTag(line.Side, animate: _nameTagPlaced);
+        }
         _nameTagPlaced = true;
         HighlightSpeaker(line.Side);
 
-        AppendLog($"[b]{Escape(resolvedSpeaker)}[/b]\n{Escape(resolvedText)}\n\n");
+        if (hideMemoryPointOfView)
+            AppendLog($"{Escape(resolvedText)}\n\n");
+        else
+            AppendLog($"[b]{Escape(resolvedSpeaker)}[/b]\n{Escape(resolvedText)}\n\n");
 
         KillTween(ref _typeTween);
         _text.Text = resolvedText;
@@ -400,9 +462,8 @@ public partial class VisualNovelScene : Control
         _sideButtonsBackdrop.AddThemeStyleboxOverride("panel", CreateChoiceButtonStyle(
             new Color(0.025f, 0.025f, 0.045f, 0.82f),
             new Color("77708f", 0.56f)));
-        Control ui = GetNode<Control>("UI");
-        ui.AddChild(_sideButtonsBackdrop);
-        ui.MoveChild(_sideButtonsBackdrop, _sideButtons.GetIndex());
+        _uiRoot.AddChild(_sideButtonsBackdrop);
+        _uiRoot.MoveChild(_sideButtonsBackdrop, _sideButtons.GetIndex());
 
         foreach (Button button in new[] { _autoButton, _skipButton, _logButton, _optionsButton, _closeLogButton })
         {
@@ -431,7 +492,6 @@ public partial class VisualNovelScene : Control
         if (!CompactChoiceMode)
             return;
 
-        Control ui = GetNode<Control>("UI");
         _choiceBox.AnchorLeft = 1f;
         _choiceBox.AnchorRight = 1f;
         _choiceBox.AnchorTop = 0.40f;
@@ -477,8 +537,8 @@ public partial class VisualNovelScene : Control
             ContentMarginBottom = 8
         });
 
-        ui.AddChild(_choiceBackdrop);
-        ui.MoveChild(_choiceBackdrop, _choiceBox.GetIndex());
+        _uiRoot.AddChild(_choiceBackdrop);
+        _uiRoot.MoveChild(_choiceBackdrop, _choiceBox.GetIndex());
     }
 
     private void ShowChoices(DialogueChoice[] choices)
