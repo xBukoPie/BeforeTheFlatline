@@ -6,6 +6,7 @@ using System.Linq;
 public partial class FlowchartDropCanvas : PanelContainer
 {
     public event Action<string, string> BlockDropped;
+    public event Action ContentChanged;
     private readonly VBoxContainer _blocks = new();
     private readonly List<FlowchartBlockControl> _placedBlocks = new();
 
@@ -119,6 +120,8 @@ public partial class FlowchartDropCanvas : PanelContainer
 
         if (definitions.Count == 0)
             ShowEmptyMessage();
+
+        ContentChanged?.Invoke();
     }
 
     private void ShowEmptyMessage()
