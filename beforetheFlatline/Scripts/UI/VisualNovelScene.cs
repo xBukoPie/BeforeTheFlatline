@@ -87,8 +87,6 @@ public partial class VisualNovelScene : Control
         _hint = GetNode<Label>("%ContinueHint");
         _choiceBox = GetNode<VBoxContainer>("%ChoiceContainer");
         ConfigureChoiceLayout();
-        if (CompactChoiceMode)
-            ApplyMemoryDialogueTheme();
 
         StatusEffectsOverlay.Instance?.SetCinematicVignette(this, true);
 
@@ -100,6 +98,9 @@ public partial class VisualNovelScene : Control
         _logPanel = GetNode<PanelContainer>("%LogPanel");
         _logText = GetNode<RichTextLabel>("%LogText");
         _closeLogButton = GetNode<Button>("%CloseLogButton");
+
+        if (CompactChoiceMode)
+            ApplyMemoryDialogueTheme();
 
         GetNode<Control>("%Background").Visible = ShowBackground;
         // The dim overlay belongs to the scene background too. Leaving it visible
@@ -357,6 +358,19 @@ public partial class VisualNovelScene : Control
         _text.AddThemeFontSizeOverride("normal_font_size", 24);
         _hint.AddThemeColorOverride("font_color", new Color("cbc4d7"));
         _hint.AddThemeFontSizeOverride("font_size", 16);
+
+        foreach (Button button in new[] { _autoButton, _skipButton, _logButton, _closeLogButton })
+        {
+            button.AddThemeColorOverride("font_color", new Color("e5dfed"));
+            button.AddThemeColorOverride("font_hover_color", Colors.White);
+            button.AddThemeColorOverride("font_pressed_color", Colors.White);
+            button.AddThemeStyleboxOverride("normal", CreateChoiceButtonStyle(
+                new Color(0.035f, 0.035f, 0.06f, 0.72f), new Color("77708f", 0.5f)));
+            button.AddThemeStyleboxOverride("hover", CreateChoiceButtonStyle(
+                new Color(0.13f, 0.12f, 0.19f, 0.9f), new Color("9e91b5", 0.8f)));
+            button.AddThemeStyleboxOverride("pressed", CreateChoiceButtonStyle(
+                new Color(0.20f, 0.17f, 0.27f, 0.95f), new Color("b5a6ce", 0.9f)));
+        }
     }
 
     private void ConfigureChoiceLayout()
