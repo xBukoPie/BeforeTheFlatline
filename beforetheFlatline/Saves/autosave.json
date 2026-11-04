@@ -1,38 +1,24 @@
 {
-	"challenge_progress": {
-		"1": [
-			"flowchart",
-			"sequence",
-			"condition",
-			"final"
-		],
-		"2": [
-			"flowchart",
-			"sequence",
-			"final"
-		]
-	},
+	"challenge_progress": {},
 	"clock_running": true,
-	"day": 3,
+	"day": 1,
 	"first_day_special_greeting_pending": false,
-	"hour": 6.5,
+	"hour": 8.0,
 	"kind": "autosave",
 	"mystery_encounter_seen": true,
-	"player_x": -24.3951816558838,
-	"player_y": 3.79695534706116,
+	"player_x": 220.809005737305,
+	"player_y": -52.9987983703613,
 	"room_keys": {
 		"bathroom_unlocked_day": -1,
-		"hidden_points": 175,
-		"keys_earned": 1,
-		"kitchen_unlocked_day": 1,
+		"hidden_points": 0,
+		"keys_earned": 0,
+		"kitchen_unlocked_day": -1,
 		"laundry_unlocked_day": -1,
 		"master_bedroom_unlocked_day": -1,
 		"pending_key_room": "",
-		"unlocked_rooms": [
-			"Kitchen"
-		]
+		"unlocked_rooms": []
 	},
-	"room_path": "res://Scenes/Home/Areas/PlayerRoom.tscn",
+	"room_path": "res://Scenes/School/School.tscn",
 	"sanity_state": {
 		"current_sanity": 100,
 		"debuffs": {
@@ -50,29 +36,25 @@
 			"Pressure": 100
 		}
 	},
-	"saved_at": "2026-11-04 21:44:41",
+	"saved_at": "2026-11-04 22:32:19",
 	"scene_path": "res://Scenes/Home/Areas/World.tscn",
 	"school_completed": false,
 	"school_friend_interactions": {
-		"day": 3,
+		"day": 1,
 		"friends": []
 	},
 	"school_friend_spawn_plan": {
 		"after_assessment": false,
 		"classroom_greeter": "Jepoy",
 		"created": true,
-		"day": 2,
+		"day": 1,
 		"entries": []
 	},
-	"school_started": false,
+	"school_started": true,
 	"slot": 0,
 	"story_progress": {
-		"completed_memories": [
-			"Kitchen"
-		],
-		"guardian_stages_seen": [
-			1
-		]
+		"completed_memories": [],
+		"guardian_stages_seen": []
 	},
 	"version": 1
 }
