@@ -3,7 +3,9 @@ using SchoolYardGame;
 
 public partial class BadEnding : Control
 {
-    public override void _Ready()
+    private bool _returningToTitle;
+
+    public override async void _Ready()
     {
         ProcessMode = ProcessModeEnum.Always;
         if (DayClock.Instance != null)
@@ -11,8 +13,26 @@ public partial class BadEnding : Control
 
         BuildUi();
 
-        // The flatline track begins with the hospital cutscene, not during the transition fade.
-        AudioManager.Instance?.PlayGameOver();
+        // Start the monitor track with the cutscene and return before its final tail.
+        double trackLength = AudioManager.Instance?.PlayGameOver() ?? 8.0;
+        double returnDelay = System.Math.Max(3.0, trackLength - 1.6);
+        SceneTreeTimer timer = GetTree().CreateTimer(returnDelay, true);
+        await ToSignal(timer, SceneTreeTimer.SignalName.Timeout);
+
+        if (IsInsideTree())
+            ReturnToTitle();
+    }
+
+    private void ReturnToTitle()
+    {
+        if (_returningToTitle)
+            return;
+
+        _returningToTitle = true;
+        if (SceneTransition.Instance != null)
+            SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+        else
+            GetTree().ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
     }
 
     private void BuildUi()
@@ -30,6 +50,27 @@ public partial class BadEnding : Control
         };
         background.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(background);
+
+        Texture2D vignetteTexture = GD.Load<Texture2D>("res://Assets/Effects/flatlineVignette.png");
+        if (vignetteTexture != null)
+        {
+            var vignette = new TextureRect
+            {
+                Name = "FlatlineVignette",
+                Texture = vignetteTexture,
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.Scale,
+                TextureFilter = CanvasItem.TextureFilterEnum.Linear,
+                Modulate = new Color(0f, 0f, 0f, 0.78f),
+                MouseFilter = Control.MouseFilterEnum.Ignore
+            };
+            vignette.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+            AddChild(vignette);
+        }
+        else
+        {
+            GD.PushWarning("BadEnding: flatline vignette texture could not be loaded.");
+        }
 
         var darken = new ColorRect
         {
@@ -87,13 +128,7 @@ public partial class BadEnding : Control
             CustomMinimumSize = new Vector2(0, 48),
             SizeFlagsHorizontal = SizeFlags.ExpandFill
         };
-        returnButton.Pressed += () =>
-        {
-            if (SceneTransition.Instance != null)
-                SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
-            else
-                GetTree().ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
-        };
+        returnButton.Pressed += ReturnToTitle;
         stack.AddChild(returnButton);
     }
 }
