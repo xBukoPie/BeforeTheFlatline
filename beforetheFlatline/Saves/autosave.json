@@ -1,55 +1,78 @@
 {
-	"challenge_progress": {},
+	"challenge_progress": {
+		"1": [
+			"flowchart",
+			"sequence",
+			"condition",
+			"final"
+		],
+		"2": [
+			"flowchart",
+			"sequence",
+			"final"
+		]
+	},
 	"clock_running": true,
-	"day": 1,
+	"day": 3,
 	"first_day_special_greeting_pending": false,
-	"hour": 17.5312347412109,
+	"hour": 6.5,
 	"kind": "autosave",
 	"mystery_encounter_seen": true,
-	"player_x": -79.7999954223633,
-	"player_y": -19.5999984741211,
+	"player_x": -24.3951816558838,
+	"player_y": 3.79695534706116,
 	"room_keys": {
-		"hidden_points": 0,
-		"keys_earned": 0,
+		"bathroom_unlocked_day": -1,
+		"hidden_points": 175,
+		"keys_earned": 1,
+		"kitchen_unlocked_day": 1,
+		"laundry_unlocked_day": -1,
+		"master_bedroom_unlocked_day": -1,
 		"pending_key_room": "",
-		"unlocked_rooms": []
+		"unlocked_rooms": [
+			"Kitchen"
+		]
 	},
-	"room_path": "res://Scenes/Home/Areas/LivingRoom.tscn",
+	"room_path": "res://Scenes/Home/Areas/PlayerRoom.tscn",
 	"sanity_state": {
-		"current_sanity": 56,
+		"current_sanity": 100,
 		"debuffs": {
 			"Anxiety": 0,
 			"Confusion": 0,
-			"Dizziness": 34,
+			"Dizziness": 0,
 			"Pressure": 0
 		},
-		"difficulty_penalty": 2,
-		"failed_test_count": 2,
+		"difficulty_penalty": 0,
+		"failed_test_count": 0,
 		"recovery_targets": {
 			"Anxiety": 100,
 			"Confusion": 100,
-			"Dizziness": 83,
+			"Dizziness": 100,
 			"Pressure": 100
 		}
 	},
-	"saved_at": "2026-11-04 20:04:29",
+	"saved_at": "2026-11-04 21:44:41",
 	"scene_path": "res://Scenes/Home/Areas/World.tscn",
-	"school_completed": true,
+	"school_completed": false,
 	"school_friend_interactions": {
-		"day": 1,
+		"day": 3,
 		"friends": []
 	},
 	"school_friend_spawn_plan": {
 		"after_assessment": false,
-		"classroom_greeter": "",
-		"created": false,
-		"day": -1,
+		"classroom_greeter": "Jepoy",
+		"created": true,
+		"day": 2,
 		"entries": []
 	},
-	"school_started": true,
+	"school_started": false,
 	"slot": 0,
 	"story_progress": {
-		"completed_memories": []
+		"completed_memories": [
+			"Kitchen"
+		],
+		"guardian_stages_seen": [
+			1
+		]
 	},
 	"version": 1
 }
