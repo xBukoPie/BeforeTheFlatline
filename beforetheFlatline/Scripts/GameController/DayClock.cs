@@ -56,6 +56,26 @@ public partial class DayClock : Node
     public bool IsSchoolOpen => Hour >= SchoolOpenHour && Hour < SchoolClosingHour;
     public bool IsNight => Hour < SchoolOpenHour || Hour >= NightBeginsHour;
 
+    public bool CanSleep =>
+        (Hour >= SchoolClosingHour || Hour < SchoolOpenHour) &&
+        (DayNumber > 1 || SchoolChallengeCompletedToday);
+
+    // Advance directly to the next school morning. Sleeping after midnight wakes
+    // the player later that same morning; sleeping in the evening advances a day.
+    public bool SleepUntilSchoolMorning()
+    {
+        if (!CanSleep)
+            return false;
+
+        float hoursUntilMorning = Mathf.PosMod(SchoolOpenHour - Hour, 24f);
+        if (hoursUntilMorning < 0.01f)
+            hoursUntilMorning = 24f;
+
+        AdvanceHours(hoursUntilMorning);
+        Running = true;
+        return true;
+    }
+
     public override void _Ready()
     {
         if (Instance != null && Instance != this)
