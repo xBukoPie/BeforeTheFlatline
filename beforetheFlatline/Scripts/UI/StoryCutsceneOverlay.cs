@@ -472,15 +472,25 @@ void fragment()
             _dialogue.DialogueFinished -= OnDialogueFinished;
         }
 
-        // This fade happens once when leaving the memory, never between dialogue lines.
-        Tween exitTween = CreateTween();
-        exitTween.TweenProperty(this, "modulate:a", 0f, 0.42)
-            .SetTrans(Tween.TransitionType.Sine)
-            .SetEase(Tween.EaseType.InOut);
-        await ToSignal(exitTween, Tween.SignalName.Finished);
+        // Cover the recollection before returning control to the live room.
+        if (_transitionCover != null && GodotObject.IsInstanceValid(_transitionCover))
+        {
+            _transitionCover.Visible = true;
+            _transitionText.Visible = false;
+            MoveChild(_transitionCover, GetChildCount() - 1);
+
+            Tween coverToBlack = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+            coverToBlack.TweenProperty(_transitionCover, "modulate:a", 1f, 0.48f)
+                .SetTrans(Tween.TransitionType.Sine)
+                .SetEase(Tween.EaseType.InOut);
+            await ToSignal(coverToBlack, Tween.SignalName.Finished);
+        }
 
         if (!IsInsideTree())
             return;
+
+        if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
+            _dialogue.Visible = false;
 
         GetTree().Paused = _previousTreePaused;
         if (DayClock.Instance != null)
@@ -489,7 +499,24 @@ void fragment()
 
         Action callback = _onFinished;
         _onFinished = null;
-        QueueFree();
         callback?.Invoke();
-    }
-}
+
+        // The final memory callback starts the global scene fade while this cover
+        // remains black. The old world is then replaced without flashing through.
+        if (_isEnding && SceneTransition.Instance?.IsBusy == true)
+            return;
+
+        // For ordinary recollections, reveal the restored room only after the
+        // memory overlay is fully opaque, then remove the overlay.
+        if (_transitionCover != null && GodotObject.IsInstanceValid(_transitionCover))
+        {
+            Tween revealRoom = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+            revealRoom.TweenProperty(_transitionCover, "modulate:a", 0f, 0.62f)
+                .SetTrans(Tween.TransitionType.Sine)
+                .SetEase(Tween.EaseType.InOut);
+            await ToSignal(revealRoom, Tween.SignalName.Finished);
+        }
+
+        if (IsInsideTree())
+            QueueFree();
+    }}
