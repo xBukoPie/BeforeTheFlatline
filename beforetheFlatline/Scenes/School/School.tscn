@@ -413,7 +413,6 @@ TargetRoom = "uid://b2wmpq2d1fy4t"
 TargetSpawn = "FromSchool"
 Prompt = "Classroom"
 Size = Vector2(30, 62)
-TriggersFirstDayMystery = true
 
 [node name="Spawns" type="Node2D" parent="." unique_id=1813384167]
 position = Vector2(0, 1)
