@@ -318,13 +318,13 @@ public partial class VisualNovelScene : Control
         _choiceBox.AnchorRight = 1f;
         _choiceBox.AnchorTop = 0.5f;
         _choiceBox.AnchorBottom = 0.5f;
-        _choiceBox.OffsetLeft = -362f;
-        _choiceBox.OffsetRight = -30f;
-        _choiceBox.OffsetTop = -118f;
-        _choiceBox.OffsetBottom = 118f;
-        _choiceBox.AddThemeConstantOverride("separation", 8);
+        _choiceBox.OffsetLeft = -354f;
+        _choiceBox.OffsetRight = -26f;
+        _choiceBox.OffsetTop = -112f;
+        _choiceBox.OffsetBottom = 112f;
+        _choiceBox.AddThemeConstantOverride("separation", 6);
         _choiceBox.ZIndex = 2;
-        _choiceBox.CustomMinimumSize = new Vector2(332f, 0f);
+        _choiceBox.CustomMinimumSize = new Vector2(328f, 0f);
 
         _choiceBackdrop = new PanelContainer
         {
@@ -337,13 +337,13 @@ public partial class VisualNovelScene : Control
         _choiceBackdrop.AnchorRight = 1f;
         _choiceBackdrop.AnchorTop = 0.5f;
         _choiceBackdrop.AnchorBottom = 0.5f;
-        _choiceBackdrop.OffsetLeft = -374f;
-        _choiceBackdrop.OffsetRight = -18f;
-        _choiceBackdrop.OffsetTop = -132f;
-        _choiceBackdrop.OffsetBottom = 132f;
+        _choiceBackdrop.OffsetLeft = -366f;
+        _choiceBackdrop.OffsetRight = -14f;
+        _choiceBackdrop.OffsetTop = -124f;
+        _choiceBackdrop.OffsetBottom = 124f;
         _choiceBackdrop.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
-            BgColor = new Color(0.035f, 0.028f, 0.055f, 0.84f),
+            BgColor = new Color(0.035f, 0.028f, 0.055f, 0.70f),
             BorderColor = new Color(0.71f, 0.64f, 0.85f, 0.78f),
             BorderWidthLeft = 1,
             BorderWidthRight = 1,
@@ -353,10 +353,10 @@ public partial class VisualNovelScene : Control
             CornerRadiusTopRight = 9,
             CornerRadiusBottomLeft = 9,
             CornerRadiusBottomRight = 9,
-            ContentMarginLeft = 12,
-            ContentMarginRight = 12,
-            ContentMarginTop = 10,
-            ContentMarginBottom = 10
+            ContentMarginLeft = 10,
+            ContentMarginRight = 10,
+            ContentMarginTop = 8,
+            ContentMarginBottom = 8
         });
 
         ui.AddChild(_choiceBackdrop);
@@ -384,16 +384,51 @@ public partial class VisualNovelScene : Control
             var button = new Button
             {
                 Text = ResolvePlayerNameTokens(choices[i].Label),
-                CustomMinimumSize = new Vector2(0, CompactChoiceMode ? 54 : 100),
+                CustomMinimumSize = new Vector2(0, CompactChoiceMode ? 46 : 100),
+                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                 FocusMode = FocusModeEnum.All
             };
-            button.AddThemeFontSizeOverride("font_size", CompactChoiceMode ? 20 : 30);
+            button.AddThemeFontSizeOverride("font_size", CompactChoiceMode ? 18 : 30);
+            if (CompactChoiceMode)
+            {
+                button.AddThemeColorOverride("font_color", new Color("f3edf9"));
+                button.AddThemeColorOverride("font_hover_color", Colors.White);
+                button.AddThemeStyleboxOverride("normal", CreateChoiceButtonStyle(
+                    new Color(0.07f, 0.055f, 0.10f, 0.66f), new Color(0.68f, 0.61f, 0.80f, 0.58f)));
+                button.AddThemeStyleboxOverride("hover", CreateChoiceButtonStyle(
+                    new Color(0.20f, 0.15f, 0.28f, 0.82f), new Color(0.82f, 0.75f, 0.94f, 0.92f)));
+                button.AddThemeStyleboxOverride("pressed", CreateChoiceButtonStyle(
+                    new Color(0.27f, 0.20f, 0.37f, 0.90f), new Color(0.90f, 0.83f, 1f, 1f)));
+                button.AddThemeStyleboxOverride("focus", CreateChoiceButtonStyle(
+                    new Color(0.12f, 0.09f, 0.18f, 0.86f), new Color(0.95f, 0.88f, 1f, 1f)));
+            }
             button.Pressed += () => OnChoicePressed(captured, choices[captured]);
             _choiceBox.AddChild(button);
         }
 
         _choiceBox.Visible = true;
         _choiceBox.GetChild<Button>(0).GrabFocus(); // keyboard: W/S or arrows + Space
+    }
+
+    private static StyleBoxFlat CreateChoiceButtonStyle(Color background, Color border)
+    {
+        return new StyleBoxFlat
+        {
+            BgColor = background,
+            BorderColor = border,
+            BorderWidthLeft = 1,
+            BorderWidthRight = 1,
+            BorderWidthTop = 1,
+            BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 7,
+            CornerRadiusTopRight = 7,
+            CornerRadiusBottomLeft = 7,
+            CornerRadiusBottomRight = 7,
+            ContentMarginLeft = 10,
+            ContentMarginRight = 10,
+            ContentMarginTop = 6,
+            ContentMarginBottom = 6
+        };
     }
 
     private void HideChoices()
