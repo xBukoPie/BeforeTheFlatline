@@ -47,7 +47,8 @@ public partial class DialoguePanel : Control
         var foregroundRoot = new Control
         {
             Name = "DialoguePanelForegroundRoot",
-            MouseFilter = Control.MouseFilterEnum.Ignore
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            Theme = Theme
         };
         foregroundRoot.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         _foregroundCanvas.AddChild(foregroundRoot);
