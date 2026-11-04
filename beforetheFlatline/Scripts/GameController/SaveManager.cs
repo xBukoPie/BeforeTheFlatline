@@ -17,6 +17,7 @@ public partial class SaveManager : Node
 
     private double _autosaveElapsed;
     private bool _writingAutosave;
+    private bool _loadingSnapshot;
 
     public override void _Ready()
     {
@@ -39,7 +40,7 @@ public partial class SaveManager : Node
 
     public override void _Process(double delta)
     {
-        if (GetTree().Paused || !CanSaveCurrentGame ||
+        if (_loadingSnapshot || GetTree().Paused || !CanSaveCurrentGame ||
             DayClock.Instance == null || !DayClock.Instance.Running)
             return;
 
@@ -144,6 +145,9 @@ public partial class SaveManager : Node
     // Call after entering/loading a room to create an immediate safety autosave.
     public void RequestAutoSave()
     {
+        if (_loadingSnapshot)
+            return;
+
         _autosaveElapsed = 0;
         SaveAutoSave();
     }
@@ -252,6 +256,9 @@ public partial class SaveManager : Node
             roomPath = DefaultRoomPath;
         }
 
+        _loadingSnapshot = true;
+        try
+        {
         float x = ReadFloat(data, "player_x", 0f);
         float y = ReadFloat(data, "player_y", 0f);
         int day = Mathf.Max(1, ReadInt(data, "day", 1));
@@ -273,8 +280,6 @@ public partial class SaveManager : Node
         DayClock.Instance?.RestoreFirstDayMysteryState(
             ReadBool(data, "mystery_encounter_seen", false),
             ReadBool(data, "first_day_special_greeting_pending", false));
-        if (SanityManager.Instance != null && sanityState.Count > 0)
-            SanityManager.Instance.RestoreFromSaveData(sanityState);
         int keysToRestore = Mathf.Max(0, ReadInt(keyState, "keys_earned", 0));
         string pendingKeyRoom = ReadString(keyState, "pending_key_room", string.Empty);
         bool hasExplicitUnlockedRooms = keyState.ContainsKey("unlocked_rooms") &&
@@ -346,12 +351,19 @@ public partial class SaveManager : Node
         // the transition from the menu into the saved world.
         if (SanityManager.Instance != null)
         {
-            StatusEffectsOverlay.Instance?.ResetForLoadedGame(SanityManager.Instance.CurrentSanity);
+            // Apply this after the world is active so room-entry autosaves cannot overwrite the snapshot.
+            // Empty state dictionaries are treated as legacy saves with default sanity.
+            SanityManager.Instance.RestoreFromSaveData(sanityState);
             SanityManager.Instance.CheckForBadEndingAfterLoad();
         }
 
         _autosaveElapsed = 0;
         return true;
+        }
+        finally
+        {
+            _loadingSnapshot = false;
+        }
     }
 
     private bool TryReadSave(string path, out Godot.Collections.Dictionary data)
