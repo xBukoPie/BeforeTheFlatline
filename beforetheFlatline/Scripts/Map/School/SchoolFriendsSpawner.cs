@@ -392,7 +392,8 @@ public partial class SchoolFriendsSpawner : Node2D
             Monitoring = true,
             Monitorable = false,
             InputPickable = false,
-            Position = new Vector2(0, -8)
+            Position = new Vector2(0, -8f / 1.5f),
+            Scale = Vector2.One / 1.5f
         };
         actorRoot.AddChild(area);
         area.AddChild(new CollisionShape2D
