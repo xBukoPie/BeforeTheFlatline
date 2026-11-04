@@ -4,9 +4,9 @@
 [ext_resource type="Script" uid="uid://7kkbkafnnxmg" path="res://Scripts/GameController/Room.cs" id="1_murr1"]
 [ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Lamp.tscn" id="2_7u4l3"]
 [ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Door.tscn" id="3_murr1"]
-[ext_resource type="PackedScene" path="res://Scenes/Home/Areas/GroundKeyPickup.tscn" id="98_key_pickup"]
-[ext_resource type="Script" path="res://Scripts/Map/Home/StoryPhotoInteractable.cs" id="99_story_photo"]
-[ext_resource type="Texture2D" path="res://Assets/Objects/objectPolaroidPhoto.png" id="100_polaroid"]
+[ext_resource type="PackedScene" uid="uid://df7360cbmy43x" path="res://Scenes/Home/Areas/GroundKeyPickup.tscn" id="98_key_pickup"]
+[ext_resource type="Script" uid="uid://bec3m6woguqol" path="res://Scripts/Map/Home/StoryPhotoInteractable.cs" id="99_story_photo"]
+[ext_resource type="Texture2D" uid="uid://21uxlmxn23jw" path="res://Assets/Objects/objectPolaroidPhoto.png" id="100_polaroid"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
 size = Vector2(241, 10)
@@ -111,21 +111,21 @@ LockedPrompt = "Locked. You need a key."
 position = Vector2(48, 23)
 scale = Vector2(0.7, 0.7)
 
-[node name="KeyForMasterBedroom" parent="." instance=ExtResource("98_key_pickup")]
-position = Vector2(0, 25)
+[node name="KeyForMasterBedroom" parent="." unique_id=1214050181 instance=ExtResource("98_key_pickup")]
+position = Vector2(98.57143, 24.285715)
 KeyRoomId = "MasterBedroom"
 
-[node name="BathroomMemoryPhoto" type="Area2D" parent="."]
-position = Vector2(-54, 10)
+[node name="BathroomMemoryPhoto" type="Area2D" parent="." unique_id=1027184226]
+position = Vector2(-18.57143, -1.4285707)
 collision_layer = 0
 collision_mask = 2
 script = ExtResource("99_story_photo")
 MemoryId = "Bathroom"
 
-[node name="Sprite2D" type="Sprite2D" parent="BathroomMemoryPhoto"]
+[node name="Sprite2D" type="Sprite2D" parent="BathroomMemoryPhoto" unique_id=746640817]
 z_index = 5
-texture = ExtResource("100_polaroid")
 scale = Vector2(0.28, 0.28)
+texture = ExtResource("100_polaroid")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="BathroomMemoryPhoto"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BathroomMemoryPhoto" unique_id=1249432717]
 shape = SubResource("StoryPhotoShape")
