@@ -52,7 +52,11 @@ public partial class GameController : CanvasModulate
         else
         {
             float blend = 1f - Mathf.Exp(-delta / 3.5f);
-            Color = Godot.Color.Lerp(Color, target, blend);
+            Color = new Godot.Color(
+                Mathf.Lerp(Color.R, target.R, blend),
+                Mathf.Lerp(Color.G, target.G, blend),
+                Mathf.Lerp(Color.B, target.B, blend),
+                Mathf.Lerp(Color.A, target.A, blend));
         }
 
         float lum = (Color.R + Color.G + Color.B) / 3f;
