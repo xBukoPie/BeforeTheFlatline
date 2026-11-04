@@ -248,7 +248,7 @@ public partial class StatusEffectsOverlay : CanvasLayer
             return;
 
         if (SceneTransition.Instance != null)
-            SceneTransition.Instance.ChangeSceneToFile(scenePath);
+            SceneTransition.Instance.RequestCriticalSceneChange(scenePath);
         else
             GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, scenePath);
     }
