@@ -333,6 +333,15 @@ public partial class SaveManager : Node
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         }
 
+        // Re-sync HUD state after the world and room have finished loading.
+        // If the save captured zero sanity, trigger the ending only now to avoid racing
+        // the transition from the menu into the saved world.
+        if (SanityManager.Instance != null)
+        {
+            StatusEffectsOverlay.Instance?.ResetForLoadedGame(SanityManager.Instance.CurrentSanity);
+            SanityManager.Instance.CheckForBadEndingAfterLoad();
+        }
+
         _autosaveElapsed = 0;
         return true;
     }
