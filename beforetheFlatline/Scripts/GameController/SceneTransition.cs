@@ -646,10 +646,7 @@ public partial class SceneTransition : CanvasLayer
             ContentMarginBottom = 6
         });
 
-        var content = new VBoxContainer
-        {
-            Alignment = BoxContainer.AlignmentMode.Center
-        };
+        var content = new VBoxContainer();
         content.AddChild(new Label
         {
             Text = number,
