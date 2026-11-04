@@ -135,6 +135,11 @@ public partial class SleepInteractable : Area2D
             if (!IsInsideTree())
                 return;
 
+            // Let the player read the first message before the clock advances.
+            await WaitOn(layer, 1.8);
+            if (!IsInsideTree())
+                return;
+
             slept = DayClock.Instance?.SleepUntilSchoolMorning() == true;
             if (slept)
             {
@@ -148,8 +153,13 @@ public partial class SleepInteractable : Area2D
                 message.Text = "You can't sleep just yet.";
             }
 
-            await WaitOn(layer, 0.85);
-            await FadeTo(black, message, 0f, 0.9);
+            Tween wakeMessageIn = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+            wakeMessageIn.TweenProperty(message, "modulate:a", 1f, 0.45f)
+                .SetTrans(Tween.TransitionType.Sine)
+                .SetEase(Tween.EaseType.InOut);
+            await ToSignal(wakeMessageIn, Tween.SignalName.Finished);
+            await WaitOn(layer, 2.0);
+            await FadeTo(black, message, 0f, 1.05);
         }
         catch (System.Exception ex)
         {
