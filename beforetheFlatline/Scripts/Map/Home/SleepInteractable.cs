@@ -130,6 +130,9 @@ public partial class SleepInteractable : Area2D
         bool slept = DayClock.Instance?.SleepUntilSchoolMorning() == true;
         if (slept)
         {
+            // Hold the clock at the exact wake-up time until the fade-in is complete.
+            if (DayClock.Instance != null)
+                DayClock.Instance.Running = false;
             message.Text = "A new morning begins. It's time to get ready for school.";
             SaveManager.Instance?.RequestAutoSave();
         }
@@ -145,6 +148,9 @@ public partial class SleepInteractable : Area2D
 
         if (GodotObject.IsInstanceValid(layer))
             layer.QueueFree();
+
+        if (slept && DayClock.Instance != null)
+            DayClock.Instance.Running = true;
 
         RestorePlayer();
         _sleeping = false;
