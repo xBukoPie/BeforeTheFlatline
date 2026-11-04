@@ -316,8 +316,8 @@ public partial class VisualNovelScene : Control
         Control ui = GetNode<Control>("UI");
         _choiceBox.AnchorLeft = 1f;
         _choiceBox.AnchorRight = 1f;
-        _choiceBox.AnchorTop = 0.5f;
-        _choiceBox.AnchorBottom = 0.5f;
+        _choiceBox.AnchorTop = 0.40f;
+        _choiceBox.AnchorBottom = 0.40f;
         _choiceBox.OffsetLeft = -386f;
         _choiceBox.OffsetRight = -26f;
         _choiceBox.OffsetTop = -114f;
@@ -335,8 +335,8 @@ public partial class VisualNovelScene : Control
         };
         _choiceBackdrop.AnchorLeft = 1f;
         _choiceBackdrop.AnchorRight = 1f;
-        _choiceBackdrop.AnchorTop = 0.5f;
-        _choiceBackdrop.AnchorBottom = 0.5f;
+        _choiceBackdrop.AnchorTop = 0.40f;
+        _choiceBackdrop.AnchorBottom = 0.40f;
         _choiceBackdrop.OffsetLeft = -398f;
         _choiceBackdrop.OffsetRight = -14f;
         _choiceBackdrop.OffsetTop = -126f;
@@ -391,8 +391,15 @@ public partial class VisualNovelScene : Control
             button.AddThemeFontSizeOverride("font_size", CompactChoiceMode ? 17 : 30);
             if (CompactChoiceMode)
             {
-                button.AddThemeColorOverride("font_color", new Color("f3edf9"));
+                Color choiceText = new("f3edf9");
+                button.AddThemeColorOverride("font_color", choiceText);
+                button.AddThemeColorOverride("font_focus_color", choiceText);
                 button.AddThemeColorOverride("font_hover_color", Colors.White);
+                button.AddThemeColorOverride("font_hover_pressed_color", Colors.White);
+                button.AddThemeColorOverride("font_pressed_color", Colors.White);
+                button.AddThemeColorOverride("font_disabled_color", new Color("a99fb7"));
+                button.AddThemeColorOverride("font_outline_color", new Color("100c18"));
+                button.AddThemeConstantOverride("outline_size", 1);
                 button.AddThemeStyleboxOverride("normal", CreateChoiceButtonStyle(
                     new Color(0.07f, 0.055f, 0.10f, 0.66f), new Color(0.68f, 0.61f, 0.80f, 0.58f)));
                 button.AddThemeStyleboxOverride("hover", CreateChoiceButtonStyle(
