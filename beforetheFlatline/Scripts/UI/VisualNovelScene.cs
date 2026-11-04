@@ -41,7 +41,8 @@ public partial class VisualNovelScene : Control
     private TextureRect _leftPortraitRect, _rightPortraitRect;
     private Control _leftPlaceholder, _rightPlaceholder;
 
-    private PanelContainer _nameTag, _dialoguePanel, _logPanel;
+    private PanelContainer _nameTag, _dialoguePanel, _logPanel, _sideButtonsBackdrop;
+    private Control _sideButtons;
     private Label _nameLabel, _hint;
     private RichTextLabel _text, _logText;
     private VBoxContainer _choiceBox;
@@ -94,6 +95,7 @@ public partial class VisualNovelScene : Control
         _skipButton = GetNode<Button>("%SkipButton");
         _logButton = GetNode<Button>("%LogButton");
         _optionsButton = GetNode<Button>("%OptionsButton");
+        _sideButtons = GetNode<Control>("UI/SideButtons");
 
         _logPanel = GetNode<PanelContainer>("%LogPanel");
         _logText = GetNode<RichTextLabel>("%LogText");
@@ -316,36 +318,47 @@ public partial class VisualNovelScene : Control
 
     private void ApplyMemoryDialogueTheme()
     {
+        // Give the recollection dialogue more horizontal room and keep its controls
+        // in a separate compact rail instead of letting them compete with the text.
+        _dialoguePanel.AnchorLeft = 0f;
+        _dialoguePanel.AnchorRight = 1f;
+        _dialoguePanel.AnchorTop = 1f;
+        _dialoguePanel.AnchorBottom = 1f;
+        _dialoguePanel.OffsetLeft = 24f;
+        _dialoguePanel.OffsetTop = -250f;
+        _dialoguePanel.OffsetRight = -170f;
+        _dialoguePanel.OffsetBottom = -24f;
+
         _dialoguePanel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
-            BgColor = new Color(0.025f, 0.025f, 0.045f, 0.84f),
-            BorderColor = new Color("77708f", 0.62f),
+            BgColor = new Color(0.025f, 0.025f, 0.045f, 0.86f),
+            BorderColor = new Color("77708f", 0.52f),
             BorderWidthLeft = 1,
             BorderWidthRight = 1,
             BorderWidthTop = 1,
             BorderWidthBottom = 1,
-            CornerRadiusTopLeft = 6,
-            CornerRadiusTopRight = 6,
-            CornerRadiusBottomLeft = 6,
-            CornerRadiusBottomRight = 6,
+            CornerRadiusTopLeft = 8,
+            CornerRadiusTopRight = 8,
+            CornerRadiusBottomLeft = 8,
+            CornerRadiusBottomRight = 8,
             ContentMarginLeft = 24,
             ContentMarginRight = 24,
-            ContentMarginTop = 17,
-            ContentMarginBottom = 17
+            ContentMarginTop = 16,
+            ContentMarginBottom = 16
         });
 
         _nameTag.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
-            BgColor = new Color(0.025f, 0.025f, 0.045f, 0.86f),
-            BorderColor = new Color("8c829f", 0.62f),
+            BgColor = new Color(0.025f, 0.025f, 0.045f, 0.9f),
+            BorderColor = new Color("8c829f", 0.58f),
             BorderWidthLeft = 1,
             BorderWidthRight = 1,
             BorderWidthTop = 1,
             BorderWidthBottom = 1,
-            CornerRadiusTopLeft = 4,
-            CornerRadiusTopRight = 4,
-            CornerRadiusBottomLeft = 4,
-            CornerRadiusBottomRight = 4,
+            CornerRadiusTopLeft = 5,
+            CornerRadiusTopRight = 5,
+            CornerRadiusBottomLeft = 5,
+            CornerRadiusBottomRight = 5,
             ContentMarginLeft = 14,
             ContentMarginRight = 14,
             ContentMarginTop = 5,
@@ -353,23 +366,63 @@ public partial class VisualNovelScene : Control
         });
 
         _nameLabel.AddThemeColorOverride("font_color", new Color("ded8e8"));
-        _nameLabel.AddThemeFontSizeOverride("font_size", 20);
+        _nameLabel.AddThemeFontSizeOverride("font_size", 19);
         _text.AddThemeColorOverride("default_color", new Color("eeeaf2"));
-        _text.AddThemeFontSizeOverride("normal_font_size", 24);
+        _text.AddThemeFontSizeOverride("normal_font_size", 22);
         _hint.AddThemeColorOverride("font_color", new Color("cbc4d7"));
-        _hint.AddThemeFontSizeOverride("font_size", 16);
+        _hint.AddThemeFontSizeOverride("font_size", 14);
 
-        foreach (Button button in new[] { _autoButton, _skipButton, _logButton, _closeLogButton })
+        _sideButtons.AnchorLeft = 1f;
+        _sideButtons.AnchorRight = 1f;
+        _sideButtons.AnchorTop = 1f;
+        _sideButtons.AnchorBottom = 1f;
+        _sideButtons.OffsetLeft = -150f;
+        _sideButtons.OffsetTop = -250f;
+        _sideButtons.OffsetRight = -24f;
+        _sideButtons.OffsetBottom = -24f;
+        _sideButtons.AddThemeConstantOverride("separation", 6);
+        _sideButtons.ZIndex = 2;
+
+        _sideButtonsBackdrop = new PanelContainer
         {
+            Name = "MemorySideButtonsBackdrop",
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            ZIndex = 1
+        };
+        _sideButtonsBackdrop.AnchorLeft = 1f;
+        _sideButtonsBackdrop.AnchorRight = 1f;
+        _sideButtonsBackdrop.AnchorTop = 1f;
+        _sideButtonsBackdrop.AnchorBottom = 1f;
+        _sideButtonsBackdrop.OffsetLeft = -160f;
+        _sideButtonsBackdrop.OffsetTop = -260f;
+        _sideButtonsBackdrop.OffsetRight = -14f;
+        _sideButtonsBackdrop.OffsetBottom = -14f;
+        _sideButtonsBackdrop.AddThemeStyleboxOverride("panel", CreateChoiceButtonStyle(
+            new Color(0.025f, 0.025f, 0.045f, 0.82f),
+            new Color("77708f", 0.56f)));
+        Control ui = GetNode<Control>("UI");
+        ui.AddChild(_sideButtonsBackdrop);
+        ui.MoveChild(_sideButtonsBackdrop, _sideButtons.GetIndex());
+
+        foreach (Button button in new[] { _autoButton, _skipButton, _logButton, _optionsButton, _closeLogButton })
+        {
+            button.CustomMinimumSize = new Vector2(112f, 40f);
+            button.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            button.AddThemeFontSizeOverride("font_size", 13);
             button.AddThemeColorOverride("font_color", new Color("e5dfed"));
+            button.AddThemeColorOverride("font_focus_color", new Color("e5dfed"));
             button.AddThemeColorOverride("font_hover_color", Colors.White);
             button.AddThemeColorOverride("font_pressed_color", Colors.White);
+            button.AddThemeColorOverride("font_outline_color", new Color("100c18"));
+            button.AddThemeConstantOverride("outline_size", 1);
             button.AddThemeStyleboxOverride("normal", CreateChoiceButtonStyle(
                 new Color(0.035f, 0.035f, 0.06f, 0.72f), new Color("77708f", 0.5f)));
             button.AddThemeStyleboxOverride("hover", CreateChoiceButtonStyle(
                 new Color(0.13f, 0.12f, 0.19f, 0.9f), new Color("9e91b5", 0.8f)));
             button.AddThemeStyleboxOverride("pressed", CreateChoiceButtonStyle(
                 new Color(0.20f, 0.17f, 0.27f, 0.95f), new Color("b5a6ce", 0.9f)));
+            button.AddThemeStyleboxOverride("focus", CreateChoiceButtonStyle(
+                new Color(0.12f, 0.09f, 0.18f, 0.86f), new Color("b5a6ce", 0.9f)));
         }
     }
 
