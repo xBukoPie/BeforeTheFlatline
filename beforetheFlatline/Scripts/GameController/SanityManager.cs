@@ -157,7 +157,8 @@ public partial class SanityManager : Node
     // Restore saved sanity data and refresh UI subscribers.
     public void RestoreFromSaveData(Godot.Collections.Dictionary data)
     {
-        CurrentSanity = Mathf.Clamp(ReadInt(data, "current_sanity", MaxSanity), 1, MaxSanity);
+        // Zero is a valid saved state: the load flow will replay the bad ending after the world is restored.
+        CurrentSanity = Mathf.Clamp(ReadInt(data, "current_sanity", MaxSanity), 0, MaxSanity);
         FailedTestCount = Mathf.Max(0, ReadInt(data, "failed_test_count", 0));
         DifficultyPenalty = Mathf.Clamp(ReadInt(data, "difficulty_penalty", 0), 0, 2);
         _badEndingQueued = false;
@@ -174,6 +175,14 @@ public partial class SanityManager : Node
         }
 
         OnSanityChanged?.Invoke(CurrentSanity);
+        StatusEffectsOverlay.Instance?.ResetForLoadedGame(CurrentSanity);
+    }
+
+    // Called after the saved world scene is active, so a saved zero-sanity state cannot be missed.
+    public void CheckForBadEndingAfterLoad()
+    {
+        if (CurrentSanity <= 0)
+            QueueBadEnding();
     }
 
     private static Godot.Collections.Dictionary ReadDictionary(
@@ -272,12 +281,11 @@ public partial class SanityManager : Node
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
-        if (StatusEffectsOverlay.Instance != null)
-        {
-            StatusEffectsOverlay.Instance.FadeForBadEnding(BadEndingScenePath);
+        if (StatusEffectsOverlay.Instance != null &&
+            StatusEffectsOverlay.Instance.FadeForBadEnding(BadEndingScenePath))
             return;
-        }
 
+        // Do not let a stale or unavailable HUD fade block the actual ending scene.
         if (SceneTransition.Instance != null)
             SceneTransition.Instance.ChangeSceneToFile(BadEndingScenePath);
         else
