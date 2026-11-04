@@ -473,12 +473,12 @@ public partial class ChallengeScene : Control
             hasOutputLine |= line.StartsWith("OUTPUT ") || line.StartsWith("PRINT ") ||
                              line.StartsWith("DISPLAY ") || line.StartsWith("WRITE ");
 
-            if (line.StartsWith("IF "))
+            if (line.StartsWith("IF ") || line.StartsWith("IF("))
                 ifDepth++;
             else if (line == "END IF" || line == "ENDIF")
                 ifDepth--;
 
-            if (line.StartsWith("WHILE "))
+            if (line.StartsWith("WHILE ") || line.StartsWith("WHILE("))
                 loopDepth++;
             else if (line == "END WHILE" || line == "ENDWHILE")
                 loopDepth--;
