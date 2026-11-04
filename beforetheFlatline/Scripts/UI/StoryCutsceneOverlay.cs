@@ -364,7 +364,7 @@ void fragment()
 
         ApplyMemoryCue(beat.EffectCue);
         if (beginCollapse)
-            PlayCollapseTransition();
+            PlayCollapseTransition(beat.ImagePath);
     }
 
     private async Task PrepareMasterBedroomBeatTransitionAsync(int index, DialogueLine line)
@@ -450,7 +450,7 @@ void fragment()
         _art.Texture = texture;
     }
 
-    private async void PlayCollapseTransition()
+    private async void PlayCollapseTransition(string imagePath)
     {
         if (_collapseTransitionRunning || _collapseTransitionPlayed ||
             _transitionCover == null || _finished)
@@ -482,6 +482,9 @@ void fragment()
 
         if (_finished || !IsInsideTree())
             return;
+
+        // Swap the bedroom frame while the blackout fully covers the previous artwork.
+        SetArtworkImmediately(imagePath);
 
         _collapseTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
         _collapseTween.TweenProperty(_transitionCover, "modulate:a", 0f, 1.15f)
