@@ -192,7 +192,7 @@ public partial class SceneTransition : CanvasLayer
         _busy = true;
         try
         {
-            _loadingProgress.Value = 100;
+            _loadingProgress.Value = 0;
             _loadingStatus.Text = string.IsNullOrWhiteSpace(statusMessage)
                 ? "On your way..."
                 : statusMessage;
@@ -214,9 +214,18 @@ public partial class SceneTransition : CanvasLayer
 
             ulong startedAt = Time.GetTicksMsec();
             ulong minimumMs = (ulong)(Math.Max(0.2, minimumDisplaySeconds) * 1000.0);
-            while (Time.GetTicksMsec() - startedAt < minimumMs)
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            while (true)
+            {
+                ulong elapsedMs = Time.GetTicksMsec() - startedAt;
+                float progress = Mathf.Clamp((float)elapsedMs / minimumMs, 0f, 1f);
+                _loadingProgress.Value = progress * 100f;
+                if (elapsedMs >= minimumMs)
+                    break;
 
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            }
+
+            _loadingProgress.Value = 100;
             transitionAction.Invoke();
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
