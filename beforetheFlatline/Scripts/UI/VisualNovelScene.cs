@@ -72,6 +72,8 @@ public partial class VisualNovelScene : Control
 
     public Control DialogueInterfaceRoot => _uiRoot;
     public Func<int, DialogueLine, Task> BeforeLinePresentationAsync { get; set; }
+    public IReadOnlyDictionary<int, int> ReplayChoiceSelections { get; set; }
+    public event Action<int, int> ChoiceSelectedAtLine;
 
     public void SetMemoryTransitionBlocked(bool blocked) =>
         _memoryTransitionBlocked = blocked;
@@ -344,9 +346,18 @@ public partial class VisualNovelScene : Control
 
         var line = _lines[_index];
         if (line.Choices is { Length: > 0 })
-            ShowChoices(line.Choices);
+        {
+            if (ReplayChoiceSelections != null &&
+                ReplayChoiceSelections.TryGetValue(_index, out int savedChoice) &&
+                savedChoice >= 0 && savedChoice < line.Choices.Length)
+                OnChoicePressed(savedChoice, line.Choices[savedChoice]);
+            else
+                ShowChoices(line.Choices);
+        }
         else
+        {
             _hint.Visible = true;
+        }
     }
 
     private void CompleteTyping()
@@ -643,6 +654,7 @@ public partial class VisualNovelScene : Control
         if (_memoryTransitionBlocked)
             return;
 
+        ChoiceSelectedAtLine?.Invoke(_index, choiceIndex);
         EmitSignal(SignalName.ChoiceSelected, choiceIndex);
         AppendLog($"[color=#7a3f12]▶ {Escape(ResolvePlayerNameTokens(choice.Label))}[/color]\n\n");
         HideChoices();
