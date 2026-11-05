@@ -434,17 +434,19 @@ public partial class SchoolFriendsSpawner : Node2D
         if (frames == null)
             return new StringName(string.Empty);
 
-        StringName[] names = frames.GetAnimationNames();
+        string[] names = frames.GetAnimationNames();
         foreach (string preferred in new[] { "Idle", "idle", "default" })
         {
-            foreach (StringName name in names)
+            foreach (string name in names)
             {
-                if (string.Equals(name.ToString(), preferred, StringComparison.OrdinalIgnoreCase))
-                    return name;
+                if (string.Equals(name, preferred, StringComparison.OrdinalIgnoreCase))
+                    return new StringName(name);
             }
         }
 
-        return names.Length > 0 ? names[0] : new StringName(string.Empty);
+        return names.Length > 0
+            ? new StringName(names[0])
+            : new StringName(string.Empty);
     }
 
     private static float GetOpaqueFrameHeight(Texture2D texture)
