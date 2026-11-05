@@ -102,7 +102,7 @@ public partial class SanityManager : Node
             QueueBadEnding();
     }
 
-    public void RemoveSanityForAdmin(int amount)
+    public void LoseSanity(int amount)
     {
         if (_badEndingQueued || amount <= 0)
             return;
@@ -112,6 +112,8 @@ public partial class SanityManager : Node
         if (CurrentSanity == 0)
             QueueBadEnding();
     }
+
+    public void RemoveSanityForAdmin(int amount) => LoseSanity(amount);
 
     public void SetDebuffLevelForAdmin(DebuffType type, int intensity)
     {
