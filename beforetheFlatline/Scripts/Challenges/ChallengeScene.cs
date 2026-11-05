@@ -37,17 +37,11 @@ public partial class ChallengeScene : Control
     public override void _Ready()
     {
         AddToGroup("challenge_scene");
-        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, true);
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
         BuildShell();
         GenerateCurrentTask();
-    }
-
-    public override void _ExitTree()
-    {
-        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, false);
     }
 
     private void BuildShell()
@@ -326,7 +320,10 @@ public partial class ChallengeScene : Control
             {
                 var reward = RoomKeyProgression.Instance?.AwardTaskCompletion(_difficulty);
                 if (reward != null)
+                {
+                    DailyTestSession.AddPointsReceived(reward.PointsAdded);
                     GD.Print($"[ChallengeScene] First correct completion earned {reward.PointsAdded} hidden story points. Total: {reward.TotalPoints}.");
+                }
             }
         }
 
