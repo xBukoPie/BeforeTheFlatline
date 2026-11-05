@@ -12,7 +12,10 @@ public partial class PauseMenuController : CanvasLayer
     private bool _isPaused;
     private bool _settingsOpen;
     private bool _saveLoadOpen;
+    private bool _journalOpen;
     private bool _clockWasRunning;
+
+    public bool IsPaused => _isPaused;
 
     public override void _Ready()
     {
@@ -37,6 +40,9 @@ public partial class PauseMenuController : CanvasLayer
 
     public override void _Process(double delta)
     {
+        if (JournalController.Instance?.IsOpen == true)
+            return;
+
         if (GetTree().GetNodesInGroup("story_cutscene").Count > 0)
             return;
 
@@ -151,6 +157,36 @@ public partial class PauseMenuController : CanvasLayer
     }
 
     // Open the three manual save slots and separate autosave while keeping gameplay paused.
+    public void OpenJournalFromPauseMenu()
+    {
+        if (!_isPaused || _journalOpen)
+            return;
+
+        if (JournalController.Instance == null)
+        {
+            GD.PushError("PauseMenuController: JournalController autoload is missing.");
+            return;
+        }
+
+        _journalOpen = true;
+        _pauseMenuContent.Visible = false;
+        _overlay.Visible = false;
+        JournalController.Instance.OpenFromPauseMenu(OnJournalClosedFromPauseMenu);
+
+        if (!JournalController.Instance.IsOpen)
+            OnJournalClosedFromPauseMenu();
+    }
+
+    private void OnJournalClosedFromPauseMenu()
+    {
+        _journalOpen = false;
+        if (!_isPaused)
+            return;
+
+        _pauseMenuContent.Visible = true;
+        _overlay.Visible = true;
+    }
+
     private void OpenSaveLoadMenu()
     {
         if (_saveLoadOpen)
@@ -272,7 +308,7 @@ public partial class PauseMenuController : CanvasLayer
         var panel = new PanelContainer
         {
             Name = "PausePanel",
-            CustomMinimumSize = new Vector2(500, 430),
+            CustomMinimumSize = new Vector2(500, 500),
             MouseFilter = Control.MouseFilterEnum.Stop
         };
         panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
@@ -328,6 +364,10 @@ public partial class PauseMenuController : CanvasLayer
         var settings = CreateMenuButton("Settings", false);
         settings.Pressed += OpenSettings;
         stack.AddChild(settings);
+
+        var journal = CreateMenuButton("Journal", false);
+        journal.Pressed += OpenJournalFromPauseMenu;
+        stack.AddChild(journal);
 
         var saveLoad = CreateMenuButton("Save / Load Game", false);
         saveLoad.Pressed += OpenSaveLoadMenu;
