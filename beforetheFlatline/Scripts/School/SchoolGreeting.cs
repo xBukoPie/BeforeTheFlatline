@@ -32,9 +32,13 @@ public partial class SchoolGreeting : Node2D
             return;
         }
 
-        // Arrival before noon counts as attendance even while the greeting is playing.
-        if (DayClock.Instance?.IsSchoolOpen == true)
+        // Keep direct scene entry consistent with the school-door attendance mark.
+        if (DayClock.Instance?.IsSchoolOpen == true &&
+            !DayClock.Instance.SchoolChallengeStartedToday)
+        {
             DayClock.Instance.MarkSchoolChallengeStartedToday();
+            SaveManager.Instance?.RequestAutoSave();
+        }
 
         _rng.Randomize();
         _dialoguePanelScene = GD.Load<PackedScene>("res://Scenes/UI/DialoguePanel.tscn");
