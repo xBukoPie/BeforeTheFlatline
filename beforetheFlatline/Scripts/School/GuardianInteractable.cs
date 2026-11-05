@@ -5,6 +5,7 @@ using SchoolYardGame;
 public partial class GuardianInteractable : Node2D
 {
     private const string DialogueScenePath = "res://Scenes/UI/VisualNovelScene.tscn";
+    private const string ModelScenePath = "res://Scenes/Models/MysteriousPerson.tscn";
     private const string PortraitPath = "res://Assets/Characters/Mysterious.png";
     private const int GuardianPromptPriority = 75;
 
@@ -22,7 +23,7 @@ public partial class GuardianInteractable : Node2D
     public override void _Ready()
     {
         Name = "Guardian";
-        BuildAnonymousStudent();
+        BuildMysteriousPersonModel();
 
         Node roomManager = GetTree().GetFirstNodeInGroup("room_manager");
         _player = roomManager?.GetNodeOrNull<CharacterBody2D>("Player");
@@ -121,41 +122,23 @@ public partial class GuardianInteractable : Node2D
         return 0;
     }
 
-    private void BuildAnonymousStudent()
+    private void BuildMysteriousPersonModel()
     {
-        // A quiet, faceless silhouette keeps the Guardian's identity unresolved.
-        Image image = Image.CreateEmpty(32, 40, false, Image.Format.Rgba8);
-        image.Fill(Colors.Transparent);
-
-        Color outline = new("11131f");
-        Color coat = new("303148");
-        Color coatLight = new("4a4964");
-        Color shirt = new("77728b");
-        Color shadow = new("090b15");
-
-        Fill(image, 8, 3, 23, 9, outline);
-        Fill(image, 7, 6, 24, 12, outline);
-        Fill(image, 9, 8, 22, 18, shadow);
-        Fill(image, 7, 17, 24, 22, outline);
-        Fill(image, 5, 21, 26, 34, outline);
-        Fill(image, 7, 22, 24, 32, coat);
-        Fill(image, 9, 22, 15, 31, coatLight);
-        Fill(image, 16, 23, 22, 31, coat);
-        Fill(image, 12, 22, 19, 28, shirt);
-        Fill(image, 8, 33, 15, 39, outline);
-        Fill(image, 17, 33, 24, 39, outline);
-        Fill(image, 9, 34, 14, 38, coat);
-        Fill(image, 18, 34, 23, 38, coat);
-
-        var sprite = new Sprite2D
+        PackedScene modelScene = GD.Load<PackedScene>(ModelScenePath);
+        if (modelScene == null)
         {
-            Name = "AnonymousStudentSprite",
-            Texture = ImageTexture.CreateFromImage(image),
-            Centered = true,
-            Scale = new Vector2(1.1f, 1.1f),
-            TextureFilter = CanvasItem.TextureFilterEnum.Nearest
-        };
-        AddChild(sprite);
+            GD.PushError($"Guardian: MysteriousPerson.tscn could not be loaded from '{ModelScenePath}'.");
+            return;
+        }
+
+        Node2D model = modelScene.Instantiate<Node2D>();
+        model.Name = "MysteriousPersonModel";
+        AddChild(model);
+
+        AnimatedSprite2D idleSprite = model.GetNodeOrNull<AnimatedSprite2D>("Sprite2D");
+        if (idleSprite != null && idleSprite.SpriteFrames != null &&
+            idleSprite.SpriteFrames.HasAnimation("Idle"))
+            idleSprite.Play("Idle");
 
         var nameLabel = new Label
         {
@@ -173,13 +156,6 @@ public partial class GuardianInteractable : Node2D
         nameLabel.AddThemeColorOverride("font_outline_color", Colors.Black);
         nameLabel.AddThemeConstantOverride("outline_size", 5);
         AddChild(nameLabel);
-    }
-
-    private static void Fill(Image image, int left, int top, int right, int bottom, Color color)
-    {
-        for (int y = top; y <= bottom; y++)
-        for (int x = left; x <= right; x++)
-            image.SetPixel(x, y, color);
     }
 
     private void OnBodyEntered(Node2D body)
