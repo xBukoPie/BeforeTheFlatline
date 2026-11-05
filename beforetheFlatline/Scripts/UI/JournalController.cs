@@ -269,7 +269,7 @@ public partial class JournalController : CanvasLayer
             Name = "JournalPageScroll",
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             SizeFlagsVertical = Control.SizeFlags.ExpandFill,
-            HorizontalScrollMode = ScrollContainer.ScrollModeEnum.Disabled
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled
         };
         pagePanel.AddChild(scroll);
 
