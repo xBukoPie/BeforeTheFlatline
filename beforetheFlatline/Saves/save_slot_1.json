@@ -1,0 +1,89 @@
+{
+	"challenge_progress": {
+		"1": [
+			"final",
+			"condition",
+			"sequence",
+			"flowchart"
+		],
+		"2": [
+			"sequence",
+			"condition",
+			"flowchart",
+			"final"
+		]
+	},
+	"clock_running": true,
+	"day": 2,
+	"first_day_special_greeting_pending": false,
+	"hour": 19.4616622924805,
+	"kind": "manual",
+	"mystery_encounter_seen": true,
+	"player_x": -67.6451950073242,
+	"player_y": 1.29255962371826,
+	"room_keys": {
+		"bathroom_unlocked_day": -1,
+		"hidden_points": 200,
+		"keys_earned": 2,
+		"kitchen_unlocked_day": 1,
+		"laundry_unlocked_day": 2,
+		"master_bedroom_unlocked_day": -1,
+		"pending_key_room": "",
+		"unlocked_rooms": [
+			"Kitchen",
+			"Laundry"
+		]
+	},
+	"room_path": "res://Scenes/Home/Areas/LivingRoom.tscn",
+	"sanity_state": {
+		"current_sanity": 95,
+		"debuffs": {
+			"Anxiety": 0,
+			"Confusion": 0,
+			"Dizziness": 5,
+			"Pressure": 0
+		},
+		"difficulty_penalty": 0,
+		"failed_test_count": 0,
+		"recovery_targets": {
+			"Anxiety": 100,
+			"Confusion": 100,
+			"Dizziness": 98,
+			"Pressure": 100
+		}
+	},
+	"saved_at": "2026-11-04 23:43:34",
+	"scene_path": "res://Scenes/Home/Areas/World.tscn",
+	"school_completed": true,
+	"school_friend_interactions": {
+		"day": 2,
+		"friends": [
+			"Mich"
+		]
+	},
+	"school_friend_spawn_plan": {
+		"after_assessment": false,
+		"classroom_greeter": "Cess",
+		"created": true,
+		"day": 2,
+		"entries": [
+			{
+				"name": "Mich",
+				"x": -190.0,
+				"y": -25.0
+			}
+		]
+	},
+	"school_started": true,
+	"slot": 1,
+	"story_progress": {
+		"completed_memories": [
+			"Kitchen",
+			"Laundry"
+		],
+		"guardian_stages_seen": [
+			1
+		]
+	},
+	"version": 1
+}

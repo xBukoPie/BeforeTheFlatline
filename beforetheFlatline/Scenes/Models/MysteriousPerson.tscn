@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://d357inw4235ug"]
+
+[ext_resource type="Texture2D" uid="uid://dlqjtdyyle2c" path="res://Assets/Characters/pixel/mysteriousIdle.png" id="1_axv55"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_axv55"]
+atlas = ExtResource("1_axv55")
+region = Rect2(0, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0seqv"]
+atlas = ExtResource("1_axv55")
+region = Rect2(128, 0, 128, 128)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_v2h47"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_axv55")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_0seqv")
+}],
+"loop": 1,
+"name": &"Idle",
+"speed": 2.0
+}]
+
+[node name="Mysterious" type="Node2D" unique_id=1053421262]
+scale = Vector2(1.5, 1.5)
+
+[node name="Sprite2D" type="AnimatedSprite2D" parent="." unique_id=1711004153]
+texture_filter = 1
+scale = Vector2(0.23, 0.23)
+sprite_frames = SubResource("SpriteFrames_v2h47")
+animation = &"Idle"
+frame_progress = 0.30481488
