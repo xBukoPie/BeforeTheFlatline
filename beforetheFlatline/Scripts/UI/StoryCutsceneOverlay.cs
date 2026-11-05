@@ -385,7 +385,7 @@ void fragment()
 
         if (_isEnding && index == 0)
             SetArtwork(beat.ImagePath);
-        else if (_isEnding && index > 0)
+        else if (_isEnding && index > 0 && !beginCollapse)
             TransitionMasterBedroomArtwork(beat.ImagePath);
 
         ApplyMemoryCue(beat.EffectCue);
