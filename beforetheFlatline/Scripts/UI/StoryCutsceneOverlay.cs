@@ -473,6 +473,9 @@ void fragment()
         if (_finished || !IsInsideTree())
             return;
 
+        // The fall impact is heard before the collapsed-bedroom artwork is loaded.
+        AudioManager.Instance?.PlayFallThud();
+
         // Swap the bedroom frame while the blackout fully covers the previous artwork.
         SetArtworkImmediately(imagePath);
 
