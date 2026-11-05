@@ -1,35 +1,123 @@
 {
 	"assessment_history": {
-		"entries": []
+		"entries": [
+			{
+				"attempt": 1,
+				"day": 1,
+				"debuff_amount": 0,
+				"debuff_type": "",
+				"maximum_score": 40,
+				"passed": true,
+				"passing_score": 30,
+				"points_received": 100,
+				"reward_text": "Key available: Kitchen (pickup in the front yard)",
+				"sanity_after": 100,
+				"score": 40,
+				"timestamp": "2026-11-05 19:01:02"
+			},
+			{
+				"attempt": 1,
+				"day": 2,
+				"debuff_amount": 0,
+				"debuff_type": "",
+				"maximum_score": 40,
+				"passed": true,
+				"passing_score": 30,
+				"points_received": 100,
+				"reward_text": "Sanity +5; Key available: Laundry (pickup in the kitchen)",
+				"sanity_after": 99,
+				"score": 40,
+				"timestamp": "2026-11-05 19:01:55"
+			},
+			{
+				"attempt": 1,
+				"day": 3,
+				"debuff_amount": 0,
+				"debuff_type": "",
+				"maximum_score": 40,
+				"passed": true,
+				"passing_score": 30,
+				"points_received": 120,
+				"reward_text": "Sanity +5; Key available: Bathroom (pickup in the laundry room)",
+				"sanity_after": 100,
+				"score": 40,
+				"timestamp": "2026-11-05 19:02:49"
+			},
+			{
+				"attempt": 1,
+				"day": 4,
+				"debuff_amount": 0,
+				"debuff_type": "",
+				"maximum_score": 40,
+				"passed": true,
+				"passing_score": 30,
+				"points_received": 140,
+				"reward_text": "Sanity +5; Key available: MasterBedroom (pickup in the bathroom)",
+				"sanity_after": 93,
+				"score": 40,
+				"timestamp": "2026-11-05 19:03:38"
+			}
+		]
 	},
-	"challenge_progress": {},
+	"challenge_progress": {
+		"1": [
+			"final",
+			"condition",
+			"flowchart",
+			"sequence"
+		],
+		"2": [
+			"condition",
+			"final",
+			"sequence",
+			"flowchart"
+		],
+		"3": [
+			"sequence",
+			"flowchart",
+			"final",
+			"condition"
+		],
+		"4": [
+			"final",
+			"flowchart",
+			"sequence",
+			"condition"
+		]
+	},
 	"clock_running": true,
 	"daily_house_activities": {
 		"bath_available": true,
-		"bath_used": false,
-		"bicycle_available": true,
+		"bath_used": true,
+		"bicycle_available": false,
 		"bicycle_used": false,
 		"tv_available": true,
 		"tv_used": false
 	},
-	"day": 1,
+	"day": 4,
 	"first_day_special_greeting_pending": false,
-	"hour": 8.0,
+	"hour": 18.6109371185303,
 	"kind": "autosave",
-	"mystery_encounter_seen": false,
-	"player_x": 56.0,
-	"player_y": 17.5,
+	"mystery_encounter_seen": true,
+	"player_x": 25.1666603088379,
+	"player_y": 28.5353527069092,
 	"room_keys": {
-		"bathroom_unlocked_day": -1,
-		"hidden_points": 0,
-		"keys_earned": 0,
-		"kitchen_unlocked_day": -1,
-		"laundry_unlocked_day": -1,
-		"master_bedroom_unlocked_day": -1,
+		"bathroom_unlocked_day": 3,
+		"hidden_points": 460,
+		"keys_earned": 4,
+		"kitchen_unlocked_day": 1,
+		"laundry_unlocked_day": 2,
+		"master_bedroom_unlocked_day": 4,
+		"pending_key_from_assessment": false,
 		"pending_key_room": "",
-		"unlocked_rooms": []
+		"unlocked_rooms": [
+			"Kitchen",
+			"Laundry",
+			"Bathroom",
+			"MasterBedroom"
+		]
 	},
-	"room_path": "res://Scenes/Home/Areas/PlayerRoom.tscn",
+	"room_path": "res://Scenes/Home/Areas/MasterBedroom.tscn",
 	"sanity_state": {
 		"assessment_penalties": {
 			"Anxiety": 0,
@@ -53,27 +141,37 @@
 			"Pressure": 100
 		}
 	},
-	"saved_at": "2026-11-05 15:55:04",
+	"saved_at": "2026-11-05 19:25:13",
 	"scene_path": "res://Scenes/Home/Areas/World.tscn",
-	"school_completed": false,
+	"school_completed": true,
 	"school_deadline_penalty_applied": false,
 	"school_friend_interactions": {
-		"day": 1,
+		"day": 4,
 		"friends": []
 	},
 	"school_friend_spawn_plan": {
 		"after_assessment": false,
-		"classroom_greeter": "",
-		"created": false,
-		"day": -1,
+		"classroom_greeter": "Jepoy",
+		"created": true,
+		"day": 4,
 		"entries": []
 	},
-	"school_started": false,
+	"school_started": true,
 	"slot": 0,
 	"story_progress": {
-		"completed_memories": [],
-		"guardian_stages_seen": [],
+		"completed_memories": [
+			"Kitchen",
+			"Laundry",
+			"Bathroom",
+			"MasterBedroom"
+		],
+		"guardian_stages_seen": [
+			1,
+			2,
+			3
+		],
 		"memory_choices": {}
 	},
-	"version": 1
+	"version": 1,
+	"wrong_room_attempts_today": 0
 }
