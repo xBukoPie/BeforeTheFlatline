@@ -380,6 +380,14 @@ void fragment()
         if (collapseCue && !_collapseTransitionPlayed)
             return;
 
+        // Dialogue advances on the same still should not animate the artwork.
+        // Only a real image change receives the coordinated fade.
+        string requestedImage = string.IsNullOrWhiteSpace(beat.ImagePath)
+            ? string.Empty
+            : beat.ImagePath.Trim();
+        if (string.Equals(requestedImage, _currentImagePath, StringComparison.OrdinalIgnoreCase))
+            return;
+
         int textLength = line.Text?.Length ?? 0;
         _masterBedroomRevealDuration = Mathf.Clamp(
             textLength / Mathf.Max(_dialogue?.CharsPerSecond ?? 30f, 1f),
