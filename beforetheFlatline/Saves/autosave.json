@@ -1,55 +1,42 @@
 {
-	"challenge_progress": {
-		"1": [
-			"flowchart",
-			"condition",
-			"sequence",
-			"final"
-		],
-		"2": [
-			"flowchart",
-			"final",
-			"sequence",
-			"condition"
-		],
-		"3": [
-			"final",
-			"condition",
-			"sequence",
-			"flowchart"
-		],
-		"4": [
-			"flowchart",
-			"condition",
-			"final",
-			"sequence"
-		]
+	"assessment_history": {
+		"entries": []
 	},
+	"challenge_progress": {},
 	"clock_running": true,
-	"day": 4,
-	"first_day_special_greeting_pending": false,
-	"hour": 18.7781448364258,
-	"kind": "autosave",
-	"mystery_encounter_seen": true,
-	"player_x": 21.8333282470703,
-	"player_y": 38.6116104125977,
-	"room_keys": {
-		"bathroom_unlocked_day": 3,
-		"hidden_points": 460,
-		"keys_earned": 4,
-		"kitchen_unlocked_day": 1,
-		"laundry_unlocked_day": 2,
-		"master_bedroom_unlocked_day": 4,
-		"pending_key_room": "",
-		"unlocked_rooms": [
-			"Kitchen",
-			"Laundry",
-			"Bathroom",
-			"MasterBedroom"
-		]
+	"daily_house_activities": {
+		"bath_available": true,
+		"bath_used": false,
+		"bicycle_available": true,
+		"bicycle_used": false,
+		"tv_available": true,
+		"tv_used": false
 	},
-	"room_path": "res://Scenes/Home/Areas/MasterBedroom.tscn",
+	"day": 1,
+	"first_day_special_greeting_pending": false,
+	"hour": 8.0,
+	"kind": "autosave",
+	"mystery_encounter_seen": false,
+	"player_x": 56.0,
+	"player_y": 17.5,
+	"room_keys": {
+		"bathroom_unlocked_day": -1,
+		"hidden_points": 0,
+		"keys_earned": 0,
+		"kitchen_unlocked_day": -1,
+		"laundry_unlocked_day": -1,
+		"master_bedroom_unlocked_day": -1,
+		"pending_key_room": "",
+		"unlocked_rooms": []
+	},
+	"room_path": "res://Scenes/Home/Areas/PlayerRoom.tscn",
 	"sanity_state": {
+		"assessment_penalties": {
+			"Anxiety": 0,
+			"Confusion": 0,
+			"Dizziness": 0,
+			"Pressure": 0
+		},
 		"current_sanity": 100,
 		"debuffs": {
 			"Anxiety": 0,
@@ -66,34 +53,27 @@
 			"Pressure": 100
 		}
 	},
-	"saved_at": "2026-11-05 12:21:01",
+	"saved_at": "2026-11-05 15:55:04",
 	"scene_path": "res://Scenes/Home/Areas/World.tscn",
-	"school_completed": true,
+	"school_completed": false,
+	"school_deadline_penalty_applied": false,
 	"school_friend_interactions": {
-		"day": 4,
+		"day": 1,
 		"friends": []
 	},
 	"school_friend_spawn_plan": {
 		"after_assessment": false,
-		"classroom_greeter": "Mich",
-		"created": true,
-		"day": 4,
+		"classroom_greeter": "",
+		"created": false,
+		"day": -1,
 		"entries": []
 	},
-	"school_started": true,
+	"school_started": false,
 	"slot": 0,
 	"story_progress": {
-		"completed_memories": [
-			"Kitchen",
-			"Laundry",
-			"Bathroom",
-			"MasterBedroom"
-		],
-		"guardian_stages_seen": [
-			1,
-			2,
-			3
-		]
+		"completed_memories": [],
+		"guardian_stages_seen": [],
+		"memory_choices": {}
 	},
 	"version": 1
 }
