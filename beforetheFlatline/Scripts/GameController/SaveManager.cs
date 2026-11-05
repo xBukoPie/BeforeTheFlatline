@@ -280,6 +280,7 @@ public partial class SaveManager : Node
         }
 
         _loadingSnapshot = true;
+        _pendingWorldAutosave = false;
         try
         {
             float x = ReadFloat(data, "player_x", 0f);
