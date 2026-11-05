@@ -20,6 +20,7 @@ public partial class SanityManager : Node
     public enum DebuffType { Dizziness, Confusion, Anxiety, Pressure }
 
     private readonly Dictionary<DebuffType, int> _debuffs = new();
+    private readonly Dictionary<DebuffType, int> _assessmentPenaltyDebuffs = new();
     private readonly Dictionary<DebuffType, int> _recoveryTargets = new();
     private readonly RandomNumberGenerator _rng = new();
     private bool _badEndingQueued;
@@ -43,6 +44,7 @@ public partial class SanityManager : Node
         foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
         {
             _debuffs[type] = 0;
+            _assessmentPenaltyDebuffs[type] = 0;
             _recoveryTargets[type] = MaxSanity;
         }
 
@@ -84,6 +86,9 @@ public partial class SanityManager : Node
 
         int appliedIntensity = Mathf.Clamp(intensity, 1, MaxSanity);
         _debuffs[type] = Mathf.Clamp(GetDebuffLevel(type) + appliedIntensity, 0, MaxSanity);
+        if (string.Equals(source, "failed_assessment", StringComparison.OrdinalIgnoreCase))
+            _assessmentPenaltyDebuffs[type] = Mathf.Clamp(
+                GetAssessmentPenaltyLevel(type) + appliedIntensity, 0, MaxSanity);
         CurrentSanity = Mathf.Max(CurrentSanity - appliedIntensity, 0);
 
         int missingSanity = MaxSanity - CurrentSanity;
@@ -146,10 +151,17 @@ public partial class SanityManager : Node
 
         return new Godot.Collections.Dictionary
         {
+        var assessmentPenalties = new Godot.Collections.Dictionary();
+        foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
+            assessmentPenalties[type.ToString()] = GetAssessmentPenaltyLevel(type);
+
+        return new Godot.Collections.Dictionary
+        {
             ["current_sanity"] = CurrentSanity,
             ["failed_test_count"] = FailedTestCount,
             ["difficulty_penalty"] = DifficultyPenalty,
             ["debuffs"] = debuffs,
+            ["assessment_penalties"] = assessmentPenalties,
             ["recovery_targets"] = targets
         };
     }
@@ -164,12 +176,15 @@ public partial class SanityManager : Node
         _badEndingQueued = false;
 
         var debuffs = ReadDictionary(data, "debuffs");
+        var assessmentPenalties = ReadDictionary(data, "assessment_penalties");
         var targets = ReadDictionary(data, "recovery_targets");
 
         foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
         {
             string key = type.ToString();
             _debuffs[type] = Mathf.Clamp(ReadInt(debuffs, key, 0), 0, MaxSanity);
+            _assessmentPenaltyDebuffs[type] = Mathf.Clamp(
+                ReadInt(assessmentPenalties, key, 0), 0, _debuffs[type]);
             _recoveryTargets[type] = Mathf.Clamp(ReadInt(targets, key, MaxSanity), 0, MaxSanity);
             OnDebuffChanged?.Invoke(type, _debuffs[type]);
         }
@@ -228,6 +243,17 @@ public partial class SanityManager : Node
     public int GetDebuffLevel(DebuffType type) =>
         _debuffs.TryGetValue(type, out int value) ? value : 0;
 
+    public int GetAssessmentPenaltyLevel(DebuffType type) =>
+        _assessmentPenaltyDebuffs.TryGetValue(type, out int value) ? value : 0;
+
+    public int GetTotalAssessmentPenalty()
+    {
+        int total = 0;
+        foreach (int level in _assessmentPenaltyDebuffs.Values)
+            total += level;
+        return total;
+    }
+
     public int GetRecoveryTarget(DebuffType type) =>
         _recoveryTargets.TryGetValue(type, out int value) ? value : MaxSanity;
 
@@ -251,6 +277,7 @@ public partial class SanityManager : Node
         foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
         {
             _debuffs[type] = 0;
+            _assessmentPenaltyDebuffs[type] = 0;
             _recoveryTargets[type] = MaxSanity;
             OnDebuffChanged?.Invoke(type, 0);
         }
@@ -267,6 +294,7 @@ public partial class SanityManager : Node
                 continue;
 
             _debuffs[type] = 0;
+            _assessmentPenaltyDebuffs[type] = 0;
             _recoveryTargets[type] = MaxSanity;
             OnDebuffChanged?.Invoke(type, 0);
         }
