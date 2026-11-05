@@ -70,6 +70,9 @@ public partial class StoryProgression : Node
             _memoryChoices[key] = selections;
         }
 
+        if (selections.ContainsKey(lineIndex))
+            return;
+
         selections[lineIndex] = choiceIndex;
         SaveManager.Instance?.RequestAutoSave();
     }
@@ -215,8 +218,8 @@ public partial class StoryProgression : Node
                     if (!int.TryParse(lineKey.AsString(), out int lineIndex) || lineIndex < 0)
                         continue;
                     Variant selected = savedSelections[lineKey];
-                    if (selected.VariantType == Variant.Type.Int && selected.AsInt32() >= 0)
-                        selections[lineIndex] = selected.AsInt32();
+                    if (TryReadChoiceIndex(selected, out int choiceIndex))
+                        selections[lineIndex] = choiceIndex;
                 }
 
                 if (selections.Count > 0)
@@ -252,6 +255,37 @@ public partial class StoryProgression : Node
         _completedMemories.Clear();
         _guardianStagesSeen.Clear();
         _memoryChoices.Clear();
+    }
+
+    private static bool TryReadChoiceIndex(Variant value, out int choiceIndex)
+    {
+        choiceIndex = -1;
+
+        if (value.VariantType == Variant.Type.Int)
+        {
+            choiceIndex = value.AsInt32();
+            return choiceIndex >= 0;
+        }
+
+        if (value.VariantType == Variant.Type.Float)
+        {
+            double number = value.AsDouble();
+            if (number >= 0 && number <= int.MaxValue &&
+                Math.Abs(number - Math.Round(number)) < 0.000001)
+            {
+                choiceIndex = (int)Math.Round(number);
+                return true;
+            }
+        }
+
+        if (value.VariantType == Variant.Type.String &&
+            int.TryParse(value.AsString(), out int parsed) && parsed >= 0)
+        {
+            choiceIndex = parsed;
+            return true;
+        }
+
+        return false;
     }
 
     private static int FindMemoryIndex(string roomId)
