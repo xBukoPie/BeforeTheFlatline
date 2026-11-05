@@ -6,6 +6,10 @@
 [ext_resource type="Texture2D" uid="uid://dbrehj5o8ff4p" path="res://Assets/Map/House/YardExpansion.jpg" id="2_puml3"]
 [ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Door.tscn" id="3_2e2xe"]
 [ext_resource type="PackedScene" uid="uid://df7360cbmy43x" path="res://Scenes/Home/Areas/GroundKeyPickup.tscn" id="5_key_pickup"]
+[ext_resource type="Script" path="res://Scripts/Map/Home/HouseActivityInteractable.cs" id="6_bicycle_activity"]
+
+[sub_resource type="CircleShape2D" id="BicycleActivityShape"]
+radius = 29.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
 size = Vector2(604, 222)
@@ -155,6 +159,17 @@ shape = SubResource("CircleShape2D_48lxs")
 [node name="Bicycle" type="CollisionShape2D" parent="Decorations" unique_id=432590469]
 position = Vector2(-352, -106.5)
 shape = SubResource("RectangleShape2D_p3lsy")
+
+[node name="BicycleActivity" type="Area2D" parent="."]
+position = Vector2(-352, -70)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("6_bicycle_activity")
+ActivityId = "bicycle"
+Prompt = "Ride Bicycle"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BicycleActivity"]
+shape = SubResource("BicycleActivityShape")
 
 [node name="Doors" type="Node2D" parent="." unique_id=1350834373]
 
