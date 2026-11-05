@@ -2,6 +2,7 @@ using System;
 using Godot;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
 
 public static class DailyTestSession
 {
@@ -183,9 +184,24 @@ public static class DailyTestSession
     {
         if (!data.ContainsKey(key))
             return fallback;
+
         Variant value = data[key];
         if (value.VariantType == Variant.Type.Int)
             return value.AsInt32();
+
+        if (value.VariantType == Variant.Type.Float)
+        {
+            double number = value.AsDouble();
+            if (double.IsFinite(number) && number >= int.MinValue && number <= int.MaxValue &&
+                Math.Abs(number - Math.Round(number)) < 0.000001)
+                return (int)Math.Round(number);
+        }
+
+        if (value.VariantType == Variant.Type.String &&
+            int.TryParse(value.AsString(), NumberStyles.Integer,
+                CultureInfo.InvariantCulture, out int parsed))
+            return parsed;
+
         return fallback;
     }
 
