@@ -25,6 +25,7 @@ public partial class DayClock : Node
     public bool SchoolChallengeStartedToday { get; private set; }
     public bool SchoolChallengeCompletedToday { get; private set; }
     public bool SchoolDeadlinePenaltyAppliedToday { get; private set; }
+    public int WrongRoomAttemptsToday { get; private set; }
 
     private readonly RandomNumberGenerator _activityRng = new();
     private bool _tvAvailableToday = true;
@@ -162,6 +163,7 @@ public partial class DayClock : Node
             SchoolChallengeStartedToday = false;
             SchoolChallengeCompletedToday = false;
             SchoolDeadlinePenaltyAppliedToday = false;
+            WrongRoomAttemptsToday = 0;
             RollDailyHouseActivities();
             EmitSignal(SignalName.DayChanged, DayNumber);
         }
@@ -218,6 +220,17 @@ public partial class DayClock : Node
     {
         SchoolDeadlinePenaltyAppliedToday = alreadyApplied;
         CheckSchoolDeadlinePenalty();
+    }
+
+    public int RegisterWrongRoomAttempt()
+    {
+        WrongRoomAttemptsToday = Mathf.Clamp(WrongRoomAttemptsToday + 1, 0, 99);
+        return WrongRoomAttemptsToday;
+    }
+
+    public void RestoreWrongRoomAttempts(int count)
+    {
+        WrongRoomAttemptsToday = Mathf.Clamp(count, 0, 99);
     }
 
     public bool IsHouseActivityRolledAvailable(string activityId) =>
@@ -304,6 +317,7 @@ public partial class DayClock : Node
         SchoolChallengeStartedToday = false;
         SchoolChallengeCompletedToday = false;
         SchoolDeadlinePenaltyAppliedToday = false;
+        WrongRoomAttemptsToday = 0;
         RollDailyHouseActivities();
         _skipSchoolGreetingOnNextLoad = false;
         FirstDayMysteryEncounterSeen = false;
