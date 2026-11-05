@@ -156,7 +156,6 @@ public partial class VisualNovelScene : Control
         VisibilityChanged -= OnVisibilityChanged;
         // Prevent a local dialogue pause from leaving the global status overlay hidden after this scene closes.
         StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
-        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, false);
     }
 
     private void RaiseVisualsAboveVignette()
@@ -188,7 +187,8 @@ public partial class VisualNovelScene : Control
         if (_foregroundCanvas != null && GodotObject.IsInstanceValid(_foregroundCanvas))
             _foregroundCanvas.Visible = visible;
 
-        StatusEffectsOverlay.Instance?.SetCinematicVignette(this, visible);
+        // Cinematic vignette ownership belongs to StoryCutsceneOverlay only.
+        // Ordinary character dialogue must not activate the memory vignette.
     }
 
     public void SetPresentationVisible(bool visible)
