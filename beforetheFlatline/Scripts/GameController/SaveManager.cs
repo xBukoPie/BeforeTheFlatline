@@ -46,9 +46,8 @@ public partial class SaveManager : Node
 
         if (_pendingWorldAutosave && CanSaveCurrentGame)
         {
-            _pendingWorldAutosave = false;
-            _autosaveElapsed = 0;
-            SaveAutoSave();
+            if (SaveAutoSave())
+                _pendingWorldAutosave = false;
             return;
         }
 
@@ -166,8 +165,7 @@ public partial class SaveManager : Node
             return;
         }
 
-        _pendingWorldAutosave = false;
-        SaveAutoSave();
+        _pendingWorldAutosave = !SaveAutoSave();
     }
 
     public async System.Threading.Tasks.Task<bool> LoadSlotAsync(int slot)
