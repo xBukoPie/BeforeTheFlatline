@@ -423,6 +423,7 @@ TargetSpawn = "FromSchool"
 Prompt = "Classroom"
 Size = Vector2(30, 62)
 RequiresSchoolHours = true
+WrongRoom = true
 ClosedPrompt = "The school attendance deadline is 12:00. Come back tomorrow morning."
 
 [node name="wrongRoom2" parent="Doors" unique_id=1793364891 instance=ExtResource("5_xqy2q")]
@@ -432,6 +433,7 @@ TargetSpawn = "FromSchool"
 Prompt = "Classroom"
 Size = Vector2(30, 62)
 RequiresSchoolHours = true
+WrongRoom = true
 ClosedPrompt = "The school attendance deadline is 12:00. Come back tomorrow morning."
 
 [node name="wrongRoom3" parent="Doors" unique_id=540559071 instance=ExtResource("5_xqy2q")]
@@ -441,6 +443,7 @@ TargetSpawn = "FromSchool"
 Prompt = "Classroom"
 Size = Vector2(30, 62)
 RequiresSchoolHours = true
+WrongRoom = true
 ClosedPrompt = "The school attendance deadline is 12:00. Come back tomorrow morning."
 
 [node name="wrongRoom4" parent="Doors" unique_id=721371697 instance=ExtResource("5_xqy2q")]
@@ -450,6 +453,7 @@ TargetSpawn = "FromSchool"
 Prompt = "Classroom"
 Size = Vector2(30, 62)
 RequiresSchoolHours = true
+WrongRoom = true
 ClosedPrompt = "The school attendance deadline is 12:00. Come back tomorrow morning."
 
 [node name="Spawns" type="Node2D" parent="." unique_id=1813384167]
