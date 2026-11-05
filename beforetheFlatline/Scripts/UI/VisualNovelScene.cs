@@ -73,6 +73,7 @@ public partial class VisualNovelScene : Control
     public Control DialogueInterfaceRoot => _uiRoot;
     public Func<int, DialogueLine, Task> BeforeLinePresentationAsync { get; set; }
     public IReadOnlyDictionary<int, int> ReplayChoiceSelections { get; set; }
+    public bool LockReplayChoices { get; set; }
     public event Action<int, int> ChoiceSelectedAtLine;
 
     public void SetMemoryTransitionBlocked(bool blocked) =>
@@ -350,9 +351,18 @@ public partial class VisualNovelScene : Control
             if (ReplayChoiceSelections != null &&
                 ReplayChoiceSelections.TryGetValue(_index, out int savedChoice) &&
                 savedChoice >= 0 && savedChoice < line.Choices.Length)
+            {
                 OnChoicePressed(savedChoice, line.Choices[savedChoice]);
+            }
+            else if (LockReplayChoices)
+            {
+                GD.PushWarning($"VisualNovelScene: replay has no valid saved choice for line {_index}; using the first branch to keep replay locked.");
+                OnChoicePressed(0, line.Choices[0]);
+            }
             else
+            {
                 ShowChoices(line.Choices);
+            }
         }
         else
         {
