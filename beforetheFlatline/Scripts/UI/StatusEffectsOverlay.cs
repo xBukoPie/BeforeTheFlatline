@@ -102,14 +102,19 @@ public partial class StatusEffectsOverlay : CanvasLayer
             scenePath,
             "res://Scenes/Menu/Main.tscn",
             StringComparison.OrdinalIgnoreCase);
+        bool onEndingPresentation = IsEndingPresentationScene(scenePath);
+        if (onEndingPresentation)
+            _vignetteOwners.Clear();
         _mainMenuFade = Mathf.MoveToward(_mainMenuFade, onMainMenu ? 0f : 1f, dt / 1.25f);
         _pauseFade = Mathf.MoveToward(_pauseFade, _pauseMenuVisible ? 0f : 1f, dt / 0.18f);
 
-        float vignetteTarget = _vignetteOwners.Count > 0 ? 0.68f : 0f;
+        float vignetteTarget = !onEndingPresentation && _vignetteOwners.Count > 0 ? 0.68f : 0f;
         _vignetteAlpha = Mathf.MoveToward(_vignetteAlpha, vignetteTarget, dt * 2.4f);
+        if (_vignetteLayer != null && GodotObject.IsInstanceValid(_vignetteLayer))
+            _vignetteLayer.Visible = !onEndingPresentation;
         if (_vignetteOverlay != null && GodotObject.IsInstanceValid(_vignetteOverlay))
         {
-            _vignetteOverlay.Visible = _vignetteAlpha > 0.005f;
+            _vignetteOverlay.Visible = !onEndingPresentation && _vignetteAlpha > 0.005f;
             _vignetteOverlay.Modulate = new Color(1f, 1f, 1f, _vignetteAlpha);
         }
 
@@ -455,7 +460,10 @@ void fragment() {
         int pressure = manager?.GetDebuffLevel(SanityManager.DebuffType.Pressure) ?? 0;
         int total = dizziness + confusion + anxiety + pressure;
 
-        float fade = Mathf.Clamp(_endingFade * _mainMenuFade * _pauseFade, 0f, 1f);
+        bool onEndingPresentation = IsEndingPresentationScene(
+            GetTree()?.CurrentScene?.SceneFilePath ?? string.Empty);
+        float fade = Mathf.Clamp(_endingFade * _mainMenuFade * _pauseFade *
+            (onEndingPresentation ? 0f : 1f), 0f, 1f);
         _root.Visible = fade > 0.005f;
         float wobble = Mathf.Clamp(dizziness / 55f, 0f, 1f) * 0.62f * fade;
         float staticStrength = Mathf.Clamp(anxiety / 38f, 0f, 1f) * fade;
@@ -475,7 +483,7 @@ void fragment() {
         }
 
         float pulse = (Mathf.Sin(_elapsed * (5.5f + pressure / 30f)) + 1f) * 0.5f;
-        _heart.Visible = pressure > 0 && _endingFade > 0.02f;
+        _heart.Visible = !onEndingPresentation && pressure > 0 && _endingFade > 0.02f;
         _heart.Scale = Vector2.One * (0.93f + pulse * (0.09f + pressureStrength * 0.08f));
         _heart.Modulate = new Color(1f, 1f, 1f,
             _heart.Visible ? (0.22f + pulse * 0.28f) * fade : 0f);
@@ -507,6 +515,11 @@ void fragment() {
         _pressureBottom.Visible = pressure > 0;
         _dominantDebuff = FindDominant(dizziness, confusion, anxiety, pressure);
     }
+
+    private static bool IsEndingPresentationScene(string scenePath) =>
+        string.Equals(scenePath, "res://Scenes/Ending/GoodEndingBriefing.tscn", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenePath, "res://Scenes/Ending/EndingCredits.tscn", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenePath, "res://Scenes/Ending/BadEnding.tscn", StringComparison.OrdinalIgnoreCase);
 
     private static SanityManager.DebuffType FindDominant(int d, int c, int a, int p)
     {
