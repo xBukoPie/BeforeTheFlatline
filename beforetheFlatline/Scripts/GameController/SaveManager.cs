@@ -199,6 +199,8 @@ public partial class SaveManager : Node
             ["clock_running"] = true,
             ["school_started"] = DayClock.Instance.SchoolChallengeStartedToday,
             ["school_completed"] = DayClock.Instance.SchoolChallengeCompletedToday,
+            ["school_deadline_penalty_applied"] = DayClock.Instance.SchoolDeadlinePenaltyAppliedToday,
+            ["daily_house_activities"] = DayClock.Instance.CreateHouseActivitySaveData(),
             ["mystery_encounter_seen"] = DayClock.Instance.FirstDayMysteryEncounterSeen,
             ["first_day_special_greeting_pending"] = DayClock.Instance.FirstDayMysteryGreetingPending,
             ["sanity_state"] = SanityManager.Instance.CreateSaveData(),
@@ -278,6 +280,7 @@ public partial class SaveManager : Node
             var storyState = ReadDictionary(data, "story_progress");
 
             DayClock.Instance?.RestoreState(day, hour, true, schoolStarted, schoolCompleted);
+            DayClock.Instance?.RestoreHouseActivityState(ReadDictionary(data, "daily_house_activities"));
             SchoolFriendInteractionHistory.RestoreFromSaveData(friendInteractionState);
             SchoolFriendSpawnHistory.RestoreFromSaveData(friendSpawnState, day, schoolCompleted);
             StoryProgression.Instance?.RestoreFromSaveData(storyState);
@@ -360,6 +363,8 @@ public partial class SaveManager : Node
                 // Apply this after the world is active so room-entry autosaves cannot overwrite the snapshot.
                 // Empty state dictionaries are treated as legacy saves with default sanity.
                 SanityManager.Instance.RestoreFromSaveData(sanityState);
+                DayClock.Instance?.RestoreSchoolDeadlinePenaltyState(
+                    ReadBool(data, "school_deadline_penalty_applied", false));
                 SanityManager.Instance.CheckForBadEndingAfterLoad();
             }
 
