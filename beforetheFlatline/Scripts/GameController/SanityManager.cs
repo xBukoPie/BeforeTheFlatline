@@ -70,16 +70,13 @@ public partial class SanityManager : Node
             return;
 
         int clamped = Mathf.Clamp(amount, 1, MaxSanity);
-        int previous = CurrentSanity;
         CurrentSanity = Mathf.Min(CurrentSanity + clamped, MaxSanity);
-
-        if (CurrentSanity > previous)
-            ClearRecoveredDebuffs();
+        ClearRecoveredDebuffs();
 
         OnSanityChanged?.Invoke(CurrentSanity);
     }
 
-    public void ApplyDebuff(string source, DebuffType type, int intensity)
+    public void ApplyDebuff(string source, DebuffType type, int intensity, bool deductSanity = true)
     {
         if (_badEndingQueued || intensity <= 0)
             return;
@@ -89,7 +86,9 @@ public partial class SanityManager : Node
         if (string.Equals(source, "failed_assessment", StringComparison.OrdinalIgnoreCase))
             _assessmentPenaltyDebuffs[type] = Mathf.Clamp(
                 GetAssessmentPenaltyLevel(type) + appliedIntensity, 0, MaxSanity);
-        CurrentSanity = Mathf.Max(CurrentSanity - appliedIntensity, 0);
+
+        if (deductSanity)
+            CurrentSanity = Mathf.Max(CurrentSanity - appliedIntensity, 0);
 
         int missingSanity = MaxSanity - CurrentSanity;
         int recoveryPercent = _rng.RandiRange(30, 60);
@@ -99,7 +98,7 @@ public partial class SanityManager : Node
         OnDebuffChanged?.Invoke(type, _debuffs[type]);
         OnSanityChanged?.Invoke(CurrentSanity);
 
-        if (CurrentSanity == 0)
+        if (deductSanity && CurrentSanity == 0)
             QueueBadEnding();
     }
 
@@ -136,6 +135,27 @@ public partial class SanityManager : Node
     }
 
     public void ClearDebuffForAdmin(DebuffType type) => SetDebuffLevelForAdmin(type, 0);
+
+    public bool ClearRandomActiveDebuff(out DebuffType clearedType)
+    {
+        var active = new List<DebuffType>();
+        foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
+            if (GetDebuffLevel(type) > 0)
+                active.Add(type);
+
+        if (active.Count == 0)
+        {
+            clearedType = DebuffType.Dizziness;
+            return false;
+        }
+
+        clearedType = active[_rng.RandiRange(0, active.Count - 1)];
+        _debuffs[clearedType] = 0;
+        _assessmentPenaltyDebuffs[clearedType] = 0;
+        _recoveryTargets[clearedType] = MaxSanity;
+        OnDebuffChanged?.Invoke(clearedType, 0);
+        return true;
+    }
 
     // Capture sanity, failure penalties, active debuffs, and their recovery gates.
     public Godot.Collections.Dictionary CreateSaveData()
