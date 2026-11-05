@@ -28,7 +28,7 @@ animations = [{
 scale = Vector2(1.5, 1.5)
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1094499538]
-scale = Vector2(0.23, 0.23)
+scale = Vector2(0.22, 0.22)
 sprite_frames = SubResource("SpriteFrames_v2h47")
 animation = &"Idle"
 frame_progress = 0.44541028
