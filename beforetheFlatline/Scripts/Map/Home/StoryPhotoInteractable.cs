@@ -302,9 +302,6 @@ public partial class StoryPhotoInteractable : Area2D
         if (!finalMemory)
         {
             ApplyMemoryEffect();
-            string newlyAvailableKey = RoomKeyProgression.Instance?.QueueAssessmentKey() ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(newlyAvailableKey))
-                GD.Print($"[StoryPhotoInteractable] The {newlyAvailableKey} key is now available in {RoomKeyProgression.Instance.GetPendingKeyLocationName()}.");
         }
         else
         {
