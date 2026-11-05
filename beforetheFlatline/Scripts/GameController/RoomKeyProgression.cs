@@ -15,6 +15,7 @@ public partial class RoomKeyProgression : Node
     public int HiddenPoints { get; private set; }
     public int TotalKeysEarned => _unlockedRoomIds.Count;
     public string PendingKeyRoomName { get; private set; } = string.Empty;
+    public bool PendingKeyFromAssessment { get; private set; }
     public bool HasPendingKey => !string.IsNullOrWhiteSpace(PendingKeyRoomName);
     public int PointsUntilNextKey => string.IsNullOrEmpty(NextRoomKeyName)
         ? 0
@@ -61,7 +62,8 @@ public partial class RoomKeyProgression : Node
         int hiddenPoints,
         int totalKeysEarned,
         string pendingKeyRoomName = "",
-        IEnumerable<string> unlockedRoomIds = null)
+        IEnumerable<string> unlockedRoomIds = null,
+        bool pendingKeyFromAssessment = false)
     {
         HiddenPoints = Math.Max(0, hiddenPoints);
         _unlockedRoomIds.Clear();
@@ -88,6 +90,14 @@ public partial class RoomKeyProgression : Node
         PendingKeyRoomName = pendingIndex >= 0 && !_unlockedRoomIds.Contains(LockedRooms[pendingIndex].Id)
             ? LockedRooms[pendingIndex].Name
             : string.Empty;
+        PendingKeyFromAssessment = !string.IsNullOrWhiteSpace(PendingKeyRoomName) &&
+            pendingKeyFromAssessment;
+
+        // Older builds could queue the Master Bedroom key directly after its memory scene.
+        // The current rule requires an assessment completion after that memory.
+        if (string.Equals(PendingKeyRoomName, "MasterBedroom", StringComparison.OrdinalIgnoreCase) &&
+            !PendingKeyFromAssessment)
+            PendingKeyRoomName = string.Empty;
 
         // A legacy save has no unlock date; mark existing rooms as unlocked before today
         // so their Guardian conversation can appear on the next available visit.
@@ -177,6 +187,7 @@ public partial class RoomKeyProgression : Node
             return string.Empty;
 
         PendingKeyRoomName = LockedRooms[nextIndex].Name;
+        PendingKeyFromAssessment = true;
         return PendingKeyRoomName;
     }
 
@@ -228,6 +239,7 @@ public partial class RoomKeyProgression : Node
         _unlockedRoomIds.Add(LockedRooms[index].Id);
         RecordRoomUnlockDay(roomName);
         PendingKeyRoomName = string.Empty;
+        PendingKeyFromAssessment = false;
         EmitSignal(SignalName.RoomKeyEarned, 1, roomName);
         return roomName;
     }
@@ -241,7 +253,10 @@ public partial class RoomKeyProgression : Node
         string roomName = LockedRooms[index].Name;
         RecordRoomUnlockDay(roomName);
         if (string.Equals(PendingKeyRoomName, roomName, StringComparison.OrdinalIgnoreCase))
+        {
             PendingKeyRoomName = string.Empty;
+            PendingKeyFromAssessment = false;
+        }
 
         EmitSignal(SignalName.RoomKeyEarned, 1, roomName);
         return roomName;
@@ -264,6 +279,7 @@ public partial class RoomKeyProgression : Node
         _unlockedRoomIds.Clear();
         _roomUnlockedDays.Clear();
         PendingKeyRoomName = string.Empty;
+        PendingKeyFromAssessment = false;
     }
 
     private int FindNextLockedRoomIndex() =>
