@@ -156,7 +156,7 @@ public partial class MainMenu : Control
         DayClock.Instance?.ResetForNewRun();
         SanityManager.Instance?.ResetForNewRun();
         StatusEffectsOverlay.Instance?.ResetForNewRun();
-        DailyTestSession.Reset();
+        DailyTestSession.ResetForNewRun();
         ChallengeProgress.Reset();
         RoomKeyProgression.Instance?.ResetForNewRun();
         StoryProgression.Instance?.ResetForNewRun();
