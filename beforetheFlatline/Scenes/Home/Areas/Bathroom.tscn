@@ -7,6 +7,10 @@
 [ext_resource type="PackedScene" uid="uid://df7360cbmy43x" path="res://Scenes/Home/Areas/GroundKeyPickup.tscn" id="98_key_pickup"]
 [ext_resource type="Script" uid="uid://bec3m6woguqol" path="res://Scripts/Map/Home/StoryPhotoInteractable.cs" id="99_story_photo"]
 [ext_resource type="Texture2D" uid="uid://21uxlmxn23jw" path="res://Assets/Objects/objectPolaroidPhoto.png" id="100_polaroid"]
+[ext_resource type="Script" path="res://Scripts/Map/Home/HouseActivityInteractable.cs" id="101_bath_activity"]
+
+[sub_resource type="CircleShape2D" id="BathActivityShape"]
+radius = 23.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
 size = Vector2(241, 10)
@@ -129,3 +133,14 @@ texture = ExtResource("100_polaroid")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="BathroomMemoryPhoto" unique_id=1249432717]
 shape = SubResource("StoryPhotoShape")
+
+[node name="BathActivity" type="Area2D" parent="."]
+position = Vector2(40, 4)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("101_bath_activity")
+ActivityId = "bath"
+Prompt = "Take a Bath"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BathActivity"]
+shape = SubResource("BathActivityShape")
