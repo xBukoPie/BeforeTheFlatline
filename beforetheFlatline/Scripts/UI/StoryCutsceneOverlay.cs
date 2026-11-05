@@ -331,8 +331,11 @@ void fragment()
         if (_isEnding)
             _dialogue.CharsPerSecond = 20f;
         if (_replayOnly && !string.IsNullOrWhiteSpace(_memoryId))
+        {
             _dialogue.ReplayChoiceSelections =
                 StoryProgression.Instance?.GetMemoryChoiceSelections(_memoryId);
+            _dialogue.LockReplayChoices = true;
+        }
         _dialogue.PlayDemoOnReady = false;
         _dialogue.LoopDemo = false;
         _dialogue.BeforeLinePresentationAsync = null;
