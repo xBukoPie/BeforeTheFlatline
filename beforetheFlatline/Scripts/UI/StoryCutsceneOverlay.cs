@@ -50,6 +50,9 @@ void fragment()
     private IReadOnlyList<StoryCutsceneBeat> _beats = Array.Empty<StoryCutsceneBeat>();
     private Action _onFinished;
     private bool _isEnding;
+    private bool _replayOnly;
+    private bool _callbackAfterReveal;
+    private string _memoryId = string.Empty;
     private bool _finished;
     private bool _worldStateRestored;
     private bool _previousTreePaused;
@@ -87,12 +90,18 @@ void fragment()
         string heading,
         IReadOnlyList<StoryCutsceneBeat> beats,
         Action onFinished,
-        bool isEnding = false)
+        bool isEnding = false,
+        string memoryId = "",
+        bool replayOnly = false,
+        bool callbackAfterReveal = false)
     {
         _heading = string.IsNullOrWhiteSpace(heading) ? "MEMORY" : heading;
         _beats = beats ?? Array.Empty<StoryCutsceneBeat>();
         _onFinished = onFinished;
         _isEnding = isEnding;
+        _memoryId = memoryId ?? string.Empty;
+        _replayOnly = replayOnly;
+        _callbackAfterReveal = callbackAfterReveal;
     }
 
     public override void _Ready()
@@ -150,6 +159,7 @@ void fragment()
             _dialogue.BeforeLinePresentationAsync = null;
             _dialogue.LinePresented -= OnLinePresented;
             _dialogue.DialogueFinished -= OnDialogueFinished;
+            _dialogue.ChoiceSelectedAtLine -= OnChoiceSelectedAtLine;
             _dialogue.SetMemoryTransitionBlocked(false);
         }
 
@@ -322,10 +332,14 @@ void fragment()
         _dialogue.CompactChoiceMode = true;
         if (_isEnding)
             _dialogue.CharsPerSecond = 30f;
+        if (_replayOnly && !string.IsNullOrWhiteSpace(_memoryId))
+            _dialogue.ReplayChoiceSelections =
+                StoryProgression.Instance?.GetMemoryChoiceSelections(_memoryId);
         _dialogue.PlayDemoOnReady = false;
         _dialogue.LoopDemo = false;
-        _dialogue.BeforeLinePresentationAsync = PrepareMasterBedroomBeatTransitionAsync;
+        _dialogue.BeforeLinePresentationAsync = null;
         _dialogue.LinePresented += OnLinePresented;
+        _dialogue.ChoiceSelectedAtLine += OnChoiceSelectedAtLine;
         _dialogue.DialogueFinished += OnDialogueFinished;
         AddChild(_dialogue);
 
@@ -344,6 +358,18 @@ void fragment()
         _dialogue.StartDialogue(lines);
     }
 
+    private void OnChoiceSelectedAtLine(int lineIndex, int choiceIndex)
+    {
+        if (string.IsNullOrWhiteSpace(_memoryId) || StoryProgression.Instance == null)
+            return;
+
+        if (_replayOnly &&
+            StoryProgression.Instance.GetMemoryChoiceSelections(_memoryId).ContainsKey(lineIndex))
+            return;
+
+        StoryProgression.Instance.RecordMemoryChoice(_memoryId, lineIndex, choiceIndex);
+    }
+
     private void OnLinePresented(int index, DialogueLine line)
     {
         if (index < 0 || index >= _beats.Count)
@@ -359,88 +385,41 @@ void fragment()
 
         if (_isEnding && index == 0)
             SetArtwork(beat.ImagePath);
-
-        if (_masterBedroomBeatNeedsReveal)
-            RevealMasterBedroomBeat();
+        else if (_isEnding && index > 0)
+            TransitionMasterBedroomArtwork(beat.ImagePath);
 
         ApplyMemoryCue(beat.EffectCue);
         if (beginCollapse)
             PlayCollapseTransition(beat.ImagePath);
     }
 
-    private async Task PrepareMasterBedroomBeatTransitionAsync(int index, DialogueLine line)
+    private async void TransitionMasterBedroomArtwork(string imagePath)
     {
-        if (!_isEnding || index <= 0 || index >= _beats.Count || _finished)
+        if (_finished || _art == null || !GodotObject.IsInstanceValid(_art))
             return;
 
-        StoryCutsceneBeat beat = _beats[index];
-        bool collapseCue =
-            string.Equals(beat.EffectCue, "blackout", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(beat.EffectCue, "collapse", StringComparison.OrdinalIgnoreCase);
-        if (collapseCue && !_collapseTransitionPlayed)
+        string requested = string.IsNullOrWhiteSpace(imagePath) ? string.Empty : imagePath.Trim();
+        if (string.Equals(requested, _currentImagePath, StringComparison.OrdinalIgnoreCase))
             return;
-
-        // Dialogue advances on the same still should not animate the artwork.
-        // Only a real image change receives the coordinated fade.
-        string requestedImage = string.IsNullOrWhiteSpace(beat.ImagePath)
-            ? string.Empty
-            : beat.ImagePath.Trim();
-        if (string.Equals(requestedImage, _currentImagePath, StringComparison.OrdinalIgnoreCase))
-            return;
-
-        int textLength = line.Text?.Length ?? 0;
-        _masterBedroomRevealDuration = Mathf.Clamp(
-            textLength / Mathf.Max(_dialogue?.CharsPerSecond ?? 30f, 1f),
-            0.75f,
-            3f);
 
         if (_masterBedroomBeatTween != null && _masterBedroomBeatTween.IsValid())
             _masterBedroomBeatTween.Kill();
         if (_artTween != null && _artTween.IsValid())
             _artTween.Kill();
 
-        Control dialogueUi = _dialogue?.DialogueInterfaceRoot;
-        if (_art == null || !GodotObject.IsInstanceValid(_art) ||
-            dialogueUi == null || !GodotObject.IsInstanceValid(dialogueUi))
-            return;
-
-        _dialogue.SetMemoryTransitionBlocked(true);
         _masterBedroomBeatTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
-        _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 0f, 0.38f)
+        _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 0f, 1.65f)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
-        _masterBedroomBeatTween.Parallel().TweenProperty(dialogueUi, "modulate:a", 0f, 0.38f)
-            .SetTrans(Tween.TransitionType.Sine)
-            .SetEase(Tween.EaseType.InOut);
-
         await ToSignal(_masterBedroomBeatTween, Tween.SignalName.Finished);
-        if (_finished || !IsInsideTree())
+        if (_finished || !IsInsideTree() || !GodotObject.IsInstanceValid(_art))
             return;
 
-        SetArtworkImmediately(beat.ImagePath);
-        _masterBedroomBeatNeedsReveal = true;
-    }
-
-    private void RevealMasterBedroomBeat()
-    {
-        _masterBedroomBeatNeedsReveal = false;
-        if (_finished || _art == null || !GodotObject.IsInstanceValid(_art))
-            return;
-
-        Control dialogueUi = _dialogue?.DialogueInterfaceRoot;
-        if (dialogueUi == null || !GodotObject.IsInstanceValid(dialogueUi))
-            return;
-
+        SetArtworkImmediately(requested);
         _masterBedroomBeatTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
-        // Reveal duration follows the typewriter length, so the image and monologue settle together.
-        _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 1f, _masterBedroomRevealDuration)
+        _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 1f, 2.1f)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
-        _masterBedroomBeatTween.Parallel().TweenProperty(
-            dialogueUi, "modulate:a", 1f, _masterBedroomRevealDuration)
-            .SetTrans(Tween.TransitionType.Sine)
-            .SetEase(Tween.EaseType.InOut);
-        _masterBedroomBeatTween.Finished += OnMasterBedroomBeatTransitionFinished;
     }
 
     private void OnMasterBedroomBeatTransitionFinished()
@@ -635,6 +614,7 @@ void fragment()
         if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
         {
             _dialogue.LinePresented -= OnLinePresented;
+            _dialogue.ChoiceSelectedAtLine -= OnChoiceSelectedAtLine;
             _dialogue.DialogueFinished -= OnDialogueFinished;
         }
 
@@ -677,11 +657,12 @@ void fragment()
 
         Action callback = _onFinished;
         _onFinished = null;
-        callback?.Invoke();
+        if (!_callbackAfterReveal)
+            callback?.Invoke();
 
         // The final memory callback starts the global scene fade while this cover
-        // remains black. The old world is then replaced without flashing through.
-        if (_isEnding && SceneTransition.Instance?.IsBusy == true)
+        // remains black. Journal replays instead reveal the Journal before returning.
+        if (!_callbackAfterReveal && _isEnding && SceneTransition.Instance?.IsBusy == true)
             return;
 
         // For ordinary recollections, reveal the restored room only after the
@@ -696,6 +677,8 @@ void fragment()
         }
 
         RestoreWorldState();
+        if (_callbackAfterReveal)
+            callback?.Invoke();
         if (IsInsideTree())
             QueueFree();
     }
