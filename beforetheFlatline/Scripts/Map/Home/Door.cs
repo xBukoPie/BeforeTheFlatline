@@ -9,6 +9,7 @@ public partial class Door : Area2D
     [Export] public Vector2 Size { get; set; } = new Vector2(32, 12);
     [Export] public bool AutoEnter { get; set; } = false;    // true = no key press needed (e.g. walk down stairs)
     [Export] public bool RequiresSchoolHours { get; set; } = false;
+    [Export] public bool MarksSchoolAttendance { get; set; } = false;
     [Export] public bool ShowLoadingScreen { get; set; } = false;
     [Export] public bool UseSchoolTravelLoadingScreen { get; set; } = false;
     [Export] public string LoadingMessage { get; set; } = "Heading to school...";
@@ -137,6 +138,12 @@ public partial class Door : Area2D
             return;
         }
         var instance = packed.Instantiate();
+
+        if (MarksSchoolAttendance && DayClock.Instance != null)
+        {
+            DayClock.Instance.MarkSchoolChallengeStartedToday();
+            SaveManager.Instance?.RequestAutoSave();
+        }
 
         if (instance is Node2D && instance is not Control)
         {
