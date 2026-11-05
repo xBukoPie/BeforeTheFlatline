@@ -364,8 +364,7 @@ void fragment()
         if (string.IsNullOrWhiteSpace(_memoryId) || StoryProgression.Instance == null)
             return;
 
-        if (_replayOnly &&
-            StoryProgression.Instance.GetMemoryChoiceSelections(_memoryId).ContainsKey(lineIndex))
+        if (_replayOnly)
             return;
 
         StoryProgression.Instance.RecordMemoryChoice(_memoryId, lineIndex, choiceIndex);
