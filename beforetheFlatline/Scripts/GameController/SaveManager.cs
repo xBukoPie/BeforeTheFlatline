@@ -216,7 +216,8 @@ public partial class SaveManager : Node
             ["challenge_progress"] = ChallengeProgress.CreateSaveData(),
             ["school_friend_interactions"] = SchoolFriendInteractionHistory.CreateSaveData(),
             ["school_friend_spawn_plan"] = SchoolFriendSpawnHistory.CreateSaveData(),
-            ["story_progress"] = StoryProgression.Instance?.CreateSaveData() ?? new Godot.Collections.Dictionary()
+            ["story_progress"] = StoryProgression.Instance?.CreateSaveData() ?? new Godot.Collections.Dictionary(),
+            ["assessment_history"] = DailyTestSession.CreateHistorySaveContainer()
         };
 
         using var file = FileAccess.Open(path, FileAccess.ModeFlags.Write);
@@ -318,6 +319,8 @@ public partial class SaveManager : Node
             RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Bathroom", ReadInt(keyState, "bathroom_unlocked_day", -1));
             RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("MasterBedroom", ReadInt(keyState, "master_bedroom_unlocked_day", -1));
             ChallengeProgress.RestoreFromSaveData(challengeState);
+            DailyTestSession.RestoreHistoryFromSaveData(
+                ReadDictionary(data, "assessment_history"));
 
             RoomManager.RequestStartRoomOnNextLoad(roomPath, "startSpawn");
             if (savedRoomExists)
