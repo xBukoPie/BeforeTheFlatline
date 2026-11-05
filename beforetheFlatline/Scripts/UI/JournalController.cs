@@ -331,9 +331,14 @@ public partial class JournalController : CanvasLayer
         AddPageHeading("MEMORY SCENES", "Only memories already recovered in this progression can be replayed.");
 
         string[] memories = StoryProgression.Instance?.GetMemoryOrder() ?? MemoryNames;
+        int displayedMemories = 0;
         foreach (string memoryId in memories)
         {
             bool unlocked = StoryProgression.Instance?.HasSeenMemory(memoryId) == true;
+            if (!unlocked)
+                continue;
+
+            displayedMemories++;
             string description = memoryId switch
             {
                 "Kitchen" => "A familiar meal, an absent appetite, and the first uneasy fragment.",
@@ -380,18 +385,16 @@ public partial class JournalController : CanvasLayer
             var text = CreateBodyLabel(description);
             stack.AddChild(text);
 
-            if (unlocked)
-            {
-                var replay = CreateButton(memoryId == "MasterBedroom" ? "Replay Memory & Good Ending" : "Replay Memory", true);
-                replay.CustomMinimumSize = new Vector2(0, 42);
-                replay.Pressed += () => ReplayMemory(memoryId);
-                stack.AddChild(replay);
-            }
-            else
-            {
-                stack.AddChild(CreateBodyLabel("Recover the previous memory and unlock this room to reveal this scene."));
-            }
+            var replay = CreateButton(memoryId == "MasterBedroom" ? "Replay Memory & Good Ending" : "Replay Memory", true);
+            replay.CustomMinimumSize = new Vector2(0, 42);
+            replay.Pressed += () => ReplayMemory(memoryId);
+            stack.AddChild(replay);
         }
+
+        if (displayedMemories == 0)
+            _pageBody.AddChild(CreateBodyLabel("No memories have been recovered in this progression yet. Return to the photographs as they become available."));
+        else
+            _pageBody.AddChild(CreateMutedLabel($"{displayedMemories} of {MemoryNames.Length} memory scenes recovered."));
     }
 
     private void BuildFriendsPage()
