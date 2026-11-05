@@ -198,9 +198,12 @@ public static class DailyTestSession
         }
 
         if (value.VariantType == Variant.Type.String &&
-            int.TryParse(value.AsString(), NumberStyles.Integer,
-                CultureInfo.InvariantCulture, out int parsed))
-            return parsed;
+            double.TryParse(value.AsString(), NumberStyles.Float,
+                CultureInfo.InvariantCulture, out double parsedString) &&
+            double.IsFinite(parsedString) &&
+            parsedString >= int.MinValue && parsedString <= int.MaxValue &&
+            Math.Abs(parsedString - Math.Round(parsedString)) < 0.000001)
+            return (int)Math.Round(parsedString);
 
         return fallback;
     }
