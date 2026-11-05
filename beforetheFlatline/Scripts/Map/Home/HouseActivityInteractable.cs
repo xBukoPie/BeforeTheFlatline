@@ -241,10 +241,12 @@ public partial class HouseActivityInteractable : Area2D
                 break;
 
             case "bath":
-                SanityManager.Instance?.Recover(lateNight ? 7 : 4);
+                SanityManager sanity = SanityManager.Instance;
+                sanity?.Recover(lateNight ? 7 : 4);
                 message = "You took a quick bath.. You feel slightly better.";
-                if (lateNight &&
-                    SanityManager.Instance?.ClearRandomActiveDebuff(out _) == true)
+                bool clearedDebuff = lateNight && sanity != null &&
+                    sanity.ClearRandomActiveDebuff(out _);
+                if (clearedDebuff)
                     message += " One lingering effect has eased.";
                 break;
 
