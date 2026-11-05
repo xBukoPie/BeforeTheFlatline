@@ -18,6 +18,7 @@ public partial class SaveManager : Node
     private double _autosaveElapsed;
     private bool _writingAutosave;
     private bool _loadingSnapshot;
+    private bool _pendingWorldAutosave;
 
     public override void _Ready()
     {
@@ -40,8 +41,18 @@ public partial class SaveManager : Node
 
     public override void _Process(double delta)
     {
-        if (_loadingSnapshot || GetTree().Paused || !CanSaveCurrentGame ||
-            DayClock.Instance == null || !DayClock.Instance.Running)
+        if (_loadingSnapshot || GetTree().Paused)
+            return;
+
+        if (_pendingWorldAutosave && CanSaveCurrentGame)
+        {
+            _pendingWorldAutosave = false;
+            _autosaveElapsed = 0;
+            SaveAutoSave();
+            return;
+        }
+
+        if (!CanSaveCurrentGame || DayClock.Instance == null || !DayClock.Instance.Running)
             return;
 
         _autosaveElapsed += delta;
@@ -149,6 +160,13 @@ public partial class SaveManager : Node
             return;
 
         _autosaveElapsed = 0;
+        if (!CanSaveCurrentGame)
+        {
+            _pendingWorldAutosave = true;
+            return;
+        }
+
+        _pendingWorldAutosave = false;
         SaveAutoSave();
     }
 
@@ -200,6 +218,7 @@ public partial class SaveManager : Node
             ["school_started"] = DayClock.Instance.SchoolChallengeStartedToday,
             ["school_completed"] = DayClock.Instance.SchoolChallengeCompletedToday,
             ["school_deadline_penalty_applied"] = DayClock.Instance.SchoolDeadlinePenaltyAppliedToday,
+            ["wrong_room_attempts_today"] = DayClock.Instance.WrongRoomAttemptsToday,
             ["daily_house_activities"] = DayClock.Instance.CreateHouseActivitySaveData(),
             ["mystery_encounter_seen"] = DayClock.Instance.FirstDayMysteryEncounterSeen,
             ["first_day_special_greeting_pending"] = DayClock.Instance.FirstDayMysteryGreetingPending,
@@ -280,6 +299,7 @@ public partial class SaveManager : Node
             var storyState = ReadDictionary(data, "story_progress");
 
             DayClock.Instance?.RestoreState(day, hour, true, schoolStarted, schoolCompleted);
+            DayClock.Instance?.RestoreWrongRoomAttempts(ReadInt(data, "wrong_room_attempts_today", 0));
             DayClock.Instance?.RestoreHouseActivityState(ReadDictionary(data, "daily_house_activities"));
             SchoolFriendInteractionHistory.RestoreFromSaveData(friendInteractionState);
             SchoolFriendSpawnHistory.RestoreFromSaveData(friendSpawnState, day, schoolCompleted);
