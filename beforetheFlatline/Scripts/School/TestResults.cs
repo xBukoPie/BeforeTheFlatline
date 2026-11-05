@@ -29,9 +29,18 @@ public partial class TestResults : Control
 
         DayClock.Instance?.MarkSchoolChallengeCompletedToday();
 
-        // Keep the existing room-key progression, but do not crowd the result screen with it.
+        // Keep the existing room-key progression, but record only newly appeared keys.
+        string newKeyReward = string.Empty;
         if (!alreadyFinalized)
-            RoomKeyProgression.Instance?.QueueAssessmentKey();
+        {
+            bool keyWasAlreadyWaiting = RoomKeyProgression.Instance?.HasPendingKey == true;
+            string roomName = RoomKeyProgression.Instance?.QueueAssessmentKey() ?? string.Empty;
+            if (!keyWasAlreadyWaiting && !string.IsNullOrWhiteSpace(roomName))
+            {
+                string location = RoomKeyProgression.Instance?.GetPendingKeyLocationName() ?? "the house";
+                newKeyReward = $"Key available: {roomName} (pickup in {location})";
+            }
+        }
 
         int score = DailyTestSession.Score;
         int pointsReceived = DailyTestSession.PointsReceived;
@@ -84,7 +93,8 @@ public partial class TestResults : Control
 
         if (!alreadyFinalized)
         {
-            string rewardText = BuildRewardText(sanityChange, appliedDebuff, appliedDebuffAmount);
+            string rewardText = BuildRewardText(
+                sanityChange, appliedDebuff, appliedDebuffAmount, newKeyReward);
             DailyTestSession.RecordHistory(
                 currentSanity,
                 appliedDebuff,
@@ -118,7 +128,8 @@ public partial class TestResults : Control
         return string.Join("\n", lines);
     }
 
-    private static string BuildRewardText(int sanityChange, string debuffType, int debuffAmount)
+    private static string BuildRewardText(
+        int sanityChange, string debuffType, int debuffAmount, string keyReward)
     {
         var rewards = new List<string>();
         if (sanityChange > 0)
@@ -129,9 +140,8 @@ public partial class TestResults : Control
         if (debuffAmount > 0 && !string.IsNullOrWhiteSpace(debuffType))
             rewards.Add($"{debuffType} assessment penalty ({debuffAmount})");
 
-        var keys = RoomKeyProgression.Instance;
-        if (keys?.HasPendingKey == true)
-            rewards.Add($"Key available: {keys.PendingKeyRoomName} (pickup in {keys.GetPendingKeyLocationName()})");
+        if (!string.IsNullOrWhiteSpace(keyReward))
+            rewards.Add(keyReward);
 
         return rewards.Count > 0 ? string.Join("; ", rewards) : "No additional rewards or penalties";
     }
