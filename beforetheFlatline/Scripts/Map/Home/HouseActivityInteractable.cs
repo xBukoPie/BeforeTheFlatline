@@ -141,7 +141,7 @@ public partial class HouseActivityInteractable : Area2D
         if (activity == "bicycle")
         {
             if (clock.IsNight || clock.Hour + GetDurationMinutes() / 60f >= clock.NightBeginsHour)
-                return "It is too late to ride safely. You can use the bicycle again tomorrow.";
+                return "It is too dark to ride safely. Come back during daylight.";
         }
 
         if (activity is not ("tv" or "bicycle" or "bath"))
@@ -217,7 +217,7 @@ public partial class HouseActivityInteractable : Area2D
     }
 
     private static bool IsLateNight(DayClock clock) =>
-        clock != null && (clock.Hour >= clock.NightBeginsHour || clock.Hour < 5f);
+        clock?.IsNight == true;
 
     private void ApplyActivity(DayClock clock, bool lateNight, out string message)
     {
