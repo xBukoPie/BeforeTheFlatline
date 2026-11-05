@@ -116,6 +116,9 @@ public partial class HouseActivityInteractable : Area2D
 
         string activity = NormalizeActivityId();
 
+        if (clock.DayNumber == 1 && !clock.SchoolChallengeCompletedToday)
+            return "You should attend your first school day before spending time on activities around the house.";
+
         if (!clock.SchoolChallengeStartedToday &&
             clock.Hour >= clock.SchoolOpenHour &&
             clock.Hour < clock.SchoolEntryDeadlineHour &&
