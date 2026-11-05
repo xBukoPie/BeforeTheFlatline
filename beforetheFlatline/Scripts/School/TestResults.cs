@@ -41,11 +41,14 @@ public partial class TestResults : Control
 
         if (_passed)
         {
-            int beforeRecovery = SanityManager.Instance?.CurrentSanity ?? SanityManager.MaxSanity;
-            SanityManager.Instance?.Recover(5);
-            int afterRecovery = SanityManager.Instance?.CurrentSanity ?? beforeRecovery;
-            sanityChange = afterRecovery - beforeRecovery;
-            StatusEffectsOverlay.Instance?.TriggerTaskPass();
+            if (!alreadyFinalized)
+            {
+                int beforeRecovery = SanityManager.Instance?.CurrentSanity ?? SanityManager.MaxSanity;
+                SanityManager.Instance?.Recover(5);
+                int afterRecovery = SanityManager.Instance?.CurrentSanity ?? beforeRecovery;
+                sanityChange = afterRecovery - beforeRecovery;
+                StatusEffectsOverlay.Instance?.TriggerTaskPass();
+            }
             _continueButton.Text = "Continue";
         }
         else
