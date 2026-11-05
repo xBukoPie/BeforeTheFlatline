@@ -72,8 +72,6 @@ void fragment()
     private VisualNovelScene _dialogue;
     private Tween _artTween;
     private Tween _masterBedroomBeatTween;
-    private bool _masterBedroomBeatNeedsReveal;
-    private float _masterBedroomRevealDuration = 0.75f;
 
     // Shader uniforms are not ordinary Godot properties, so animate their values
     // in _Process and push them through ShaderMaterial.SetShaderParameter().
@@ -420,12 +418,6 @@ void fragment()
         _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 1f, 2.1f)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
-    }
-
-    private void OnMasterBedroomBeatTransitionFinished()
-    {
-        if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
-            _dialogue.SetMemoryTransitionBlocked(false);
     }
 
     private void SetArtworkImmediately(string imagePath)
