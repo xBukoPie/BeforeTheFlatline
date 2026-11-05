@@ -199,7 +199,6 @@ public partial class Door : Area2D
         ProcessModeEnum previousPlayerMode = player?.ProcessMode ?? ProcessModeEnum.Inherit;
 
         int attempts = clock?.RegisterWrongRoomAttempt() ?? 1;
-        SanityManager.Instance?.LoseSanity(1);
 
         string message = "That was the wrong room... -1 Sanity due to Humiliation.";
         if (attempts >= 2)
@@ -253,8 +252,6 @@ public partial class Door : Area2D
 
         try
         {
-            SaveManager.Instance?.RequestAutoSave();
-
             Tween fadeIn = layer.CreateTween().SetPauseMode(Tween.TweenPauseMode.Process).SetParallel();
             fadeIn.TweenProperty(black, "modulate:a", 1f, 0.62f)
                 .SetTrans(Tween.TransitionType.Sine)
@@ -267,6 +264,9 @@ public partial class Door : Area2D
             Tween hold = layer.CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
             hold.TweenInterval(2.1f);
             await ToSignal(hold, Tween.SignalName.Finished);
+
+            SanityManager.Instance?.LoseSanity(1);
+            SaveManager.Instance?.RequestAutoSave();
 
             Tween fadeOut = layer.CreateTween().SetPauseMode(Tween.TweenPauseMode.Process).SetParallel();
             fadeOut.TweenProperty(black, "modulate:a", 0f, 0.82f)
