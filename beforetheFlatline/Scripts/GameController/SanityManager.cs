@@ -149,8 +149,6 @@ public partial class SanityManager : Node
             targets[type.ToString()] = GetRecoveryTarget(type);
         }
 
-        return new Godot.Collections.Dictionary
-        {
         var assessmentPenalties = new Godot.Collections.Dictionary();
         foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
             assessmentPenalties[type.ToString()] = GetAssessmentPenaltyLevel(type);
