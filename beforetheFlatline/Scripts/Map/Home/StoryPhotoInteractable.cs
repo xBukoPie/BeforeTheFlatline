@@ -113,14 +113,19 @@ public partial class StoryPhotoInteractable : Area2D
 
         StoryCutsceneOverlay overlay = new();
         bool finalMemory = MemoryId.Equals("MasterBedroom", System.StringComparison.OrdinalIgnoreCase);
-        overlay.Configure(GetHeading(), BuildBeats(), () => CompleteMemory(finalMemory), finalMemory);
+        overlay.Configure(
+            GetMemoryHeading(MemoryId),
+            BuildMemoryBeats(MemoryId),
+            () => CompleteMemory(finalMemory),
+            finalMemory,
+            MemoryId);
         _triggered = true;
         _playerInside = false;
         InteractionPromptManager.Instance?.HidePrompt(this);
         uiRoot.AddChild(overlay);
     }
 
-    private string GetHeading() => MemoryId switch
+    public static string GetMemoryHeading(string memoryId) => memoryId switch
     {
         "Kitchen" => "MEMORY FRAGMENT — THE KITCHEN",
         "Laundry" => "MEMORY FRAGMENT — THE LAUNDRY",
@@ -129,7 +134,9 @@ public partial class StoryPhotoInteractable : Area2D
         _ => "MEMORY FRAGMENT"
     };
 
-    private List<StoryCutsceneBeat> BuildBeats()
+    private List<StoryCutsceneBeat> BuildBeats() => BuildMemoryBeats(MemoryId);
+
+    public static List<StoryCutsceneBeat> BuildMemoryBeats(string memoryId)
     {
         const string kitchenImage = "res://Assets/Cutscenes/cutsceneKitcken.jpg";
         const string laundryImage = "res://Assets/Cutscenes/cutsceneLaundry.jpg";
@@ -138,7 +145,7 @@ public partial class StoryPhotoInteractable : Area2D
         const string bedroomImage = "res://Assets/Cutscenes/cutsceneMasterBedroom.jpg";
         const string goodEndingImage = "res://Assets/Cutscenes/cutsceneGoodEnding.jpg";
 
-        return MemoryId switch
+        return memoryId switch
         {
             "Kitchen" => new List<StoryCutsceneBeat>
             {
@@ -187,7 +194,7 @@ public partial class StoryPhotoInteractable : Area2D
             {
                 new(laundryImage, new DialogueLine(
                     "You",
-                    "I keep watching my uniform spin inside the washing machine.",
+                    "My hands are starting to feel numb from washing my uniform daily.. I feel really tired. "
                     DialogueSide.Right),
                     "dizziness"),
                 new(laundryImage, new DialogueLine(
@@ -308,10 +315,11 @@ public partial class StoryPhotoInteractable : Area2D
 
         if (finalMemory)
         {
+            const string briefingPath = "res://Scenes/Ending/GoodEndingBriefing.tscn";
             if (SceneTransition.Instance != null)
-                SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+                SceneTransition.Instance.ChangeSceneToFile(briefingPath, 1.25f);
             else
-                GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, "res://Scenes/Menu/Main.tscn");
+                GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, briefingPath);
         }
     }
 
