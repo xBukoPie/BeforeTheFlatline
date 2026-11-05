@@ -194,7 +194,7 @@ public partial class StoryPhotoInteractable : Area2D
             {
                 new(laundryImage, new DialogueLine(
                     "You",
-                    "My hands are starting to feel numb from washing my uniform daily.. I feel really tired. "
+                    "My hands are starting to feel numb from washing my uniform daily.. I feel really tired. ",
                     DialogueSide.Right),
                     "dizziness"),
                 new(laundryImage, new DialogueLine(
