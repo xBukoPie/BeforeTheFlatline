@@ -18,6 +18,8 @@ public partial class StoryProgression : Node
 
     private readonly HashSet<string> _completedMemories = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<int> _guardianStagesSeen = new();
+    private readonly Dictionary<string, Dictionary<int, int>> _memoryChoices =
+        new(StringComparer.OrdinalIgnoreCase);
 
     public int CompletedMemoryCount => _completedMemories.Count;
     public bool HasCompletedAllMemories => CompletedMemoryCount >= MemoryOrder.Length;
@@ -41,6 +43,36 @@ public partial class StoryProgression : Node
 
     public bool HasSeenMemory(string roomId) =>
         !string.IsNullOrWhiteSpace(roomId) && _completedMemories.Contains(roomId.Trim());
+
+    public string[] GetMemoryOrder() => (string[])MemoryOrder.Clone();
+
+    public IReadOnlyDictionary<int, int> GetMemoryChoiceSelections(string roomId)
+    {
+        if (string.IsNullOrWhiteSpace(roomId) ||
+            !_memoryChoices.TryGetValue(roomId.Trim(), out var selections))
+            return new Dictionary<int, int>();
+
+        return new Dictionary<int, int>(selections);
+    }
+
+    public void RecordMemoryChoice(string roomId, int lineIndex, int choiceIndex)
+    {
+        if (string.IsNullOrWhiteSpace(roomId) || lineIndex < 0 || choiceIndex < 0)
+            return;
+
+        string key = roomId.Trim();
+        if (FindMemoryIndex(key) < 0)
+            return;
+
+        if (!_memoryChoices.TryGetValue(key, out var selections))
+        {
+            selections = new Dictionary<int, int>();
+            _memoryChoices[key] = selections;
+        }
+
+        selections[lineIndex] = choiceIndex;
+        SaveManager.Instance?.RequestAutoSave();
+    }
 
     public bool CanTriggerMemory(string roomId)
     {
@@ -139,10 +171,20 @@ public partial class StoryProgression : Node
             if (HasSeenGuardianStage(stage))
                 guardianStages.Add(stage);
 
+        var memoryChoices = new Godot.Collections.Dictionary();
+        foreach (var memory in _memoryChoices)
+        {
+            var selections = new Godot.Collections.Dictionary();
+            foreach (var choice in memory.Value)
+                selections[choice.Key.ToString()] = choice.Value;
+            memoryChoices[memory.Key] = selections;
+        }
+
         return new Godot.Collections.Dictionary
         {
             ["completed_memories"] = memories,
-            ["guardian_stages_seen"] = guardianStages
+            ["guardian_stages_seen"] = guardianStages,
+            ["memory_choices"] = memoryChoices
         };
     }
 
@@ -150,8 +192,39 @@ public partial class StoryProgression : Node
     {
         _completedMemories.Clear();
         _guardianStagesSeen.Clear();
+        _memoryChoices.Clear();
 
-        if (data == null || !data.ContainsKey("completed_memories") ||
+        if (data == null)
+            return;
+
+        if (data.ContainsKey("memory_choices") &&
+            data["memory_choices"].VariantType == Variant.Type.Dictionary)
+        {
+            var savedChoices = data["memory_choices"].AsGodotDictionary();
+            foreach (Variant memoryKey in savedChoices.Keys)
+            {
+                string memoryId = memoryKey.AsString().Trim();
+                if (FindMemoryIndex(memoryId) < 0 ||
+                    savedChoices[memoryKey].VariantType != Variant.Type.Dictionary)
+                    continue;
+
+                var savedSelections = savedChoices[memoryKey].AsGodotDictionary();
+                var selections = new Dictionary<int, int>();
+                foreach (Variant lineKey in savedSelections.Keys)
+                {
+                    if (!int.TryParse(lineKey.AsString(), out int lineIndex) || lineIndex < 0)
+                        continue;
+                    Variant selected = savedSelections[lineKey];
+                    if (selected.VariantType == Variant.Type.Int && selected.AsInt32() >= 0)
+                        selections[lineIndex] = selected.AsInt32();
+                }
+
+                if (selections.Count > 0)
+                    _memoryChoices[memoryId] = selections;
+            }
+        }
+
+        if (!data.ContainsKey("completed_memories") ||
             data["completed_memories"].VariantType != Variant.Type.Array)
             return;
 
@@ -178,6 +251,7 @@ public partial class StoryProgression : Node
     {
         _completedMemories.Clear();
         _guardianStagesSeen.Clear();
+        _memoryChoices.Clear();
     }
 
     private static int FindMemoryIndex(string roomId)
