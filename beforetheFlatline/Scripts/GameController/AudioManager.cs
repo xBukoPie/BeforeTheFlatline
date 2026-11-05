@@ -162,6 +162,7 @@ public partial class AudioManager : Node
     public void PlayObjectObtain() => PlaySoundEffect("ObjectInteraction/objectObtain.wav", -1f);
     public void PlayAssessmentPassed() => PlaySoundEffect("Tasks/passedTask.mp3", -1f);
     public void PlayAssessmentFailed() => PlaySoundEffect("Tasks/failedTask.mp3", -1f);
+    public void PlayFallThud() => PlaySoundEffect("SoundFX/fallThud.mp3", -1f);
 
     public double PlayGameOver()
     {
