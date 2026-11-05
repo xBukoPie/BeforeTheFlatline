@@ -6,7 +6,7 @@ public partial class EndingCredits : Control
     private const string MainMenuPath = "res://Scenes/Menu/Main.tscn";
 
     [Export]
-    public string[] TeamMemberCredits { get; set; } =
+    public string[] TeamMemberCredits { get; set; } = new[]
     {
         "[Insert member name] — [Insert role]"
     };
