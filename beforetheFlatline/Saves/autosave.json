@@ -1,24 +1,54 @@
 {
-	"challenge_progress": {},
+	"challenge_progress": {
+		"1": [
+			"flowchart",
+			"condition",
+			"sequence",
+			"final"
+		],
+		"2": [
+			"flowchart",
+			"final",
+			"sequence",
+			"condition"
+		],
+		"3": [
+			"final",
+			"condition",
+			"sequence",
+			"flowchart"
+		],
+		"4": [
+			"flowchart",
+			"condition",
+			"final",
+			"sequence"
+		]
+	},
 	"clock_running": true,
-	"day": 1,
+	"day": 4,
 	"first_day_special_greeting_pending": false,
-	"hour": 8.0,
+	"hour": 18.7781448364258,
 	"kind": "autosave",
 	"mystery_encounter_seen": true,
-	"player_x": 220.809005737305,
-	"player_y": -52.9987983703613,
+	"player_x": 21.8333282470703,
+	"player_y": 38.6116104125977,
 	"room_keys": {
-		"bathroom_unlocked_day": -1,
-		"hidden_points": 0,
-		"keys_earned": 0,
-		"kitchen_unlocked_day": -1,
-		"laundry_unlocked_day": -1,
-		"master_bedroom_unlocked_day": -1,
+		"bathroom_unlocked_day": 3,
+		"hidden_points": 460,
+		"keys_earned": 4,
+		"kitchen_unlocked_day": 1,
+		"laundry_unlocked_day": 2,
+		"master_bedroom_unlocked_day": 4,
 		"pending_key_room": "",
-		"unlocked_rooms": []
+		"unlocked_rooms": [
+			"Kitchen",
+			"Laundry",
+			"Bathroom",
+			"MasterBedroom"
+		]
 	},
-	"room_path": "res://Scenes/School/School.tscn",
+	"room_path": "res://Scenes/Home/Areas/MasterBedroom.tscn",
 	"sanity_state": {
 		"current_sanity": 100,
 		"debuffs": {
@@ -36,25 +66,34 @@
 			"Pressure": 100
 		}
 	},
-	"saved_at": "2026-11-04 22:32:19",
+	"saved_at": "2026-11-05 12:21:01",
 	"scene_path": "res://Scenes/Home/Areas/World.tscn",
-	"school_completed": false,
+	"school_completed": true,
 	"school_friend_interactions": {
-		"day": 1,
+		"day": 4,
 		"friends": []
 	},
 	"school_friend_spawn_plan": {
 		"after_assessment": false,
-		"classroom_greeter": "Jepoy",
+		"classroom_greeter": "Mich",
 		"created": true,
-		"day": 1,
+		"day": 4,
 		"entries": []
 	},
 	"school_started": true,
 	"slot": 0,
 	"story_progress": {
-		"completed_memories": [],
-		"guardian_stages_seen": []
+		"completed_memories": [
+			"Kitchen",
+			"Laundry",
+			"Bathroom",
+			"MasterBedroom"
+		],
+		"guardian_stages_seen": [
+			1,
+			2,
+			3
+		]
 	},
 	"version": 1
 }

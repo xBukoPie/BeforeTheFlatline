@@ -1,14 +1,33 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://ui3s768kfg40"]
 
-[ext_resource type="Texture2D" path="res://Assets/Characters/pixel/michIdle.png" id="1_sprite"]
+[ext_resource type="Texture2D" uid="uid://biy66hevnm1ed" path="res://Assets/Characters/pixel/michIdle.png" id="1_sprite"]
 
-[node name="Mich" type="Node2D"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_e3xot"]
+atlas = ExtResource("1_sprite")
+region = Rect2(0, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_w5oca"]
+atlas = ExtResource("1_sprite")
+region = Rect2(128, 0, 128, 128)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_v2h47"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_e3xot")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_w5oca")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 2.0
+}]
+
+[node name="Mich" type="Node2D" unique_id=1001599199]
 scale = Vector2(1.5, 1.5)
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
-texture = ExtResource("1_sprite")
-hframes = 2
-vframes = 1
-frame = 0
-scale = Vector2(0.23, 0.23)
+[node name="Sprite2D" type="AnimatedSprite2D" parent="." unique_id=1095847166]
 texture_filter = 1
+scale = Vector2(0.23, 0.23)
+sprite_frames = SubResource("SpriteFrames_v2h47")
