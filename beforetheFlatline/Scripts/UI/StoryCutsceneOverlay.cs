@@ -329,7 +329,7 @@ void fragment()
         _dialogue.AllowPauseMenu = false;
         _dialogue.CompactChoiceMode = true;
         if (_isEnding)
-            _dialogue.CharsPerSecond = 30f;
+            _dialogue.CharsPerSecond = 20f;
         if (_replayOnly && !string.IsNullOrWhiteSpace(_memoryId))
             _dialogue.ReplayChoiceSelections =
                 StoryProgression.Instance?.GetMemoryChoiceSelections(_memoryId);
@@ -406,7 +406,7 @@ void fragment()
             _artTween.Kill();
 
         _masterBedroomBeatTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
-        _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 0f, 1.65f)
+        _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 0f, 1.8f)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
         await ToSignal(_masterBedroomBeatTween, Tween.SignalName.Finished);
@@ -415,7 +415,7 @@ void fragment()
 
         SetArtworkImmediately(requested);
         _masterBedroomBeatTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
-        _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 1f, 2.1f)
+        _masterBedroomBeatTween.TweenProperty(_art, "modulate:a", 1f, 2.2f)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
     }
