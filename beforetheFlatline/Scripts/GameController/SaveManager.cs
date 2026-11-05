@@ -226,6 +226,7 @@ public partial class SaveManager : Node
                 ["hidden_points"] = RoomKeyProgression.Instance?.HiddenPoints ?? 0,
                 ["keys_earned"] = RoomKeyProgression.Instance?.TotalKeysEarned ?? 0,
                 ["pending_key_room"] = RoomKeyProgression.Instance?.PendingKeyRoomName ?? string.Empty,
+                ["pending_key_from_assessment"] = RoomKeyProgression.Instance?.PendingKeyFromAssessment ?? false,
                 ["unlocked_rooms"] = CreateUnlockedRoomIds(),
                 ["kitchen_unlocked_day"] = RoomKeyProgression.Instance?.GetRoomUnlockedDay("Kitchen") ?? -1,
                 ["laundry_unlocked_day"] = RoomKeyProgression.Instance?.GetRoomUnlockedDay("Laundry") ?? -1,
@@ -335,7 +336,8 @@ public partial class SaveManager : Node
                 ReadInt(keyState, "hidden_points", 0),
                 keysToRestore,
                 pendingKeyRoom,
-                hasExplicitUnlockedRooms ? unlockedRoomIds : null);
+                hasExplicitUnlockedRooms ? unlockedRoomIds : null,
+                ReadBool(keyState, "pending_key_from_assessment", false));
             RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Kitchen", ReadInt(keyState, "kitchen_unlocked_day", -1));
             RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Laundry", ReadInt(keyState, "laundry_unlocked_day", -1));
             RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Bathroom", ReadInt(keyState, "bathroom_unlocked_day", -1));
