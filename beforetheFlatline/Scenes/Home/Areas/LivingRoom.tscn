@@ -4,6 +4,10 @@
 [ext_resource type="Texture2D" uid="uid://drq8647apnfe1" path="res://Assets/Map/House/House.jpg" id="1_tkhq2"]
 [ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Door.tscn" id="2_m6c8v"]
 [ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Lamp.tscn" id="3_5cw2u"]
+[ext_resource type="Script" path="res://Scripts/Map/Home/HouseActivityInteractable.cs" id="4_tv_activity"]
+
+[sub_resource type="CircleShape2D" id="TvActivityShape"]
+radius = 28.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
 size = Vector2(393, 14)
@@ -73,6 +77,17 @@ shape = SubResource("RectangleShape2D_oejw2")
 [node name="Fan" type="CollisionShape2D" parent="Decorations" unique_id=1435937932]
 position = Vector2(72, -69)
 shape = SubResource("CircleShape2D_48lxs")
+
+[node name="TelevisionActivity" type="Area2D" parent="."]
+position = Vector2(-12, -30)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("4_tv_activity")
+ActivityId = "tv"
+Prompt = "Watch TV"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="TelevisionActivity"]
+shape = SubResource("TvActivityShape")
 
 [node name="PlantPot2" type="CollisionShape2D" parent="Decorations" unique_id=1211732834]
 position = Vector2(-165, -74)
