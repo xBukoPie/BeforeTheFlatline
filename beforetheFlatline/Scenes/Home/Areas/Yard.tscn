@@ -187,6 +187,7 @@ TargetSpawn = "FromHome"
 Prompt = "School"
 Size = Vector2(30, 62)
 RequiresSchoolHours = true
+MarksSchoolAttendance = true
 ShowLoadingScreen = true
 UseSchoolTravelLoadingScreen = true
 LoadingMessage = "The walk to school..."
