@@ -100,6 +100,7 @@ public partial class TestResults : Control
                 appliedDebuff,
                 appliedDebuffAmount,
                 rewardText);
+            SaveManager.Instance?.RequestAutoSave();
         }
     }
 
