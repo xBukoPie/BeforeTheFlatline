@@ -23,8 +23,6 @@ public partial class SchoolFriendsSpawner : Node2D
     private CanvasLayer _dialogueLayer;
     private VisualNovelScene _dialogue;
 
-    private double _idleFrameTimer;
-
     private readonly record struct FriendDefinition(string Name, string ScenePath, string PortraitPath);
 
     private sealed record InteractionTopic(
@@ -39,7 +37,7 @@ public partial class SchoolFriendsSpawner : Node2D
     {
         public string Name { get; init; } = "";
         public Node2D Root { get; init; }
-        public Sprite2D Sprite { get; init; }
+        public AnimatedSprite2D Sprite { get; init; }
         public Area2D Area { get; init; }
         public bool PlayerNearby { get; set; }
     }
@@ -225,17 +223,6 @@ public partial class SchoolFriendsSpawner : Node2D
     public override void _Process(double delta)
     {
         UpdateFriendDepthSorting();
-
-        _idleFrameTimer += delta;
-        if (_idleFrameTimer >= 0.72)
-        {
-            _idleFrameTimer = 0;
-            foreach (FriendActor friend in _friends)
-            {
-                if (GodotObject.IsInstanceValid(friend.Sprite))
-                    friend.Sprite.Frame = (friend.Sprite.Frame + 1) % 2;
-            }
-        }
     }
 
     // The player is a sibling of RoomHolder in World.tscn, not a child of the school room.
@@ -353,24 +340,38 @@ public partial class SchoolFriendsSpawner : Node2D
         actorRoot.ZAsRelative = false;
         AddChild(actorRoot);
 
-        Sprite2D sprite = actorRoot.GetNodeOrNull<Sprite2D>("Sprite2D");
-        if (sprite == null)
+        AnimatedSprite2D sprite = actorRoot.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+        if (sprite == null || sprite.SpriteFrames == null)
         {
-            GD.PushWarning($"SchoolFriends: {definition.Name} scene is missing Sprite2D.");
+            GD.PushWarning($"SchoolFriends: {definition.Name} scene is missing an AnimatedSprite2D with SpriteFrames.");
             actorRoot.QueueFree();
             return;
         }
 
-        AnimatedSprite2D playerSprite = _player?.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+        StringName idleAnimation = ResolveIdleAnimation(sprite.SpriteFrames);
+        if (idleAnimation.IsEmpty)
+        {
+            GD.PushWarning($"SchoolFriends: {definition.Name} has no usable animation.");
+            actorRoot.QueueFree();
+            return;
+        }
+
+        sprite.Play(idleAnimation);
         sprite.Frame = 0;
-        sprite.Centered = playerSprite?.Centered ?? true;
         sprite.TextureFilter = CanvasItem.TextureFilterEnum.Nearest;
+
+        AnimatedSprite2D playerSprite = _player?.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+        sprite.Centered = playerSprite?.Centered ?? true;
 
         if (playerSprite != null)
         {
-            Texture2D playerFrame = playerSprite.SpriteFrames?.GetFrameTexture(playerSprite.Animation, 0);
-            float playerVisibleHeight = GetOpaqueFrameHeight(playerFrame, 1, 1, 0);
-            float friendVisibleHeight = GetOpaqueFrameHeight(sprite.Texture, sprite.Hframes, sprite.Vframes, 0);
+            SpriteFrames playerFrames = playerSprite.SpriteFrames;
+            Texture2D playerFrame = playerFrames != null && playerFrames.HasAnimation(playerSprite.Animation)
+                ? playerFrames.GetFrameTexture(playerSprite.Animation, 0)
+                : null;
+            Texture2D friendFrame = sprite.SpriteFrames.GetFrameTexture(idleAnimation, 0);
+            float playerVisibleHeight = GetOpaqueFrameHeight(playerFrame);
+            float friendVisibleHeight = GetOpaqueFrameHeight(friendFrame);
             float scaleRatio = playerVisibleHeight > 0f && friendVisibleHeight > 0f
                 ? playerVisibleHeight / friendVisibleHeight
                 : 1f;
@@ -428,7 +429,25 @@ public partial class SchoolFriendsSpawner : Node2D
         _friends.Add(friend);
     }
 
-    private static float GetOpaqueFrameHeight(Texture2D texture, int horizontalFrames, int verticalFrames, int frame)
+    private static StringName ResolveIdleAnimation(SpriteFrames frames)
+    {
+        if (frames == null)
+            return new StringName(string.Empty);
+
+        StringName[] names = frames.GetAnimationNames();
+        foreach (string preferred in new[] { "Idle", "idle", "default" })
+        {
+            foreach (StringName name in names)
+            {
+                if (string.Equals(name.ToString(), preferred, StringComparison.OrdinalIgnoreCase))
+                    return name;
+            }
+        }
+
+        return names.Length > 0 ? names[0] : new StringName(string.Empty);
+    }
+
+    private static float GetOpaqueFrameHeight(Texture2D texture)
     {
         if (texture == null)
             return 0f;
@@ -437,23 +456,14 @@ public partial class SchoolFriendsSpawner : Node2D
         if (image == null || image.GetWidth() <= 0 || image.GetHeight() <= 0)
             return 0f;
 
-        int columns = Math.Max(1, horizontalFrames);
-        int rows = Math.Max(1, verticalFrames);
-        int frameWidth = image.GetWidth() / columns;
-        int frameHeight = image.GetHeight() / rows;
-        if (frameWidth <= 0 || frameHeight <= 0)
-            return 0f;
-
-        int frameX = (frame % columns) * frameWidth;
-        int frameY = (frame / columns) * frameHeight;
-        int top = frameHeight;
+        int top = image.GetHeight();
         int bottom = -1;
 
-        for (int y = 0; y < frameHeight; y++)
+        for (int y = 0; y < image.GetHeight(); y++)
         {
-            for (int x = 0; x < frameWidth; x++)
+            for (int x = 0; x < image.GetWidth(); x++)
             {
-                if (image.GetPixel(frameX + x, frameY + y).A <= 0.05f)
+                if (image.GetPixel(x, y).A <= 0.05f)
                     continue;
 
                 top = Math.Min(top, y);
