@@ -349,7 +349,7 @@ public partial class SchoolFriendsSpawner : Node2D
         }
 
         StringName idleAnimation = ResolveIdleAnimation(sprite.SpriteFrames);
-        if (idleAnimation.IsEmpty)
+        if (string.IsNullOrWhiteSpace(idleAnimation.ToString()))
         {
             GD.PushWarning($"SchoolFriends: {definition.Name} has no usable animation.");
             actorRoot.QueueFree();
