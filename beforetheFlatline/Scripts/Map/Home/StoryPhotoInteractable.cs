@@ -143,9 +143,8 @@ public partial class StoryPhotoInteractable : Area2D
         const string bathroomImage = "res://Assets/Cutscenes/cutsceneBathroomSink.jpg";
         const string toBedroomImage = "res://Assets/Cutscenes/cutsceneToMasterBedroom.jpg";
         const string bedroomImage = "res://Assets/Cutscenes/cutsceneMasterBedroom.jpg";
-        const string goodEndingFallback = "res://Assets/Cutscenes/cutsceneGoodEnding.jpg";
-        string goodEndingImageOne = ResolveCutsceneImage("cutsceneGoodEnding1", goodEndingFallback);
-        string goodEndingImageTwo = ResolveCutsceneImage("cutsceneGoodEnding2", goodEndingImageOne);
+        const string goodEndingImageOne = "res://Assets/Cutscenes/cutsceneGoodEnding1.jpg";
+        const string goodEndingImageTwo = "res://Assets/Cutscenes/cutsceneGoodEnding2.jpg";
 
         return memoryId switch
         {
@@ -290,36 +289,6 @@ public partial class StoryPhotoInteractable : Area2D
                     DialogueSide.Left))
             }
         };
-    }
-
-    private static string ResolveCutsceneImage(string baseName, string fallbackPath)
-    {
-        const string folderPath = "res://Assets/Cutscenes";
-        using DirAccess directory = DirAccess.Open(folderPath);
-        if (directory == null)
-            return fallbackPath;
-
-        string[] files = directory.GetFiles();
-        System.Array.Sort(files, System.StringComparer.OrdinalIgnoreCase);
-
-        foreach (string file in files)
-        {
-            int extensionIndex = file.LastIndexOf('.');
-            if (extensionIndex <= 0 ||
-                !string.Equals(file[..extensionIndex], baseName, System.StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            string extension = file[(extensionIndex + 1)..].ToLowerInvariant();
-            if (extension is not ("jpg" or "jpeg" or "png" or "webp"))
-                continue;
-
-            string candidatePath = folderPath + "/" + file;
-            if (ResourceLoader.Exists(candidatePath))
-                return candidatePath;
-        }
-
-        GD.PushWarning($"StoryPhotoInteractable: '{baseName}' image was not found in {folderPath}; using the existing ending artwork.");
-        return fallbackPath;
     }
 
     private void CompleteMemory(bool finalMemory)
