@@ -143,7 +143,9 @@ public partial class StoryPhotoInteractable : Area2D
         const string bathroomImage = "res://Assets/Cutscenes/cutsceneBathroomSink.jpg";
         const string toBedroomImage = "res://Assets/Cutscenes/cutsceneToMasterBedroom.jpg";
         const string bedroomImage = "res://Assets/Cutscenes/cutsceneMasterBedroom.jpg";
-        const string goodEndingImage = "res://Assets/Cutscenes/cutsceneGoodEnding.jpg";
+        const string goodEndingFallback = "res://Assets/Cutscenes/cutsceneGoodEnding.jpg";
+        string goodEndingImageOne = ResolveCutsceneImage("goodEnding1", goodEndingFallback);
+        string goodEndingImageTwo = ResolveCutsceneImage("goodEnding2", goodEndingImageOne);
 
         return memoryId switch
         {
@@ -263,17 +265,17 @@ public partial class StoryPhotoInteractable : Area2D
                     "Everything goes quiet.",
                     DialogueSide.Right),
                     "blackout"),
-                new(goodEndingImage, new DialogueLine(
+                new(goodEndingImageOne, new DialogueLine(
                     "You",
                     "A steady heart-monitor beep fills the room. I slowly open my eyes.",
                     DialogueSide.Right),
                     "relief"),
-                new(goodEndingImage, new DialogueLine(
+                new(goodEndingImageOne, new DialogueLine(
                     "Memory",
                     "My parents are beside me, their eyes full of tears. They thank the heavens that I finally woke up.",
                     DialogueSide.Left),
                     "relief"),
-                new(goodEndingImage, new DialogueLine(
+                new(goodEndingImageTwo, new DialogueLine(
                     "You",
                     "We hold each other. I burst into tears. I am not alone.",
                     DialogueSide.Right),
@@ -288,6 +290,36 @@ public partial class StoryPhotoInteractable : Area2D
                     DialogueSide.Left))
             }
         };
+    }
+
+    private static string ResolveCutsceneImage(string baseName, string fallbackPath)
+    {
+        const string folderPath = "res://Assets/Cutscenes";
+        using DirAccess directory = DirAccess.Open(folderPath);
+        if (directory == null)
+            return fallbackPath;
+
+        string[] files = directory.GetFiles();
+        System.Array.Sort(files, System.StringComparer.OrdinalIgnoreCase);
+
+        foreach (string file in files)
+        {
+            int extensionIndex = file.LastIndexOf('.');
+            if (extensionIndex <= 0 ||
+                !string.Equals(file[..extensionIndex], baseName, System.StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            string extension = file[(extensionIndex + 1)..].ToLowerInvariant();
+            if (extension is not ("jpg" or "jpeg" or "png" or "webp"))
+                continue;
+
+            string candidatePath = folderPath + "/" + file;
+            if (ResourceLoader.Exists(candidatePath))
+                return candidatePath;
+        }
+
+        GD.PushWarning($"StoryPhotoInteractable: '{baseName}' image was not found in {folderPath}; using the existing ending artwork.");
+        return fallbackPath;
     }
 
     private void CompleteMemory(bool finalMemory)
