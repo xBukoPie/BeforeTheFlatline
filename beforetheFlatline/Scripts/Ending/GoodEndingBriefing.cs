@@ -233,7 +233,7 @@ public partial class GoodEndingBriefing : Control
             return;
 
         _creditsStarted = true;
-        AudioManager.Instance?.FadeOutGoodEndingHeartbeat(HeartbeatFadeSeconds);
+        AudioManager.Instance?.FadeOutGoodEndingHeartbeatAfter(CreditsTransitionSeconds, HeartbeatFadeSeconds);
 
         if (SceneTransition.Instance != null)
             SceneTransition.Instance.ChangeSceneToFile(CreditsPath, (float)CreditsTransitionSeconds);
