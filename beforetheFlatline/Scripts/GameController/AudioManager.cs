@@ -225,6 +225,17 @@ public partial class AudioManager : Node
         return Math.Max(0.0, length - _goodEndingHeartbeatPlayer.GetPlaybackPosition());
     }
 
+    public async void FadeOutGoodEndingHeartbeatAfter(double delay, double duration = 2.2)
+    {
+        if (delay > 0.0)
+        {
+            SceneTreeTimer timer = GetTree().CreateTimer(delay, true);
+            await ToSignal(timer, SceneTreeTimer.SignalName.Timeout);
+        }
+
+        FadeOutGoodEndingHeartbeat(duration);
+    }
+
     public async void FadeOutGoodEndingHeartbeat(double duration = 2.2)
     {
         AudioStreamPlayer player = _goodEndingHeartbeatPlayer;
@@ -318,8 +329,14 @@ public partial class AudioManager : Node
 
     private AudioStream LoadGoodEndingHeartbeat()
     {
+        const string preferredPath = "Ending/goodEndingHeartbeat.mp3";
+        AudioStream preferred = LoadSound(preferredPath);
+        if (preferred != null)
+            return preferred;
+
         string[] folders =
         {
+            "res://Assets/Sounds/Ending",
             "res://Assets/Heartbeat",
             "res://Assets/Sounds/Heartbeat"
         };
@@ -332,44 +349,28 @@ public partial class AudioManager : Node
 
             string[] files = directory.GetFiles();
             Array.Sort(files, StringComparer.OrdinalIgnoreCase);
-            string fallbackPath = string.Empty;
 
             foreach (string file in files)
             {
                 string lower = file.ToLowerInvariant();
-                if (!(lower.EndsWith(".mp3") || lower.EndsWith(".wav") ||
+                if (!lower.Contains("heartbeat", StringComparison.Ordinal) ||
+                    !(lower.EndsWith(".mp3") || lower.EndsWith(".wav") ||
                       lower.EndsWith(".ogg") || lower.EndsWith(".opus")))
                     continue;
 
                 string candidatePath = folderPath + "/" + file;
-                if (lower.Contains("heartbeat", StringComparison.Ordinal))
+                AudioStream stream = GD.Load<AudioStream>(candidatePath);
+                if (stream != null)
                 {
-                    AudioStream namedStream = GD.Load<AudioStream>(candidatePath);
-                    if (namedStream != null)
-                    {
-                        GD.Print($"[AudioManager] Loaded good-ending heartbeat: {candidatePath}");
-                        return namedStream;
-                    }
-                }
-
-                if (string.IsNullOrEmpty(fallbackPath))
-                    fallbackPath = candidatePath;
-            }
-
-            if (!string.IsNullOrEmpty(fallbackPath))
-            {
-                AudioStream fallbackStream = GD.Load<AudioStream>(fallbackPath);
-                if (fallbackStream != null)
-                {
-                    GD.Print($"[AudioManager] Loaded good-ending audio from: {fallbackPath}");
-                    return fallbackStream;
+                    GD.Print($"[AudioManager] Loaded good-ending heartbeat: {candidatePath}");
+                    return stream;
                 }
             }
         }
 
         GD.PushWarning(
-            "AudioManager: no heartbeat audio was found in Assets/Heartbeat. " +
-            "Add the heartbeat audio there and allow Godot to import it.");
+            "AudioManager: heartbeat audio was not found. Expected " +
+            "res://Assets/Sounds/Ending/goodEndingHeartbeat.mp3.");
         return null;
     }
 
