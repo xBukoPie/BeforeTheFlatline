@@ -5,7 +5,11 @@
 [ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Lamp.tscn" id="2_2e2xe"]
 [ext_resource type="Texture2D" uid="uid://dbrehj5o8ff4p" path="res://Assets/Map/House/YardExpansion.jpg" id="2_puml3"]
 [ext_resource type="PackedScene" path="res://Scenes/Home/Areas/Door.tscn" id="3_2e2xe"]
-[ext_resource type="PackedScene" path="res://Scenes/Home/Areas/GroundKeyPickup.tscn" id="5_key_pickup"]
+[ext_resource type="PackedScene" uid="uid://df7360cbmy43x" path="res://Scenes/Home/Areas/GroundKeyPickup.tscn" id="5_key_pickup"]
+[ext_resource type="Script" path="res://Scripts/Map/Home/HouseActivityInteractable.cs" id="6_bicycle_activity"]
+
+[sub_resource type="CircleShape2D" id="BicycleActivityShape"]
+radius = 29.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_v2h47"]
 size = Vector2(604, 222)
@@ -156,6 +160,17 @@ shape = SubResource("CircleShape2D_48lxs")
 position = Vector2(-352, -106.5)
 shape = SubResource("RectangleShape2D_p3lsy")
 
+[node name="BicycleActivity" type="Area2D" parent="."]
+position = Vector2(-352, -70)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("6_bicycle_activity")
+ActivityId = "bicycle"
+Prompt = "Ride Bicycle"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BicycleActivity"]
+shape = SubResource("BicycleActivityShape")
+
 [node name="Doors" type="Node2D" parent="." unique_id=1350834373]
 
 [node name="ToHome" parent="Doors" unique_id=1210053727 instance=ExtResource("3_2e2xe")]
@@ -172,11 +187,14 @@ TargetSpawn = "FromHome"
 Prompt = "School"
 Size = Vector2(30, 62)
 RequiresSchoolHours = true
+MarksSchoolAttendance = true
+ShowLoadingScreen = true
+UseSchoolTravelLoadingScreen = true
+LoadingMessage = "The walk to school..."
 ClosedPrompt = "Too late for school today. Come back tomorrow morning."
 
 [node name="GroundKeyPickup" parent="." unique_id=953442134 instance=ExtResource("5_key_pickup")]
-position = Vector2(-370, 100)
-KeyRoomId = "Kitchen"
+position = Vector2(-264.28574, 25.714302)
 
 [node name="Spawns" type="Node2D" parent="." unique_id=695283417]
 

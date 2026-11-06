@@ -54,6 +54,7 @@ public partial class PostChallengeConversation : Control
         _dialogue = GetNode<VisualNovelScene>("%PostChallengeDialogue");
         _dialogue.PlayDemoOnReady = false;
         _dialogue.LoopDemo = false;
+        _dialogue.ShowPlaceholders = false;
         _dialogue.DialogueFinished += OnDialogueFinished;
 
         var rng = new RandomNumberGenerator();

@@ -15,11 +15,15 @@ public partial class Classroom : Control
         ("Cess", "res://Assets/Characters/Cess.png"),
     };
 
+    private const string ProfessorLessonScenePath = "res://Scenes/School/Rooms/ClassroomVox.tscn";
+
+    private readonly RandomNumberGenerator _rng = new();
     private VisualNovelScene _dialogue;
     private Label _leaveHint;
     private Node2D _player;
     private bool _greetingActive;
     private bool _firstDayGreetingVariant;
+    private FirstDayMysteryIntro _firstDayMysteryIntro;
 
     public override void _Ready()
     {
@@ -32,16 +36,25 @@ public partial class Classroom : Control
         _dialogue = GetNode<VisualNovelScene>("%GreetingDialogue");
         _leaveHint = GetNode<Label>("%LeaveHint");
         _leaveHint.Visible = false;
+        _rng.Randomize();
 
         FreezePlayer();
 
         var clock = DayClock.Instance;
-        _firstDayGreetingVariant = clock != null &&
-            !clock.FirstDayMysteryEncounterSeen &&
-            clock.ConsumeFirstDaySpecialGreetingPending();
+        _firstDayGreetingVariant = false;
         _greetingActive = true;
         _dialogue.DialogueFinished += OnGreetingFinished;
-        CallDeferred(MethodName.StartGreeting);
+
+        bool showFirstDayIntro = clock != null &&
+            clock.DayNumber == 1 &&
+            !clock.FirstDayMysteryEncounterSeen;
+        _firstDayGreetingVariant = showFirstDayIntro;
+        _dialogue.Visible = !showFirstDayIntro;
+
+        if (showFirstDayIntro)
+            CallDeferred(nameof(BeginFirstDayMysteryIntro));
+        else
+            CallDeferred(MethodName.StartGreeting);
     }
 
     public override void _ExitTree()
@@ -60,10 +73,54 @@ public partial class Classroom : Control
         }
     }
 
+    private void BeginFirstDayMysteryIntro()
+    {
+        if (!IsInsideTree() || _firstDayMysteryIntro != null)
+            return;
+
+        PackedScene introScene = GD.Load<PackedScene>("res://Scenes/School/FirstDayMysteryIntro.tscn");
+        if (introScene == null)
+        {
+            GD.PushError("Classroom: FirstDayMysteryIntro.tscn could not be loaded.");
+            _dialogue.Visible = true;
+            StartGreeting();
+            return;
+        }
+
+        _firstDayMysteryIntro = introScene.Instantiate<FirstDayMysteryIntro>();
+        _firstDayMysteryIntro.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        _firstDayMysteryIntro.TreeExiting += OnFirstDayMysteryIntroExiting;
+        AddChild(_firstDayMysteryIntro);
+    }
+
+    private void OnFirstDayMysteryIntroExiting()
+    {
+        if (_firstDayMysteryIntro != null && GodotObject.IsInstanceValid(_firstDayMysteryIntro))
+            _firstDayMysteryIntro.TreeExiting -= OnFirstDayMysteryIntroExiting;
+
+        _firstDayMysteryIntro = null;
+        if (!IsInsideTree())
+            return;
+
+        _dialogue.Visible = true;
+        StartGreeting();
+    }
+
     private void StartGreeting()
     {
         string[] friendNames = { Greeters[0].Name, Greeters[1].Name, Greeters[2].Name };
         string name = SchoolFriendSpawnHistory.GetOrAssignClassroomGreeter(friendNames);
+
+        if (SaveManager.Instance?.CanSaveCurrentGame == true)
+            SaveManager.Instance.SaveAutoSave();
+
+        // A friend is present for this greeting only 40% of the time.
+        if (string.IsNullOrWhiteSpace(name) || _rng.Randf() >= 0.4f)
+        {
+            GD.Print("[Classroom] No friend greeting this visit.");
+            OnGreetingFinished();
+            return;
+        }
 
         (string Name, string PortraitPath) selectedGreeter = Greeters[0];
         foreach (var greeter in Greeters)
@@ -77,11 +134,6 @@ public partial class Classroom : Control
 
         name = selectedGreeter.Name;
         string portraitPath = selectedGreeter.PortraitPath;
-
-        // Persist the selected greeter together with the current outdoor roster.
-        if (SaveManager.Instance?.CanSaveCurrentGame == true)
-            SaveManager.Instance.SaveAutoSave();
-
         _dialogue.SetPortrait(DialogueSide.Right, GD.Load<Texture2D>(portraitPath));
 
         string timeGreeting = GameController.Darkness switch
@@ -140,24 +192,48 @@ public partial class Classroom : Control
 
     private void OnGreetingFinished()
     {
+        if (!_greetingActive)
+            return;
+
         _greetingActive = false;
-        _dialogue.QueueFree();
+        if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
+        {
+            _dialogue.DialogueFinished -= OnGreetingFinished;
+            _dialogue.QueueFree();
+            _dialogue = null;
+        }
 
         bool alreadyCleared = DayClock.Instance?.SchoolChallengeCompletedToday == true;
-
-        if (!alreadyCleared
-            && !string.IsNullOrWhiteSpace(ChallengeScenePath)
-            && ResourceLoader.Exists(ChallengeScenePath))
+        if (alreadyCleared)
         {
-            _leaveHint.Visible = false;
-            if (SceneTransition.Instance != null)
-                SceneTransition.Instance.ChangeSceneToFile(ChallengeScenePath);
-            else
-                GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, ChallengeScenePath);
+            _leaveHint.Visible = AllowEscapeToLeave;
             return;
         }
 
-        _leaveHint.Visible = AllowEscapeToLeave;
+        if (string.IsNullOrWhiteSpace(ChallengeScenePath) ||
+            !ResourceLoader.Exists(ChallengeScenePath))
+        {
+            GD.PushWarning($"Classroom: assessment scene was not found: {ChallengeScenePath}");
+            _leaveHint.Visible = AllowEscapeToLeave;
+            return;
+        }
+
+        _leaveHint.Visible = false;
+        if (ResourceLoader.Exists(ProfessorLessonScenePath))
+        {
+            ClassroomVox.SetNextChallengeScenePath(ChallengeScenePath);
+            if (SceneTransition.Instance != null)
+                SceneTransition.Instance.ChangeSceneToFile(ProfessorLessonScenePath);
+            else
+                GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, ProfessorLessonScenePath);
+            return;
+        }
+
+        GD.PushWarning("Classroom: ClassroomVox.tscn is missing; proceeding directly to the assessment.");
+        if (SceneTransition.Instance != null)
+            SceneTransition.Instance.ChangeSceneToFile(ChallengeScenePath);
+        else
+            GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, ChallengeScenePath);
     }
 
     private void FreezePlayer()

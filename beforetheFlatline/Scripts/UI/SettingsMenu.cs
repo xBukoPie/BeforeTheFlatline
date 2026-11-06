@@ -10,8 +10,12 @@ public partial class SettingsMenu : Control
     public bool EmbeddedInPauseMenu { get; set; }
 
     private Label _volumeValue;
+    private Label _musicVolumeValue;
+    private Label _effectsVolumeValue;
     private Label _brightnessValue;
     private HSlider _volume;
+    private HSlider _musicVolume;
+    private HSlider _effectsVolume;
     private HSlider _brightness;
     private CheckButton _fullscreen;
     private LineEdit _playerName;
@@ -41,7 +45,7 @@ public partial class SettingsMenu : Control
         center.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(center);
 
-        var panel = new PanelContainer { CustomMinimumSize = new Vector2(650, 680) };
+        var panel = new PanelContainer { CustomMinimumSize = new Vector2(650, 660) };
         panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color("172033"), BorderColor = new Color("46546e"),
@@ -52,9 +56,23 @@ public partial class SettingsMenu : Control
         });
         center.AddChild(panel);
 
+        var layout = new VBoxContainer();
+        layout.AddThemeConstantOverride("separation", 12);
+        panel.AddChild(layout);
+
+        var scroll = new ScrollContainer
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(0, 500),
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled
+        };
+        layout.AddChild(scroll);
+
         var stack = new VBoxContainer();
-        stack.AddThemeConstantOverride("separation", 18);
-        panel.AddChild(stack);
+        stack.AddThemeConstantOverride("separation", 12);
+        stack.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        scroll.AddChild(stack);
 
         var title = new Label { Text = "SETTINGS", HorizontalAlignment = HorizontalAlignment.Center };
         title.AddThemeFontSizeOverride("font_size", 30);
@@ -101,6 +119,14 @@ public partial class SettingsMenu : Control
         };
         volumeRow.AddChild(_volume);
 
+        AddAudioSliderRow(stack, "Background music", SettingsManager.Instance?.MusicVolume ?? 0.8f,
+            value => SettingsManager.Instance?.SetMusicVolume(value),
+            out _musicVolume, out _musicVolumeValue);
+
+        AddAudioSliderRow(stack, "Sound effects", SettingsManager.Instance?.EffectsVolume ?? 0.85f,
+            value => SettingsManager.Instance?.SetEffectsVolume(value),
+            out _effectsVolume, out _effectsVolumeValue);
+
         var brightnessRow = new VBoxContainer();
         brightnessRow.AddThemeConstantOverride("separation", 5);
         stack.AddChild(brightnessRow);
@@ -144,7 +170,7 @@ public partial class SettingsMenu : Control
 
         var footer = new HBoxContainer();
         footer.AddThemeConstantOverride("separation", 10);
-        stack.AddChild(footer);
+        layout.AddChild(footer);
         var back = new Button
         {
             Text = EmbeddedInPauseMenu ? "Back to Pause Menu" : "Back to Main Menu",
@@ -169,12 +195,57 @@ public partial class SettingsMenu : Control
         defaults.Pressed += () =>
         {
             SettingsManager.Instance?.SetMasterVolume(0.85f);
+            SettingsManager.Instance?.SetMusicVolume(0.8f);
+            SettingsManager.Instance?.SetEffectsVolume(0.85f);
             SettingsManager.Instance?.SetBrightness(0.88f);
             SettingsManager.Instance?.SetFullscreen(false);
             SettingsManager.Instance?.SetPlayerName("Player");
             SyncFromSettings();
         };
         footer.AddChild(defaults);
+    }
+
+    private static void AddAudioSliderRow(
+        VBoxContainer parent,
+        string label,
+        float initialValue,
+        Action<float> onChanged,
+        out HSlider slider,
+        out Label valueLabel)
+    {
+        var row = new VBoxContainer();
+        row.AddThemeConstantOverride("separation", 4);
+        parent.AddChild(row);
+
+        var heading = new HBoxContainer();
+        heading.AddChild(new Label
+        {
+            Text = label,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        });
+        var percentageLabel = new Label
+        {
+            Text = $"{Mathf.RoundToInt(initialValue * 100f)}%"
+        };
+        valueLabel = percentageLabel;
+        heading.AddChild(percentageLabel);
+        row.AddChild(heading);
+
+        slider = new HSlider
+        {
+            MinValue = 0,
+            MaxValue = 1,
+            Step = 0.05,
+            Value = initialValue,
+            CustomMinimumSize = new Vector2(0, 26)
+        };
+        slider.ValueChanged += value =>
+        {
+            float normalized = (float)value;
+            percentageLabel.Text = $"{Mathf.RoundToInt(normalized * 100f)}%";
+            onChanged?.Invoke(normalized);
+        };
+        row.AddChild(slider);
     }
 
     private void AddSupportLink(HBoxContainer parent, string label, string url)
@@ -205,11 +276,17 @@ public partial class SettingsMenu : Control
             return;
 
         _volume.SetValueNoSignal(SettingsManager.Instance.MasterVolume);
+        _musicVolume?.SetValueNoSignal(SettingsManager.Instance.MusicVolume);
+        _effectsVolume?.SetValueNoSignal(SettingsManager.Instance.EffectsVolume);
         _brightness.SetValueNoSignal(SettingsManager.Instance.Brightness);
         _fullscreen.SetPressedNoSignal(SettingsManager.Instance.Fullscreen);
         if (_playerName != null)
             _playerName.Text = SettingsManager.Instance.PlayerName;
         _volumeValue.Text = $"{Mathf.RoundToInt(SettingsManager.Instance.MasterVolume * 100)}%";
+        if (_musicVolumeValue != null)
+            _musicVolumeValue.Text = $"{Mathf.RoundToInt(SettingsManager.Instance.MusicVolume * 100)}%";
+        if (_effectsVolumeValue != null)
+            _effectsVolumeValue.Text = $"{Mathf.RoundToInt(SettingsManager.Instance.EffectsVolume * 100)}%";
         _brightnessValue.Text = $"{Mathf.RoundToInt(SettingsManager.Instance.Brightness * 100)}%";
     }
 }

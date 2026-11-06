@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://b1g5bhlk405k5"]
+
+[ext_resource type="Texture2D" uid="uid://c5yb80gshyt0l" path="res://Assets/Characters/pixel/cessIdle.png" id="1_sprite"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dgvy3"]
+atlas = ExtResource("1_sprite")
+region = Rect2(0, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8rwkl"]
+atlas = ExtResource("1_sprite")
+region = Rect2(128, 0, 128, 128)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_v2h47"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_dgvy3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8rwkl")
+}],
+"loop": 1,
+"name": &"Idle",
+"speed": 2.0
+}]
+
+[node name="Cess" type="Node2D" unique_id=27522099]
+scale = Vector2(1.5, 1.5)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1094499538]
+scale = Vector2(0.22, 0.22)
+sprite_frames = SubResource("SpriteFrames_v2h47")
+animation = &"Idle"
+frame_progress = 0.44541028

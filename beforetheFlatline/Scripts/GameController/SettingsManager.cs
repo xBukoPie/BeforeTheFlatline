@@ -13,6 +13,8 @@ public partial class SettingsManager : Node
     private const string AudioBusName = "Master";
 
     public float MasterVolume { get; private set; } = 0.85f;
+    public float MusicVolume { get; private set; } = 0.8f;
+    public float EffectsVolume { get; private set; } = 0.85f;
     public float Brightness { get; private set; } = 0.88f;
     public bool Fullscreen { get; private set; } = false;
     public string PlayerName { get; private set; } = "Player";
@@ -40,6 +42,22 @@ public partial class SettingsManager : Node
     public void SetMasterVolume(float value)
     {
         MasterVolume = Mathf.Clamp(value, 0f, 1f);
+        ApplyVolume();
+        SaveSettings();
+        SettingsChanged?.Invoke();
+    }
+
+    public void SetMusicVolume(float value)
+    {
+        MusicVolume = Mathf.Clamp(value, 0f, 1f);
+        ApplyVolume();
+        SaveSettings();
+        SettingsChanged?.Invoke();
+    }
+
+    public void SetEffectsVolume(float value)
+    {
+        EffectsVolume = Mathf.Clamp(value, 0f, 1f);
         ApplyVolume();
         SaveSettings();
         SettingsChanged?.Invoke();
@@ -102,6 +120,8 @@ public partial class SettingsManager : Node
             return;
 
         MasterVolume = Mathf.Clamp((float)config.GetValue("audio", "master_volume", MasterVolume), 0f, 1f);
+        MusicVolume = Mathf.Clamp((float)config.GetValue("audio", "music_volume", MusicVolume), 0f, 1f);
+        EffectsVolume = Mathf.Clamp((float)config.GetValue("audio", "effects_volume", EffectsVolume), 0f, 1f);
         Brightness = Mathf.Clamp((float)config.GetValue("display", "brightness", Brightness), 0.65f, 1.05f);
         Fullscreen = (bool)config.GetValue("display", "fullscreen", Fullscreen);
         PlayerName = ((string)config.GetValue("player", "name", PlayerName) ?? PlayerName).Trim();
@@ -125,11 +145,14 @@ public partial class SettingsManager : Node
     private void ApplyVolume()
     {
         int bus = AudioServer.GetBusIndex(AudioBusName);
-        if (bus < 0)
-            return;
+        if (bus >= 0)
+        {
+            AudioServer.SetBusMute(bus, MasterVolume <= 0.001f);
+            AudioServer.SetBusVolumeDb(bus,
+                MasterVolume <= 0.001f ? -80f : Mathf.LinearToDb(MasterVolume));
+        }
 
-        AudioServer.SetBusMute(bus, MasterVolume <= 0.001f);
-        AudioServer.SetBusVolumeDb(bus, MasterVolume <= 0.001f ? -80f : Mathf.LinearToDb(MasterVolume));
+        AudioManager.Instance?.ApplyVolumeSettings(MusicVolume, EffectsVolume);
     }
 
     private void ApplyDisplayMode()
@@ -141,6 +164,8 @@ public partial class SettingsManager : Node
     {
         var config = new ConfigFile();
         config.SetValue("audio", "master_volume", MasterVolume);
+        config.SetValue("audio", "music_volume", MusicVolume);
+        config.SetValue("audio", "effects_volume", EffectsVolume);
         config.SetValue("display", "brightness", Brightness);
         config.SetValue("display", "fullscreen", Fullscreen);
         config.SetValue("player", "name", PlayerName);

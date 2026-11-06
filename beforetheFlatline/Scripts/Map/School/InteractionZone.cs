@@ -26,6 +26,11 @@ public partial class InteractionZone : Area2D
         };
     }
 
+    public override void _ExitTree()
+    {
+        InteractionPromptManager.Instance?.HidePrompt(this);
+    }
+
     [Export] public string TargetScenePath = "res://Scenes/School/Rooms/Classroom.tscn";
 
     public void Interact(PlayerController p)

@@ -14,6 +14,8 @@ public partial class AudioManager : Node
     public static AudioManager Instance { get; private set; }
 
     private const string SoundRoot = "res://Assets/Sounds/";
+    private const string MusicBusName = "Music";
+    private const string EffectsBusName = "Effects";
     private const float MusicVolumeDb = -9f;
     private const float MusicSilentDb = -60f;
     private const double CrossfadeSeconds = 1.6;
@@ -31,6 +33,11 @@ public partial class AudioManager : Node
     private AudioStream _menuTrackTwo;
     private AudioStream _dayTrack;
     private AudioStream _nightTrack;
+    private AudioStreamPlayer _gameOverPlayer;
+    private AudioStreamPlayer _goodEndingHeartbeatPlayer;
+    private AudioStream _goodEndingHeartbeatStream;
+    private bool _goodEndingHeartbeatStarted;
+    private bool _goodEndingHeartbeatFading;
 
     public override void _Ready()
     {
@@ -43,6 +50,9 @@ public partial class AudioManager : Node
         Instance = this;
         ProcessMode = ProcessModeEnum.Always;
 
+        EnsureAudioBus(MusicBusName);
+        EnsureAudioBus(EffectsBusName);
+
         _musicA = CreateMusicPlayer("MusicPlayerA");
         _musicB = CreateMusicPlayer("MusicPlayerB");
         _musicA.Finished += () => OnMusicFinished(_musicA);
@@ -54,6 +64,7 @@ public partial class AudioManager : Node
             {
                 Name = $"SfxPlayer_{i + 1}",
                 ProcessMode = ProcessModeEnum.Always,
+                Bus = EffectsBusName,
                 VolumeDb = 0f
             };
             AddChild(player);
@@ -64,6 +75,10 @@ public partial class AudioManager : Node
         _menuTrackTwo = LoadSound("Menu/Menu2.mp3");
         _dayTrack = LoadSound("Game/dayTime.mp3");
         _nightTrack = LoadSound("Game/nightTime.mp3");
+
+        ApplyVolumeSettings(
+            SettingsManager.Instance?.MusicVolume ?? 0.8f,
+            SettingsManager.Instance?.EffectsVolume ?? 0.85f);
 
         if (DayClock.Instance != null)
             DayClock.Instance.TimeChanged += OnTimeChanged;
@@ -94,6 +109,37 @@ public partial class AudioManager : Node
             AdvanceMenuTrack();
     }
 
+    public void ApplyVolumeSettings(float musicVolume, float effectsVolume)
+    {
+        ApplyBusVolume(MusicBusName, musicVolume);
+        ApplyBusVolume(EffectsBusName, effectsVolume);
+    }
+
+    private static void EnsureAudioBus(string busName)
+    {
+        int busIndex = AudioServer.GetBusIndex(busName);
+        if (busIndex < 0)
+        {
+            AudioServer.AddBus(-1);
+            busIndex = AudioServer.BusCount - 1;
+            AudioServer.SetBusName(busIndex, busName);
+        }
+
+        AudioServer.SetBusSend(busIndex, "Master");
+    }
+
+    private static void ApplyBusVolume(string busName, float volume)
+    {
+        int busIndex = AudioServer.GetBusIndex(busName);
+        if (busIndex < 0)
+            return;
+
+        float normalized = Mathf.Clamp(volume, 0f, 1f);
+        bool muted = normalized <= 0.001f;
+        AudioServer.SetBusMute(busIndex, muted);
+        AudioServer.SetBusVolumeDb(busIndex, muted ? -80f : Mathf.LinearToDb(normalized));
+    }
+
     public void PlayMenuMusic()
     {
         if (_musicMode == "menu" && _activeMusicPlayer != null &&
@@ -120,11 +166,120 @@ public partial class AudioManager : Node
     public void PlayObjectObtain() => PlaySoundEffect("ObjectInteraction/objectObtain.wav", -1f);
     public void PlayAssessmentPassed() => PlaySoundEffect("Tasks/passedTask.mp3", -1f);
     public void PlayAssessmentFailed() => PlaySoundEffect("Tasks/failedTask.mp3", -1f);
+    public void PlayFallThud() => PlaySoundEffect("SoundFX/fallThud.mp3", -1f);
 
-    public void PlayGameOver()
+    public double PlayGoodEndingHeartbeat()
+    {
+        if (_goodEndingHeartbeatPlayer != null &&
+            GodotObject.IsInstanceValid(_goodEndingHeartbeatPlayer) &&
+            _goodEndingHeartbeatPlayer.Playing)
+            return GetGoodEndingHeartbeatRemaining();
+
+        if (_goodEndingHeartbeatStarted)
+            return 0.0;
+
+        _goodEndingHeartbeatStream = LoadGoodEndingHeartbeat();
+        if (_goodEndingHeartbeatStream == null)
+            return 0.0;
+
+        if (_goodEndingHeartbeatPlayer == null ||
+            !GodotObject.IsInstanceValid(_goodEndingHeartbeatPlayer))
+        {
+            _goodEndingHeartbeatPlayer = new AudioStreamPlayer
+            {
+                Name = "GoodEndingHeartbeatPlayer",
+                ProcessMode = ProcessModeEnum.Always,
+                Bus = EffectsBusName,
+                VolumeDb = 0f
+            };
+            AddChild(_goodEndingHeartbeatPlayer);
+        }
+
+        _goodEndingHeartbeatPlayer.Stream = _goodEndingHeartbeatStream;
+        _goodEndingHeartbeatPlayer.VolumeDb = 0f;
+        _goodEndingHeartbeatPlayer.Play();
+        _goodEndingHeartbeatStarted = true;
+        _goodEndingHeartbeatFading = false;
+        GD.Print("[AudioManager] Good-ending heartbeat started.");
+        return _goodEndingHeartbeatStream.GetLength();
+    }
+
+    public void ResetGoodEndingHeartbeat()
+    {
+        if (_goodEndingHeartbeatPlayer != null &&
+            GodotObject.IsInstanceValid(_goodEndingHeartbeatPlayer))
+            _goodEndingHeartbeatPlayer.Stop();
+
+        _goodEndingHeartbeatStarted = false;
+        _goodEndingHeartbeatFading = false;
+    }
+
+    public double GetGoodEndingHeartbeatRemaining()
+    {
+        if (_goodEndingHeartbeatPlayer == null ||
+            !GodotObject.IsInstanceValid(_goodEndingHeartbeatPlayer) ||
+            !_goodEndingHeartbeatPlayer.Playing)
+            return 0.0;
+
+        double length = _goodEndingHeartbeatPlayer.Stream?.GetLength() ?? 0.0;
+        return Math.Max(0.0, length - _goodEndingHeartbeatPlayer.GetPlaybackPosition());
+    }
+
+    public async void FadeOutGoodEndingHeartbeatAfter(double delay, double duration = 2.2)
+    {
+        if (delay > 0.0)
+        {
+            SceneTreeTimer timer = GetTree().CreateTimer(delay, true);
+            await ToSignal(timer, SceneTreeTimer.SignalName.Timeout);
+        }
+
+        FadeOutGoodEndingHeartbeat(duration);
+    }
+
+    public async void FadeOutGoodEndingHeartbeat(double duration = 2.2)
+    {
+        AudioStreamPlayer player = _goodEndingHeartbeatPlayer;
+        if (_goodEndingHeartbeatFading || player == null ||
+            !GodotObject.IsInstanceValid(player) || !player.Playing)
+            return;
+
+        _goodEndingHeartbeatFading = true;
+        Tween tween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        tween.TweenProperty(player, "volume_db", MusicSilentDb, Math.Max(0.1, duration))
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(tween, Tween.SignalName.Finished);
+
+        if (GodotObject.IsInstanceValid(player))
+            player.Stop();
+    }
+
+    public double PlayGameOver()
     {
         FadeOutMusic(0.7);
-        PlaySoundEffect("Ending/gameOverFlatline.mp3", 0f);
+        AudioStream track = LoadSound("Ending/gameOverFlatline.mp3");
+        if (track == null)
+            return 8.0;
+
+        _gameOverPlayer = PlaySoundEffect("Ending/gameOverFlatline.mp3", 0f);
+        return track.GetLength();
+    }
+
+    public async void FadeOutGameOver(double duration = 0.65)
+    {
+        AudioStreamPlayer player = _gameOverPlayer;
+        _gameOverPlayer = null;
+        if (player == null || !GodotObject.IsInstanceValid(player) || !player.Playing)
+            return;
+
+        Tween tween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        tween.TweenProperty(player, "volume_db", MusicSilentDb, Math.Max(0.1, duration))
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(tween, Tween.SignalName.Finished);
+
+        if (GodotObject.IsInstanceValid(player))
+            player.Stop();
     }
 
     private AudioStreamPlayer CreateMusicPlayer(string playerName)
@@ -133,6 +288,7 @@ public partial class AudioManager : Node
         {
             Name = playerName,
             ProcessMode = ProcessModeEnum.Always,
+            Bus = MusicBusName,
             VolumeDb = MusicSilentDb
         };
         AddChild(player);
@@ -169,6 +325,53 @@ public partial class AudioManager : Node
         _soundCache[path] = stream;
         GD.Print($"[AudioManager] Loaded sound: {path}");
         return stream;
+    }
+
+    private AudioStream LoadGoodEndingHeartbeat()
+    {
+        const string preferredPath = "Ending/goodEndingHeartbeat.mp3";
+        AudioStream preferred = LoadSound(preferredPath);
+        if (preferred != null)
+            return preferred;
+
+        string[] folders =
+        {
+            "res://Assets/Sounds/Ending",
+            "res://Assets/Heartbeat",
+            "res://Assets/Sounds/Heartbeat"
+        };
+
+        foreach (string folderPath in folders)
+        {
+            using DirAccess directory = DirAccess.Open(folderPath);
+            if (directory == null)
+                continue;
+
+            string[] files = directory.GetFiles();
+            Array.Sort(files, StringComparer.OrdinalIgnoreCase);
+
+            foreach (string file in files)
+            {
+                string lower = file.ToLowerInvariant();
+                if (!lower.Contains("heartbeat", StringComparison.Ordinal) ||
+                    !(lower.EndsWith(".mp3") || lower.EndsWith(".wav") ||
+                      lower.EndsWith(".ogg") || lower.EndsWith(".opus")))
+                    continue;
+
+                string candidatePath = folderPath + "/" + file;
+                AudioStream stream = GD.Load<AudioStream>(candidatePath);
+                if (stream != null)
+                {
+                    GD.Print($"[AudioManager] Loaded good-ending heartbeat: {candidatePath}");
+                    return stream;
+                }
+            }
+        }
+
+        GD.PushWarning(
+            "AudioManager: heartbeat audio was not found. Expected " +
+            "res://Assets/Sounds/Ending/goodEndingHeartbeat.mp3.");
+        return null;
     }
 
     // Resolve the actual filename from the folder so casing differences do not break
@@ -303,11 +506,11 @@ public partial class AudioManager : Node
             FadeOutAndStop(outgoing, duration);
     }
 
-    private void PlaySoundEffect(string relativePath, float volumeDb)
+    private AudioStreamPlayer PlaySoundEffect(string relativePath, float volumeDb)
     {
         AudioStream stream = LoadSound(relativePath);
         if (stream == null || _sfxPlayers.Count == 0)
-            return;
+            return null;
 
         AudioStreamPlayer player = null;
         for (int i = 0; i < _sfxPlayers.Count; i++)
@@ -331,5 +534,6 @@ public partial class AudioManager : Node
         player.Stream = stream;
         player.VolumeDb = volumeDb;
         player.Play();
+        return player;
     }
 }

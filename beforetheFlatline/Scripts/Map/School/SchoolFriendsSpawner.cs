@@ -8,7 +8,6 @@ public readonly record struct SchoolFriendSpawn(string Name, Vector2 Position);
 
 public partial class SchoolFriendsSpawner : Node2D
 {
-    private const float FriendSpriteScale = 0.345f;
     private const int PlayerCollisionMask = 2;
     private const float StoryHintChance = 0.005f; // 0.5% on the first conversation with each friend per day.
     private const string DialogueScenePath = "res://Scenes/UI/VisualNovelScene.tscn";
@@ -21,15 +20,10 @@ public partial class SchoolFriendsSpawner : Node2D
     private bool _playerFrozen;
     private bool _conversationOpen;
 
-    private CanvasLayer _promptLayer;
-    private Control _promptRoot;
-    private Label _interactionPrompt;
     private CanvasLayer _dialogueLayer;
     private VisualNovelScene _dialogue;
 
-    private double _idleFrameTimer;
-
-    private readonly record struct FriendDefinition(string Name, string TexturePath, string PortraitPath);
+    private readonly record struct FriendDefinition(string Name, string ScenePath, string PortraitPath);
 
     private sealed record InteractionTopic(
         string Opening,
@@ -43,16 +37,16 @@ public partial class SchoolFriendsSpawner : Node2D
     {
         public string Name { get; init; } = "";
         public Node2D Root { get; init; }
-        public Sprite2D Sprite { get; init; }
+        public AnimatedSprite2D Sprite { get; init; }
         public Area2D Area { get; init; }
         public bool PlayerNearby { get; set; }
     }
 
     private static readonly FriendDefinition[] FriendDefinitions =
     {
-        new("Mich", "res://Assets/Characters/pixel/michIdle.png", "res://Assets/Characters/Mich.png"),
-        new("Jepoy", "res://Assets/Characters/pixel/jepoyIdle.png", "res://Assets/Characters/Jepoy.png"),
-        new("Cess", "res://Assets/Characters/pixel/cessIdle.png", "res://Assets/Characters/Cess.png")
+        new("Mich", "res://Scenes/Models/SchoolFriendMich.tscn", "res://Assets/Characters/Mich.png"),
+        new("Jepoy", "res://Scenes/Models/SchoolFriendJepoy.tscn", "res://Assets/Characters/Jepoy.png"),
+        new("Cess", "res://Scenes/Models/SchoolFriendCess.tscn", "res://Assets/Characters/Cess.png")
     };
 
     // These are clear ground / path positions in front of the school building.
@@ -63,7 +57,6 @@ public partial class SchoolFriendsSpawner : Node2D
         new(-120f, 25f),
         new(-65f, 95f),
         new(-5f, 25f),
-        new(75f, 95f),
         new(145f, 25f),
         new(-175f, 105f),
         new(5f, 145f),
@@ -224,24 +217,12 @@ public partial class SchoolFriendsSpawner : Node2D
         var roomManager = GetTree().GetFirstNodeInGroup("room_manager");
         _player = roomManager?.GetNodeOrNull<CharacterBody2D>("Player");
 
-        BuildInteractionUi();
         SpawnRandomFriends();
     }
 
     public override void _Process(double delta)
     {
         UpdateFriendDepthSorting();
-
-        _idleFrameTimer += delta;
-        if (_idleFrameTimer >= 0.72)
-        {
-            _idleFrameTimer = 0;
-            foreach (FriendActor friend in _friends)
-            {
-                if (GodotObject.IsInstanceValid(friend.Sprite))
-                    friend.Sprite.Frame = (friend.Sprite.Frame + 1) % 2;
-            }
-        }
     }
 
     // The player is a sibling of RoomHolder in World.tscn, not a child of the school room.
@@ -267,17 +248,11 @@ public partial class SchoolFriendsSpawner : Node2D
         }
     }
 
-    private Vector2 GetPlayerSpriteGlobalScale()
-    {
-        AnimatedSprite2D playerSprite = _player?.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
-        return playerSprite != null && GodotObject.IsInstanceValid(playerSprite)
-            ? playerSprite.GlobalScale
-            : new Vector2(FriendSpriteScale, FriendSpriteScale);
-    }
-
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (_conversationOpen || !@event.IsActionPressed("interact"))
+        if (_conversationOpen ||
+            (InteractionPromptManager.Instance != null && !InteractionPromptManager.Instance.IsPrimary(this)) ||
+            !@event.IsActionPressed("interact"))
             return;
 
         FriendActor friend = GetNearestFriend();
@@ -290,6 +265,7 @@ public partial class SchoolFriendsSpawner : Node2D
 
     public override void _ExitTree()
     {
+        InteractionPromptManager.Instance?.HidePrompt(this);
         RestorePlayerControl();
     }
 
@@ -343,42 +319,73 @@ public partial class SchoolFriendsSpawner : Node2D
 
     private void CreateFriend(FriendDefinition definition, Vector2 position)
     {
-        Texture2D texture = GD.Load<Texture2D>(definition.TexturePath);
-        if (texture == null)
+        PackedScene actorScene = GD.Load<PackedScene>(definition.ScenePath);
+        if (actorScene == null)
         {
-            GD.PushWarning($"SchoolFriends: character texture not found: {definition.TexturePath}");
+            GD.PushWarning($"SchoolFriends: character scene not found: {definition.ScenePath}");
             return;
         }
 
-        var actorRoot = new Node2D
+        Node2D actorRoot = actorScene.Instantiate<Node2D>();
+        if (actorRoot == null)
         {
-            Name = $"Friend_{definition.Name}",
-            Position = position,
-            ZAsRelative = false
-        };
+            GD.PushWarning($"SchoolFriends: character scene has an invalid root: {definition.ScenePath}");
+            return;
+        }
+
+        actorRoot.Name = $"Friend_{definition.Name}";
+        if (_player != null && GodotObject.IsInstanceValid(_player))
+            actorRoot.Scale = _player.Scale;
+        actorRoot.Position = position;
+        actorRoot.ZAsRelative = false;
         AddChild(actorRoot);
 
-        var sprite = new Sprite2D
+        AnimatedSprite2D sprite = actorRoot.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+        if (sprite == null || sprite.SpriteFrames == null)
         {
-            Name = $"{definition.Name}Sprite",
-            Texture = texture,
-            Hframes = 2,
-            Vframes = 1,
-            Frame = 0,
-            TextureFilter = CanvasItem.TextureFilterEnum.Nearest
-        };
-        actorRoot.AddChild(sprite);
+            GD.PushWarning($"SchoolFriends: {definition.Name} scene is missing an AnimatedSprite2D with SpriteFrames.");
+            actorRoot.QueueFree();
+            return;
+        }
 
-        // Match the player's effective rendered scale (Player root 1.5 x sprite 0.23).
-        // The player sprite is centered at its ground anchor, so keep the same local origin.
-        sprite.GlobalScale = GetPlayerSpriteGlobalScale();
+        StringName idleAnimation = ResolveIdleAnimation(sprite.SpriteFrames);
+        if (string.IsNullOrWhiteSpace(idleAnimation.ToString()))
+        {
+            GD.PushWarning($"SchoolFriends: {definition.Name} has no usable animation.");
+            actorRoot.QueueFree();
+            return;
+        }
 
-        // The name floats just above the character's head and uses an outline for map contrast.
+        sprite.Play(idleAnimation);
+        sprite.Frame = 0;
+        sprite.TextureFilter = CanvasItem.TextureFilterEnum.Nearest;
+
+        AnimatedSprite2D playerSprite = _player?.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+        sprite.Centered = playerSprite?.Centered ?? true;
+
+        if (playerSprite != null)
+        {
+            SpriteFrames playerFrames = playerSprite.SpriteFrames;
+            Texture2D playerFrame = playerFrames != null && playerFrames.HasAnimation(playerSprite.Animation)
+                ? playerFrames.GetFrameTexture(playerSprite.Animation, 0)
+                : null;
+            Texture2D friendFrame = sprite.SpriteFrames.GetFrameTexture(idleAnimation, 0);
+            float playerVisibleHeight = GetOpaqueFrameHeight(playerFrame);
+            float friendVisibleHeight = GetOpaqueFrameHeight(friendFrame);
+            float scaleRatio = playerVisibleHeight > 0f && friendVisibleHeight > 0f
+                ? playerVisibleHeight / friendVisibleHeight
+                : 1f;
+            sprite.Scale = playerSprite.Scale * scaleRatio;
+        }
+
         var nameLabel = new Label
         {
             Name = $"{definition.Name}Name",
             Text = definition.Name,
-            Position = new Vector2(-48, -44),
+            // The character scene root is scaled to match the player (1.5x).
+            // Counter-scale the name label so its font and offset stay in screen pixels.
+            Position = new Vector2(-48f / actorRoot.Scale.X, -44f / actorRoot.Scale.Y),
+            Scale = new Vector2(1f / actorRoot.Scale.X, 1f / actorRoot.Scale.Y),
             Size = new Vector2(96, 20),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
@@ -399,7 +406,8 @@ public partial class SchoolFriendsSpawner : Node2D
             Monitoring = true,
             Monitorable = false,
             InputPickable = false,
-            Position = new Vector2(0, -8)
+            Position = new Vector2(0, -8f / actorRoot.Scale.Y),
+            Scale = new Vector2(1f / actorRoot.Scale.X, 1f / actorRoot.Scale.Y)
         };
         actorRoot.AddChild(area);
         area.AddChild(new CollisionShape2D
@@ -419,6 +427,53 @@ public partial class SchoolFriendsSpawner : Node2D
         area.BodyEntered += body => OnFriendBodyEntered(friend, body);
         area.BodyExited += body => OnFriendBodyExited(friend, body);
         _friends.Add(friend);
+    }
+
+    private static StringName ResolveIdleAnimation(SpriteFrames frames)
+    {
+        if (frames == null)
+            return new StringName(string.Empty);
+
+        string[] names = frames.GetAnimationNames();
+        foreach (string preferred in new[] { "Idle", "idle", "default" })
+        {
+            foreach (string name in names)
+            {
+                if (string.Equals(name, preferred, StringComparison.OrdinalIgnoreCase))
+                    return new StringName(name);
+            }
+        }
+
+        return names.Length > 0
+            ? new StringName(names[0])
+            : new StringName(string.Empty);
+    }
+
+    private static float GetOpaqueFrameHeight(Texture2D texture)
+    {
+        if (texture == null)
+            return 0f;
+
+        Image image = texture.GetImage();
+        if (image == null || image.GetWidth() <= 0 || image.GetHeight() <= 0)
+            return 0f;
+
+        int top = image.GetHeight();
+        int bottom = -1;
+
+        for (int y = 0; y < image.GetHeight(); y++)
+        {
+            for (int x = 0; x < image.GetWidth(); x++)
+            {
+                if (image.GetPixel(x, y).A <= 0.05f)
+                    continue;
+
+                top = Math.Min(top, y);
+                bottom = Math.Max(bottom, y);
+            }
+        }
+
+        return bottom >= top ? bottom - top + 1 : 0f;
     }
 
     private void OnFriendBodyEntered(FriendActor friend, Node2D body)
@@ -468,13 +523,17 @@ public partial class SchoolFriendsSpawner : Node2D
 
     private void RefreshInteractionPrompt()
     {
-        if (_interactionPrompt == null || _conversationOpen)
+        if (_conversationOpen)
+        {
+            InteractionPromptManager.Instance?.HidePrompt(this);
             return;
+        }
 
         FriendActor nearest = GetNearestFriend();
-        _interactionPrompt.Visible = nearest != null;
         if (nearest != null)
-            _interactionPrompt.Text = $"[E] Talk to {nearest.Name}";
+            InteractionPromptManager.Instance?.ShowPrompt(this, $"[E] Talk to {nearest.Name}", 40);
+        else
+            InteractionPromptManager.Instance?.HidePrompt(this);
     }
 
     private void BeginConversation(FriendActor friend)
@@ -507,7 +566,7 @@ public partial class SchoolFriendsSpawner : Node2D
         var lines = BuildConversation(friend, playerName, showStoryHint, recoveredSanity);
 
         _conversationOpen = true;
-        _interactionPrompt.Visible = false;
+        InteractionPromptManager.Instance?.HidePrompt(this);
         FreezePlayerControl();
 
         _dialogueLayer = new CanvasLayer
@@ -621,47 +680,6 @@ public partial class SchoolFriendsSpawner : Node2D
         if (_player != null && GodotObject.IsInstanceValid(_player))
             _player.ProcessMode = _playerPreviousProcessMode;
         _playerFrozen = false;
-    }
-
-    private void BuildInteractionUi()
-    {
-        _promptLayer = new CanvasLayer
-        {
-            Name = "SchoolFriendsPromptLayer",
-            Layer = 107
-        };
-        AddChild(_promptLayer);
-
-        _promptRoot = new Control
-        {
-            Name = "SchoolFriendsPromptRoot",
-            MouseFilter = Control.MouseFilterEnum.Ignore
-        };
-        _promptRoot.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        _promptLayer.AddChild(_promptRoot);
-
-        _interactionPrompt = new Label
-        {
-            Name = "FriendInteractionPrompt",
-            Visible = false,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            CustomMinimumSize = new Vector2(640, 42),
-            MouseFilter = Control.MouseFilterEnum.Ignore
-        };
-        _interactionPrompt.AnchorLeft = 0.5f;
-        _interactionPrompt.AnchorRight = 0.5f;
-        _interactionPrompt.AnchorTop = 1f;
-        _interactionPrompt.AnchorBottom = 1f;
-        _interactionPrompt.OffsetLeft = -320;
-        _interactionPrompt.OffsetRight = 320;
-        _interactionPrompt.OffsetTop = -86;
-        _interactionPrompt.OffsetBottom = -44;
-        _interactionPrompt.AddThemeFontSizeOverride("font_size", 18);
-        _interactionPrompt.AddThemeColorOverride("font_color", Colors.White);
-        _interactionPrompt.AddThemeColorOverride("font_outline_color", Colors.Black);
-        _interactionPrompt.AddThemeConstantOverride("outline_size", 4);
-        _promptRoot.AddChild(_interactionPrompt);
     }
 
     private void Shuffle<T>(T[] values)
