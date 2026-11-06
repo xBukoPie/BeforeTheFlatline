@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bix4yg7tfvtip"
-path="res://.godot/imported/VoxTekLogo.svg-59117ae4cfe7ede052990f695f0615b4.ctex"
+uid="uid://b87l56cly50kc"
+path="res://.godot/imported/VoxTekLogo.png-fb37ef029b6d1f33bc469457cdb8ed16.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/UI/Opening/VoxTekLogo.svg"
-dest_files=["res://.godot/imported/VoxTekLogo.svg-59117ae4cfe7ede052990f695f0615b4.ctex"]
+source_file="res://Assets/UI/Opening/VoxTekLogo.png"
+dest_files=["res://.godot/imported/VoxTekLogo.png-fb37ef029b6d1f33bc469457cdb8ed16.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

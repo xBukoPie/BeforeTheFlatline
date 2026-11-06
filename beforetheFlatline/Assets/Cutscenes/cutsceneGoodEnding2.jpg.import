@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cqceoyuw1jdx4"
-path="res://.godot/imported/cutsceneGoodEnding.jpg-30aafecd8b1b1f8c428bd193df288308.ctex"
+uid="uid://bcu10ec14l61t"
+path="res://.godot/imported/cutsceneGoodEnding2.jpg-460bbf1619b82af1833f58da602f58ad.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Cutscenes/cutsceneGoodEnding.jpg"
-dest_files=["res://.godot/imported/cutsceneGoodEnding.jpg-30aafecd8b1b1f8c428bd193df288308.ctex"]
+source_file="res://Assets/Cutscenes/cutsceneGoodEnding2.jpg"
+dest_files=["res://.godot/imported/cutsceneGoodEnding2.jpg-460bbf1619b82af1833f58da602f58ad.ctex"]
 
 [params]
 
