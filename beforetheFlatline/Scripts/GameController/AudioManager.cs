@@ -34,6 +34,10 @@ public partial class AudioManager : Node
     private AudioStream _dayTrack;
     private AudioStream _nightTrack;
     private AudioStreamPlayer _gameOverPlayer;
+    private AudioStreamPlayer _goodEndingHeartbeatPlayer;
+    private AudioStream _goodEndingHeartbeatStream;
+    private bool _goodEndingHeartbeatStarted;
+    private bool _goodEndingHeartbeatFading;
 
     public override void _Ready()
     {
@@ -164,6 +168,71 @@ public partial class AudioManager : Node
     public void PlayAssessmentFailed() => PlaySoundEffect("Tasks/failedTask.mp3", -1f);
     public void PlayFallThud() => PlaySoundEffect("SoundFX/fallThud.mp3", -1f);
 
+    public double PlayGoodEndingHeartbeat()
+    {
+        if (_goodEndingHeartbeatPlayer != null &&
+            GodotObject.IsInstanceValid(_goodEndingHeartbeatPlayer) &&
+            _goodEndingHeartbeatPlayer.Playing)
+            return GetGoodEndingHeartbeatRemaining();
+
+        if (_goodEndingHeartbeatStarted)
+            return 0.0;
+
+        _goodEndingHeartbeatStream = LoadGoodEndingHeartbeat();
+        if (_goodEndingHeartbeatStream == null)
+            return 0.0;
+
+        if (_goodEndingHeartbeatPlayer == null ||
+            !GodotObject.IsInstanceValid(_goodEndingHeartbeatPlayer))
+        {
+            _goodEndingHeartbeatPlayer = new AudioStreamPlayer
+            {
+                Name = "GoodEndingHeartbeatPlayer",
+                ProcessMode = ProcessModeEnum.Always,
+                Bus = EffectsBusName,
+                VolumeDb = 0f
+            };
+            AddChild(_goodEndingHeartbeatPlayer);
+        }
+
+        _goodEndingHeartbeatPlayer.Stream = _goodEndingHeartbeatStream;
+        _goodEndingHeartbeatPlayer.VolumeDb = 0f;
+        _goodEndingHeartbeatPlayer.Play();
+        _goodEndingHeartbeatStarted = true;
+        _goodEndingHeartbeatFading = false;
+        GD.Print("[AudioManager] Good-ending heartbeat started.");
+        return _goodEndingHeartbeatStream.GetLength();
+    }
+
+    public double GetGoodEndingHeartbeatRemaining()
+    {
+        if (_goodEndingHeartbeatPlayer == null ||
+            !GodotObject.IsInstanceValid(_goodEndingHeartbeatPlayer) ||
+            !_goodEndingHeartbeatPlayer.Playing)
+            return 0.0;
+
+        double length = _goodEndingHeartbeatPlayer.Stream?.GetLength() ?? 0.0;
+        return Math.Max(0.0, length - _goodEndingHeartbeatPlayer.GetPlaybackPosition());
+    }
+
+    public async void FadeOutGoodEndingHeartbeat(double duration = 2.2)
+    {
+        AudioStreamPlayer player = _goodEndingHeartbeatPlayer;
+        if (_goodEndingHeartbeatFading || player == null ||
+            !GodotObject.IsInstanceValid(player) || !player.Playing)
+            return;
+
+        _goodEndingHeartbeatFading = true;
+        Tween tween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        tween.TweenProperty(player, "volume_db", MusicSilentDb, Math.Max(0.1, duration))
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(tween, Tween.SignalName.Finished);
+
+        if (GodotObject.IsInstanceValid(player))
+            player.Stop();
+    }
+
     public double PlayGameOver()
     {
         FadeOutMusic(0.7);
@@ -235,6 +304,63 @@ public partial class AudioManager : Node
         _soundCache[path] = stream;
         GD.Print($"[AudioManager] Loaded sound: {path}");
         return stream;
+    }
+
+    private AudioStream LoadGoodEndingHeartbeat()
+    {
+        string[] folders =
+        {
+            "res://Assets/Heartbeat",
+            "res://Assets/Sounds/Heartbeat"
+        };
+
+        foreach (string folderPath in folders)
+        {
+            using DirAccess directory = DirAccess.Open(folderPath);
+            if (directory == null)
+                continue;
+
+            string[] files = directory.GetFiles();
+            Array.Sort(files, StringComparer.OrdinalIgnoreCase);
+            string fallbackPath = string.Empty;
+
+            foreach (string file in files)
+            {
+                string lower = file.ToLowerInvariant();
+                if (!(lower.EndsWith(".mp3") || lower.EndsWith(".wav") ||
+                      lower.EndsWith(".ogg") || lower.EndsWith(".opus")))
+                    continue;
+
+                string candidatePath = folderPath + "/" + file;
+                if (lower.Contains("heartbeat", StringComparison.Ordinal))
+                {
+                    AudioStream namedStream = GD.Load<AudioStream>(candidatePath);
+                    if (namedStream != null)
+                    {
+                        GD.Print($"[AudioManager] Loaded good-ending heartbeat: {candidatePath}");
+                        return namedStream;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(fallbackPath))
+                    fallbackPath = candidatePath;
+            }
+
+            if (!string.IsNullOrEmpty(fallbackPath))
+            {
+                AudioStream fallbackStream = GD.Load<AudioStream>(fallbackPath);
+                if (fallbackStream != null)
+                {
+                    GD.Print($"[AudioManager] Loaded good-ending audio from: {fallbackPath}");
+                    return fallbackStream;
+                }
+            }
+        }
+
+        GD.PushWarning(
+            "AudioManager: no heartbeat audio was found in Assets/Heartbeat. " +
+            "Add the heartbeat audio there and allow Godot to import it.");
+        return null;
     }
 
     // Resolve the actual filename from the folder so casing differences do not break
