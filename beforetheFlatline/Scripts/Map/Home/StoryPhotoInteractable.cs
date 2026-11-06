@@ -144,8 +144,8 @@ public partial class StoryPhotoInteractable : Area2D
         const string toBedroomImage = "res://Assets/Cutscenes/cutsceneToMasterBedroom.jpg";
         const string bedroomImage = "res://Assets/Cutscenes/cutsceneMasterBedroom.jpg";
         const string goodEndingFallback = "res://Assets/Cutscenes/cutsceneGoodEnding.jpg";
-        string goodEndingImageOne = ResolveCutsceneImage("goodEnding1", goodEndingFallback);
-        string goodEndingImageTwo = ResolveCutsceneImage("goodEnding2", goodEndingImageOne);
+        string goodEndingImageOne = ResolveCutsceneImage("cutsceneGoodEnding1", goodEndingFallback);
+        string goodEndingImageTwo = ResolveCutsceneImage("cutsceneGoodEnding2", goodEndingImageOne);
 
         return memoryId switch
         {
