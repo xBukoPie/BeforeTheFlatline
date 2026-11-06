@@ -4,6 +4,10 @@ using SchoolYardGame;
 public partial class GoodEndingBriefing : Control
 {
     private const string CreditsPath = "res://Scenes/Ending/EndingCredits.tscn";
+    private const double HeartbeatFadeSeconds = 2.2;
+    private const double CreditsTransitionSeconds = 1.25;
+
+    private bool _creditsStarted;
 
     public override void _Ready()
     {
@@ -11,7 +15,22 @@ public partial class GoodEndingBriefing : Control
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
+        double heartbeatRemaining = AudioManager.Instance?.PlayGoodEndingHeartbeat() ?? 0.0;
         BuildUi();
+
+        if (heartbeatRemaining > 0.05)
+            ScheduleAutomaticCredits(heartbeatRemaining);
+    }
+
+    private async void ScheduleAutomaticCredits(double heartbeatRemaining)
+    {
+        double leadTime = HeartbeatFadeSeconds + CreditsTransitionSeconds + 0.8;
+        double waitSeconds = System.Math.Max(0.0, heartbeatRemaining - leadTime);
+        SceneTreeTimer timer = GetTree().CreateTimer(waitSeconds, true);
+        await ToSignal(timer, SceneTreeTimer.SignalName.Timeout);
+
+        if (IsInsideTree())
+            OpenCredits();
     }
 
     private void BuildUi()
@@ -210,8 +229,14 @@ public partial class GoodEndingBriefing : Control
 
     private void OpenCredits()
     {
+        if (_creditsStarted)
+            return;
+
+        _creditsStarted = true;
+        AudioManager.Instance?.FadeOutGoodEndingHeartbeat(HeartbeatFadeSeconds);
+
         if (SceneTransition.Instance != null)
-            SceneTransition.Instance.ChangeSceneToFile(CreditsPath, 1.25f);
+            SceneTransition.Instance.ChangeSceneToFile(CreditsPath, (float)CreditsTransitionSeconds);
         else
             GetTree().ChangeSceneToFile(CreditsPath);
     }
