@@ -2,7 +2,7 @@ using Godot;
 
 public partial class OpeningLogo : Control
 {
-    private const string LogoPath = "res://Assets/UI/Opening/VoxTekLogo.svg";
+    private const string LogoPath = "res://Assets/UI/Opening/VoxTekLogo.png";
 
     public override void _Ready()
     {
