@@ -204,6 +204,16 @@ public partial class AudioManager : Node
         return _goodEndingHeartbeatStream.GetLength();
     }
 
+    public void ResetGoodEndingHeartbeat()
+    {
+        if (_goodEndingHeartbeatPlayer != null &&
+            GodotObject.IsInstanceValid(_goodEndingHeartbeatPlayer))
+            _goodEndingHeartbeatPlayer.Stop();
+
+        _goodEndingHeartbeatStarted = false;
+        _goodEndingHeartbeatFading = false;
+    }
+
     public double GetGoodEndingHeartbeatRemaining()
     {
         if (_goodEndingHeartbeatPlayer == null ||
