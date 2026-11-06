@@ -32,6 +32,14 @@ public partial class SchoolGreeting : Node2D
             return;
         }
 
+        // Keep direct scene entry consistent with the school-door attendance mark.
+        if (DayClock.Instance?.IsSchoolOpen == true &&
+            !DayClock.Instance.SchoolChallengeStartedToday)
+        {
+            DayClock.Instance.MarkSchoolChallengeStartedToday();
+            SaveManager.Instance?.RequestAutoSave();
+        }
+
         _rng.Randomize();
         _dialoguePanelScene = GD.Load<PackedScene>("res://Scenes/UI/DialoguePanel.tscn");
         if (_dialoguePanelScene == null)
@@ -92,7 +100,8 @@ public partial class SchoolGreeting : Node2D
         if (IsInstanceValid(_activeGreetingPanel))
             _activeGreetingPanel.QueueFree();
 
-        DayClock.Instance?.MarkSchoolChallengeStartedToday();
+        if (DayClock.Instance?.IsSchoolOpen == true)
+            DayClock.Instance.MarkSchoolChallengeStartedToday();
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
         EmitSignal(SignalName.SchoolGreetingFinished);

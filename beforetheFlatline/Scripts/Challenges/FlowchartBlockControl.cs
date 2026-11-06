@@ -7,6 +7,8 @@ public partial class FlowchartBlockControl : HBoxContainer
     [Export] public string InitialText { get; set; } = "value = 0";
     private FlowchartSymbolControl _symbol;
 
+    public event Action TextChanged;
+
     public string BlockText => _symbol?.BlockText ?? InitialText;
 
     public void Configure(string type, string text, int index, Action<int> moveUp, Action<int> moveDown, Action<int> remove)
@@ -21,6 +23,7 @@ public partial class FlowchartBlockControl : HBoxContainer
 
         _symbol = new FlowchartSymbolControl();
         _symbol.Configure(type, text);
+        _symbol.TextChanged += () => TextChanged?.Invoke();
         AddChild(_symbol);
 
         AddControlButton("↑", index, moveUp, index == 0);

@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="BeforeTheFlatline : Original"
-run/main_scene="uid://c6cp4xu2fa4t4"
+run/main_scene="res://Scenes/Menu/OpeningSequence.tscn"
 config/features=PackedStringArray("4.7", "C#", "GL Compatibility")
 config/icon="res://icon.svg"
 
@@ -27,8 +27,10 @@ SettingsManager="*res://Scripts/GameController/SettingsManager.cs"
 AudioManager="*res://Scripts/GameController/AudioManager.cs"
 StatusEffectsOverlay="*res://Scripts/UI/StatusEffectsOverlay.cs"
 PauseMenuController="*res://Scripts/UI/PauseMenuController.cs"
+JournalController="*res://Scripts/UI/JournalController.cs"
 SuperUserAccess="*res://Scripts/UI/SuperUserAccess.cs"
 UIFeedback="*res://Scripts/UI/UIFeedback.cs"
+InteractionPromptManager="*res://Scripts/UI/InteractionPromptManager.cs"
 
 [display]
 

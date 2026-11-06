@@ -9,6 +9,7 @@ public partial class GameController : CanvasModulate
 
     [Export] public float DayLengthSeconds { get; set; } = 180f;
     public float Hour { get; private set; }
+    private bool _hasColorSample;
 
     private static readonly (float hour, Color color)[] Keys =
     {
@@ -28,10 +29,10 @@ public partial class GameController : CanvasModulate
         Instance = this;
         if (DayClock.Instance != null && DayLengthSeconds > 0f)
             DayClock.Instance.DayLengthSeconds = DayLengthSeconds;
-        Apply();
+        Apply(0f);
     }
 
-    public override void _Process(double delta) => Apply();
+    public override void _Process(double delta) => Apply((float)delta);
 
     public override void _ExitTree()
     {
@@ -39,10 +40,25 @@ public partial class GameController : CanvasModulate
             Instance = null;
     }
 
-    private void Apply()
+    private void Apply(float delta)
     {
         Hour = DayClock.Instance?.Hour ?? 8f;
-        Color = Sample(Hour);
+        Godot.Color target = Sample(Hour);
+        if (!_hasColorSample || delta <= 0f)
+        {
+            Color = target;
+            _hasColorSample = true;
+        }
+        else
+        {
+            float blend = 1f - Mathf.Exp(-delta / 3.5f);
+            Color = new Godot.Color(
+                Mathf.Lerp(Color.R, target.R, blend),
+                Mathf.Lerp(Color.G, target.G, blend),
+                Mathf.Lerp(Color.B, target.B, blend),
+                Mathf.Lerp(Color.A, target.A, blend));
+        }
+
         float lum = (Color.R + Color.G + Color.B) / 3f;
         Darkness = Mathf.Clamp(Mathf.Remap(lum, 0.95f, 0.25f, 0f, 1f), 0f, 1f);
     }

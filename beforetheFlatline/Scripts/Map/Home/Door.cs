@@ -1,3 +1,4 @@
+using System;
 using Godot;
 using SchoolYardGame;
 
@@ -9,18 +10,20 @@ public partial class Door : Area2D
     [Export] public Vector2 Size { get; set; } = new Vector2(32, 12);
     [Export] public bool AutoEnter { get; set; } = false;    // true = no key press needed (e.g. walk down stairs)
     [Export] public bool RequiresSchoolHours { get; set; } = false;
+    [Export] public bool MarksSchoolAttendance { get; set; } = false;
+    [Export] public bool WrongRoom { get; set; } = false;
+    [Export] public bool ShowLoadingScreen { get; set; } = false;
+    [Export] public bool UseSchoolTravelLoadingScreen { get; set; } = false;
+    [Export] public string LoadingMessage { get; set; } = "Heading to school...";
     [Export] public string UnlockRoomId { get; set; } = "";
-    [Export] public bool TriggersFirstDayMystery { get; set; } = false;
     [Export] public string LockedPrompt { get; set; } = "Locked. Score at least 30 points, then find the key in the Yard.";
     [Export] public string ClosedPrompt { get; set; } = "School is closed. Come back after sunrise.";
     [Export] public float ClosedMessageDuration { get; set; } = 2.5f;
 
     private const bool DebugLog = true;   // prints door activity to the Output panel; set to false once doors work
 
-    private Label _hint;
-    private CanvasLayer _promptLayer;
     private bool _playerInside;
-    private bool _mysteryIntroOpening;
+    private bool _wrongRoomFeedbackRunning;
     private float _closedPromptRemaining;
 
     public override void _Ready()
@@ -40,40 +43,13 @@ public partial class Door : Area2D
             });
         }
 
-        _promptLayer = new CanvasLayer
-        {
-            Name = "InteractionPromptLayer",
-            Layer = 105
-        };
-        AddChild(_promptLayer);
-
-        _hint = new Label
-        {
-            Text = $"[E] {Prompt}",
-            Visible = false,
-            ZIndex = 100,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            CustomMinimumSize = new Vector2(640, 56),
-            MouseFilter = Control.MouseFilterEnum.Ignore
-        };
-        _hint.AnchorLeft = 0.5f;
-        _hint.AnchorRight = 0.5f;
-        _hint.AnchorTop = 1f;
-        _hint.AnchorBottom = 1f;
-        _hint.OffsetLeft = -320;
-        _hint.OffsetRight = 320;
-        _hint.OffsetTop = -106;
-        _hint.OffsetBottom = -50;
-        _hint.AddThemeFontSizeOverride("font_size", 18);
-        _hint.AddThemeColorOverride("font_color", Colors.White);
-        _hint.AddThemeColorOverride("font_outline_color", Colors.Black);
-        _hint.AddThemeConstantOverride("outline_size", 4);
-        _promptLayer.AddChild(_hint);
-
         BodyEntered += OnBodyEntered;
         BodyExited += OnBodyExited;
+    }
+
+    public override void _ExitTree()
+    {
+        InteractionPromptManager.Instance?.HidePrompt(this);
     }
 
     public override void _Process(double delta)
@@ -82,16 +58,15 @@ public partial class Door : Area2D
             return;
 
         _closedPromptRemaining = Mathf.Max(0f, _closedPromptRemaining - (float)delta);
-        if (_closedPromptRemaining <= 0f && IsInstanceValid(_hint))
-        {
-            _hint.Text = $"[E] {Prompt}";
-            _hint.Visible = _playerInside;
-        }
+        if (_closedPromptRemaining <= 0f && _playerInside && !AutoEnter)
+            InteractionPromptManager.Instance?.ShowPrompt(this, $"[E] {Prompt}", 30);
     }
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (_playerInside && @event.IsActionPressed("interact"))
+        if (_playerInside && !AutoEnter && !_wrongRoomFeedbackRunning &&
+            (InteractionPromptManager.Instance == null || InteractionPromptManager.Instance.IsPrimary(this)) &&
+            @event.IsActionPressed("interact"))
         {
             if (DebugLog) GD.Print($"[Door] {Name}: interact pressed -> {TargetRoom} @ {TargetSpawn}");
             GetViewport().SetInputAsHandled();
@@ -103,9 +78,11 @@ public partial class Door : Area2D
     {
         if (DebugLog) GD.Print($"[Door] {Name}: '{body.Name}' entered the trigger");
         _playerInside = true;
-        _hint.Text = $"[E] {Prompt}";
-        _hint.Visible = true;
-        if (AutoEnter) Use();
+        _closedPromptRemaining = 0f;
+        if (AutoEnter)
+            Use();
+        else
+            InteractionPromptManager.Instance?.ShowPrompt(this, $"[E] {Prompt}", 30);
     }
 
     private void OnBodyExited(Node2D body)
@@ -113,8 +90,7 @@ public partial class Door : Area2D
         if (DebugLog) GD.Print($"[Door] {Name}: '{body.Name}' left the trigger");
         _playerInside = false;
         _closedPromptRemaining = 0f;
-        _hint.Text = $"[E] {Prompt}";
-        _hint.Visible = false;
+        InteractionPromptManager.Instance?.HidePrompt(this);
     }
 
     private static void EnsureInteractAction()
@@ -130,20 +106,9 @@ public partial class Door : Area2D
 
     private void ShowTemporaryPrompt(string message)
     {
-        if (_hint == null || !IsInstanceValid(_hint))
-            return;
-
-        _hint.Text = message;
-        _hint.Visible = true;
+        InteractionPromptManager.Instance?.HidePrompt(this);
+        InteractionPromptManager.Instance?.ShowNotice(this, message, ClosedMessageDuration);
         _closedPromptRemaining = Mathf.Max(0.5f, ClosedMessageDuration);
-    }
-
-    // Called after the one-time first-day encounter finishes.
-    public void ContinueAfterMysteryIntro()
-    {
-        _mysteryIntroOpening = false;
-        if (GodotObject.IsInstanceValid(this))
-            Use();
     }
 
     private void Use()
@@ -162,37 +127,16 @@ public partial class Door : Area2D
             return;
         }
 
+        if (WrongRoom || Name.ToString().StartsWith("wrongRoom", StringComparison.OrdinalIgnoreCase))
+        {
+            ShowWrongRoomFeedback();
+            return;
+        }
+
         var manager = GetTree().GetFirstNodeInGroup("room_manager") as RoomManager;
         if (manager == null)
         {
             GD.PushWarning("Door: no RoomManager (group 'room_manager') found.");
-            return;
-        }
-
-        if (TriggersFirstDayMystery &&
-            DayClock.Instance?.ShouldShowFirstDayMysteryEncounter == true)
-        {
-            if (_mysteryIntroOpening)
-                return;
-
-            var introScene = GD.Load<PackedScene>("res://Scenes/School/FirstDayMysteryIntro.tscn");
-            if (introScene == null)
-            {
-                GD.PushError("Door: missing FirstDayMysteryIntro.tscn.");
-                return;
-            }
-
-            var mysteryUiRoot = manager.GetNodeOrNull<Node>("UI");
-            if (mysteryUiRoot == null)
-            {
-                GD.PushError("Door: cannot show the first-day mystery because the RoomManager has no UI node.");
-                return;
-            }
-
-            var intro = introScene.Instantiate<FirstDayMysteryIntro>();
-            intro.DoorToContinue = this;
-            _mysteryIntroOpening = true;
-            mysteryUiRoot.AddChild(intro);
             return;
         }
 
@@ -204,9 +148,16 @@ public partial class Door : Area2D
         }
         var instance = packed.Instantiate();
 
+        if (MarksSchoolAttendance && DayClock.Instance != null)
+        {
+            DayClock.Instance.MarkSchoolChallengeStartedToday();
+            SaveManager.Instance?.RequestAutoSave();
+        }
+
         if (instance is Node2D && instance is not Control)
         {
-            manager.GoTo(TargetRoom, TargetSpawn);
+            instance.QueueFree();
+            manager.GoTo(TargetRoom, TargetSpawn, ShowLoadingScreen, LoadingMessage, UseSchoolTravelLoadingScreen);
             return;
         }
 
@@ -230,5 +181,128 @@ public partial class Door : Area2D
         if (fade != null)
             fade.Modulate = new Color(0, 0, 0, 0);
 
+    }
+
+    private async void ShowWrongRoomFeedback()
+    {
+        if (_wrongRoomFeedbackRunning)
+            return;
+
+        _wrongRoomFeedbackRunning = true;
+        InteractionPromptManager.Instance?.HidePrompt(this);
+
+        SceneTree tree = GetTree();
+        DayClock clock = DayClock.Instance;
+        bool previousClockRunning = clock?.Running ?? false;
+
+        Node roomManager = tree.GetFirstNodeInGroup("room_manager");
+        CharacterBody2D player = roomManager?.GetNodeOrNull<CharacterBody2D>("Player");
+        ProcessModeEnum previousPlayerMode = player?.ProcessMode ?? ProcessModeEnum.Inherit;
+
+        int attempts = clock?.RegisterWrongRoomAttempt() ?? 1;
+
+        string message = "That was the wrong room... -1 Sanity due to Humiliation.";
+        if (attempts >= 2)
+            message += "\nMaybe you should try the stairs.";
+
+        CanvasLayer layer = new()
+        {
+            Name = "WrongRoomTransition",
+            Layer = 126,
+            ProcessMode = ProcessModeEnum.Always
+        };
+
+        var black = new ColorRect
+        {
+            Name = "BlackFade",
+            Color = Colors.Black,
+            Modulate = new Color(1f, 1f, 1f, 0f),
+            MouseFilter = Control.MouseFilterEnum.Stop
+        };
+        black.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        layer.AddChild(black);
+
+        var label = new Label
+        {
+            Name = "WrongRoomMessage",
+            Text = message,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            Modulate = new Color(1f, 1f, 1f, 0f),
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
+        label.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        label.OffsetLeft = 100;
+        label.OffsetRight = -100;
+        label.AddThemeFontSizeOverride("font_size", 27);
+        label.AddThemeColorOverride("font_color", new Color("f1edf5"));
+        label.AddThemeColorOverride("font_outline_color", new Color("08070c"));
+        label.AddThemeConstantOverride("outline_size", 4);
+        black.AddChild(label);
+
+        tree.Root.AddChild(layer);
+
+        if (clock != null)
+            clock.Running = false;
+        if (player != null && GodotObject.IsInstanceValid(player))
+        {
+            player.Velocity = Vector2.Zero;
+            player.ProcessMode = ProcessModeEnum.Disabled;
+        }
+
+        try
+        {
+            Tween fadeIn = layer.CreateTween().SetPauseMode(Tween.TweenPauseMode.Process).SetParallel();
+            fadeIn.TweenProperty(black, "modulate:a", 1f, 0.62f)
+                .SetTrans(Tween.TransitionType.Sine)
+                .SetEase(Tween.EaseType.InOut);
+            fadeIn.TweenProperty(label, "modulate:a", 1f, 0.62f)
+                .SetTrans(Tween.TransitionType.Sine)
+                .SetEase(Tween.EaseType.InOut);
+            await ToSignal(fadeIn, Tween.SignalName.Finished);
+
+            Tween hold = layer.CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+            hold.TweenInterval(2.1f);
+            await ToSignal(hold, Tween.SignalName.Finished);
+
+            SanityManager.Instance?.LoseSanity(1);
+            SaveManager.Instance?.RequestAutoSave();
+
+            Tween fadeOut = layer.CreateTween().SetPauseMode(Tween.TweenPauseMode.Process).SetParallel();
+            fadeOut.TweenProperty(black, "modulate:a", 0f, 0.82f)
+                .SetTrans(Tween.TransitionType.Sine)
+                .SetEase(Tween.EaseType.InOut);
+            fadeOut.TweenProperty(label, "modulate:a", 0f, 0.5f)
+                .SetTrans(Tween.TransitionType.Sine)
+                .SetEase(Tween.EaseType.InOut);
+            await ToSignal(fadeOut, Tween.SignalName.Finished);
+        }
+        catch (System.Exception ex)
+        {
+            GD.PushError($"Door '{Name}': wrong-room feedback failed: {ex.Message}");
+        }
+        finally
+        {
+            if (layer != null && GodotObject.IsInstanceValid(layer))
+                layer.QueueFree();
+
+            if (clock != null && GodotObject.IsInstanceValid(clock))
+                clock.Running = previousClockRunning;
+
+            if (player != null && GodotObject.IsInstanceValid(player))
+            {
+                player.Velocity = Vector2.Zero;
+                player.ProcessMode = previousPlayerMode == ProcessModeEnum.Disabled
+                    ? ProcessModeEnum.Inherit
+                    : previousPlayerMode;
+                player.SetProcess(true);
+                player.SetPhysicsProcess(true);
+            }
+
+            _wrongRoomFeedbackRunning = false;
+            if (IsInsideTree() && _playerInside)
+                InteractionPromptManager.Instance?.ShowPrompt(this, $"[E] {Prompt}", 30);
+        }
     }
 }

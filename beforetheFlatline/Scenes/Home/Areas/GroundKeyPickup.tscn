@@ -1,33 +1,32 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://df7360cbmy43x"]
 
-[ext_resource type="Script" path="res://Scripts/Map/Home/GroundKeyPickup.cs" id="1_pickup"]
-[ext_resource type="Texture2D" path="res://Assets/Objects/Keys/roomKey.png" id="2_key_texture"]
+[ext_resource type="Script" uid="uid://b4pdeuc2hglbs" path="res://Scripts/Map/Home/GroundKeyPickup.cs" id="1_pickup"]
+[ext_resource type="Texture2D" uid="uid://s2e4tclp1qgy" path="res://Assets/Objects/Keys/keyLaundry.png" id="2_fwlli"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_key"]
-size = Vector2(20, 20)
 
-[node name="GroundKeyPickup" type="Area2D"]
+[node name="GroundKeyPickup" type="Area2D" unique_id=2056452452]
 collision_layer = 0
 collision_mask = 2
 script = ExtResource("1_pickup")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=775932196]
 z_index = 5
-texture = ExtResource("2_key_texture")
-scale = Vector2(0.35, 0.35)
+scale = Vector2(0.16499999, 0.16499999)
+texture = ExtResource("2_fwlli")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=700893720]
 shape = SubResource("RectangleShape2D_key")
 
-[node name="Prompt" type="Label" parent="."]
+[node name="Prompt" type="Label" parent="." unique_id=1111203534]
 visible = false
+z_index = 100
 offset_left = -48.0
 offset_top = -34.0
 offset_right = 48.0
 offset_bottom = -18.0
-z_index = 100
-horizontal_alignment = 1
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 3
 theme_override_font_sizes/font_size = 10
 text = "[E] Pick up key"
+horizontal_alignment = 1

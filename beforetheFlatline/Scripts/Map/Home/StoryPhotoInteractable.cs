@@ -8,8 +8,6 @@ public partial class StoryPhotoInteractable : Area2D
 
     private Sprite2D _sprite;
     private Sprite2D _glow;
-    private Label _prompt;
-    private CanvasLayer _promptLayer;
     private bool _playerInside;
     private double _elapsed;
     private bool _triggered;
@@ -29,42 +27,16 @@ public partial class StoryPhotoInteractable : Area2D
             return;
         }
 
-        _glow = WorldInteractableGlow.AddGlow(this, new Color("f8d98a"), 2.4f);
-
-        _promptLayer = new CanvasLayer
-        {
-            Name = "InteractionPromptLayer",
-            Layer = 105
-        };
-        AddChild(_promptLayer);
-
-        _prompt = new Label
-        {
-            Text = "[E] Examine photograph",
-            Visible = false,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            CustomMinimumSize = new Vector2(640, 48),
-            MouseFilter = Control.MouseFilterEnum.Ignore
-        };
-        _prompt.AnchorLeft = 0.5f;
-        _prompt.AnchorRight = 0.5f;
-        _prompt.AnchorTop = 1f;
-        _prompt.AnchorBottom = 1f;
-        _prompt.OffsetLeft = -320;
-        _prompt.OffsetRight = 320;
-        _prompt.OffsetTop = -106;
-        _prompt.OffsetBottom = -58;
-        _prompt.AddThemeFontSizeOverride("font_size", 18);
-        _prompt.AddThemeColorOverride("font_color", Colors.White);
-        _prompt.AddThemeColorOverride("font_outline_color", Colors.Black);
-        _prompt.AddThemeConstantOverride("outline_size", 4);
-        _promptLayer.AddChild(_prompt);
+        _glow = WorldInteractableGlow.AddGlow(this, new Color("f8d98a"), 3.3f);
 
         BodyEntered += OnBodyEntered;
         BodyExited += OnBodyExited;
         RefreshAvailability();
+    }
+
+    public override void _ExitTree()
+    {
+        InteractionPromptManager.Instance?.HidePrompt(this);
     }
 
     public override void _Process(double delta)
@@ -77,7 +49,7 @@ public partial class StoryPhotoInteractable : Area2D
         {
             if (Visible)
                 Visible = false;
-            _prompt.Visible = false;
+            InteractionPromptManager.Instance?.HidePrompt(this);
             Monitoring = false;
             _playerInside = false;
             return;
@@ -87,11 +59,16 @@ public partial class StoryPhotoInteractable : Area2D
             Visible = true;
         if (!Monitoring)
             Monitoring = true;
+
+        if (_playerInside)
+            InteractionPromptManager.Instance?.ShowPrompt(this, "[E] Examine photograph", 70);
     }
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (_triggered || !_playerInside || !@event.IsActionPressed("interact"))
+        if (_triggered || !_playerInside ||
+            (InteractionPromptManager.Instance != null && !InteractionPromptManager.Instance.IsPrimary(this)) ||
+            !@event.IsActionPressed("interact"))
             return;
 
         GetViewport().SetInputAsHandled();
@@ -103,8 +80,7 @@ public partial class StoryPhotoInteractable : Area2D
         bool available = StoryProgression.Instance?.CanTriggerMemory(MemoryId) == true;
         Visible = available;
         Monitoring = available;
-        if (_prompt != null)
-            _prompt.Visible = false;
+        InteractionPromptManager.Instance?.HidePrompt(this);
     }
 
     private void OnBodyEntered(Node2D body)
@@ -113,15 +89,13 @@ public partial class StoryPhotoInteractable : Area2D
             return;
 
         _playerInside = true;
-        _prompt.Text = "[E] Examine photograph";
-        _prompt.Visible = true;
+        InteractionPromptManager.Instance?.ShowPrompt(this, "[E] Examine photograph", 70);
     }
 
     private void OnBodyExited(Node2D body)
     {
         _playerInside = false;
-        if (_prompt != null)
-            _prompt.Visible = false;
+        InteractionPromptManager.Instance?.HidePrompt(this);
     }
 
     private void BeginMemory()
@@ -139,14 +113,19 @@ public partial class StoryPhotoInteractable : Area2D
 
         StoryCutsceneOverlay overlay = new();
         bool finalMemory = MemoryId.Equals("MasterBedroom", System.StringComparison.OrdinalIgnoreCase);
-        overlay.Configure(GetHeading(), BuildSlides(), () => CompleteMemory(finalMemory), finalMemory);
+        overlay.Configure(
+            GetMemoryHeading(MemoryId),
+            BuildMemoryBeats(MemoryId),
+            () => CompleteMemory(finalMemory),
+            finalMemory,
+            MemoryId);
         _triggered = true;
         _playerInside = false;
-        _prompt.Visible = false;
+        InteractionPromptManager.Instance?.HidePrompt(this);
         uiRoot.AddChild(overlay);
     }
 
-    private string GetHeading() => MemoryId switch
+    public static string GetMemoryHeading(string memoryId) => memoryId switch
     {
         "Kitchen" => "MEMORY FRAGMENT — THE KITCHEN",
         "Laundry" => "MEMORY FRAGMENT — THE LAUNDRY",
@@ -155,47 +134,159 @@ public partial class StoryPhotoInteractable : Area2D
         _ => "MEMORY FRAGMENT"
     };
 
-    private List<StoryCutsceneSlide> BuildSlides()
+    private List<StoryCutsceneBeat> BuildBeats() => BuildMemoryBeats(MemoryId);
+
+    public static List<StoryCutsceneBeat> BuildMemoryBeats(string memoryId)
     {
         const string kitchenImage = "res://Assets/Cutscenes/cutsceneKitcken.jpg";
         const string laundryImage = "res://Assets/Cutscenes/cutsceneLaundry.jpg";
         const string bathroomImage = "res://Assets/Cutscenes/cutsceneBathroomSink.jpg";
         const string toBedroomImage = "res://Assets/Cutscenes/cutsceneToMasterBedroom.jpg";
         const string bedroomImage = "res://Assets/Cutscenes/cutsceneMasterBedroom.jpg";
-        const string goodEndingImage = "res://Assets/Cutscenes/cutsceneGoodEnding.jpg";
+        const string goodEndingImageOne = "res://Assets/Cutscenes/cutsceneGoodEnding1.jpg";
+        const string goodEndingImageTwo = "res://Assets/Cutscenes/cutsceneGoodEnding2.jpg";
 
-        return MemoryId switch
+        return memoryId switch
         {
-            "Kitchen" => new List<StoryCutsceneSlide>
+            "Kitchen" => new List<StoryCutsceneBeat>
             {
-                new(kitchenImage, "Eat your food before you go to school today. You haven't been eating lately."),
-                new(kitchenImage, "The food tastes bland lately. I know I should eat, but I don't have an appetite."),
-                new(kitchenImage, "That felt familiar... and uncomfortable. Is this part of my memory? I feel dizzy.")
+                new(kitchenImage, new DialogueLine(
+                    "Memory",
+                    "Eat your food before you go to school today. You haven't been eating lately.",
+                    DialogueSide.Left),
+                    "dizziness"),
+                new(kitchenImage, new DialogueLine(
+                    "You",
+                    "I know. I'm just not hungry. Even sitting here feels harder than it should.",
+                    DialogueSide.Right,
+                    Choices: new[]
+                    {
+                        new DialogueChoice("I'll try to eat a little.", Goto: 2),
+                        new DialogueChoice("I can't. Even the smell feels wrong.", Goto: 3)
+                    })),
+                new(kitchenImage, new DialogueLine(
+                    "You",
+                    "A few bites. I can at least try that much.",
+                    DialogueSide.Right,
+                    Next: 4)),
+                new(kitchenImage, new DialogueLine(
+                    "You",
+                    "I can't force it. The smell turns my stomach, and I don't know why.",
+                    DialogueSide.Right,
+                    Next: 4),
+                    "nausea"),
+                new(kitchenImage, new DialogueLine(
+                    "Memory",
+                    "The food tastes bland lately. The kitchen is familiar, but something about it feels distant.",
+                    DialogueSide.Left),
+                    "nausea"),
+                new(kitchenImage, new DialogueLine(
+                    "You",
+                    "That felt familiar... and uncomfortable. Is this part of my memory? I feel dizzy.",
+                    DialogueSide.Right),
+                    "dizziness"),
+                new(kitchenImage, new DialogueLine(
+                    "You",
+                    "I need a moment to steady myself.",
+                    DialogueSide.Right))
             },
-            "Laundry" => new List<StoryCutsceneSlide>
+
+            "Laundry" => new List<StoryCutsceneBeat>
             {
-                new(laundryImage, "My uniform keeps spinning inside the washing machine. I don't want to go to school today."),
-                new(laundryImage, "The memory fades. I feel dizzy.")
+                new(laundryImage, new DialogueLine(
+                    "You",
+                    "My hands are starting to feel numb from washing my uniform daily.. I feel really tired. ",
+                    DialogueSide.Right),
+                    "dizziness"),
+                new(laundryImage, new DialogueLine(
+                    "You",
+                    "I don't want to go to school today.",
+                    DialogueSide.Right),
+                    "dizziness")
             },
-            "Bathroom" => new List<StoryCutsceneSlide>
+
+            "Bathroom" => new List<StoryCutsceneBeat>
             {
-                new(bathroomImage, "This is pointless. I just want to disappear."),
-                new(bathroomImage, "My friends and classmates seem to do better than me. I keep comparing myself to them."),
-                new(bathroomImage, "The pressure and panic come rushing back. I feel nauseous and dizzy.")
+                new(bathroomImage, new DialogueLine(
+                    "You",
+                    "This is pointless. I just want to disappear.",
+                    DialogueSide.Right),
+                    "pressure"),
+                new(bathroomImage, new DialogueLine(
+                    "You",
+                    "My friends and classmates seem to do better than me. They make everything look so easy.",
+                    DialogueSide.Right)),
+                new(bathroomImage, new DialogueLine(
+                    "You",
+                    "I keep comparing myself to them. No matter what I do, I feel like I'm falling behind.",
+                    DialogueSide.Right),
+                    "pressure"),
+                new(bathroomImage, new DialogueLine(
+                    "You",
+                    "The pressure and panic come rushing back. My thoughts won't slow down.",
+                    DialogueSide.Right),
+                    "panic"),
+                new(bathroomImage, new DialogueLine(
+                    "You",
+                    "I feel nauseous and dizzy. I can barely steady myself.",
+                    DialogueSide.Right),
+                    "nausea"),
+                new(bathroomImage, new DialogueLine(
+                    "Memory",
+                    "The room is quiet again, but the feeling does not disappear with the memory.",
+                    DialogueSide.Left))
             },
-            "MasterBedroom" => new List<StoryCutsceneSlide>
+
+            "MasterBedroom" => new List<StoryCutsceneBeat>
             {
-                new(toBedroomImage, "I need to talk to my parents. I need to ask them for help."),
-                new(toBedroomImage, "Every step toward the bedroom makes the pressure heavier. The bad thoughts keep building."),
-                new(bedroomImage, "I finally reach the bedroom, but I collapse before I can say anything."),
-                new("", ""),
-                new(goodEndingImage, "A steady heart-monitor beep fills the room. I slowly open my eyes."),
-                new(goodEndingImage, "My parents are beside me, their eyes full of tears. They thank the heavens that I finally woke up."),
-                new(goodEndingImage, "We hold each other. I burst into tears. I am not alone.")
+                new(toBedroomImage, new DialogueLine(
+                    "You",
+                    "I need to talk to my parents. I need to ask them for help.",
+                    DialogueSide.Right),
+                    "pressure"),
+                new(toBedroomImage, new DialogueLine(
+                    "You",
+                    "Every step toward the bedroom makes the pressure heavier. I keep trying to find the right words.",
+                    DialogueSide.Right),
+                    "pressure"),
+                new(toBedroomImage, new DialogueLine(
+                    "You",
+                    "The bad thoughts keep building. I know I need help, but I don't know how to say it.",
+                    DialogueSide.Right),
+                    "panic"),
+                new(bedroomImage, new DialogueLine(
+                    "You",
+                    "I finally reach the bedroom, but I collapse before I can say anything.",
+                    DialogueSide.Right),
+                    "blackout"),
+                new("", new DialogueLine(
+                    "You",
+                    "Everything goes quiet.",
+                    DialogueSide.Right),
+                    "blackout"),
+                new(goodEndingImageOne, new DialogueLine(
+                    "You",
+                    "A steady heart-monitor beep fills the room. I slowly open my eyes.",
+                    DialogueSide.Right),
+                    "relief"),
+                new(goodEndingImageOne, new DialogueLine(
+                    "Memory",
+                    "My parents are beside me, their eyes full of tears. They thank the heavens that I finally woke up.",
+                    DialogueSide.Left),
+                    "relief"),
+                new(goodEndingImageTwo, new DialogueLine(
+                    "You",
+                    "We hold each other. I burst into tears. I am not alone.",
+                    DialogueSide.Right),
+                    "relief")
             },
-            _ => new List<StoryCutsceneSlide>
+
+            _ => new List<StoryCutsceneBeat>
             {
-                new(kitchenImage, "A fragment of a memory returns.")
+                new(kitchenImage, new DialogueLine(
+                    "Memory",
+                    "A fragment of a memory returns.",
+                    DialogueSide.Left))
             }
         };
     }
@@ -212,9 +303,6 @@ public partial class StoryPhotoInteractable : Area2D
         if (!finalMemory)
         {
             ApplyMemoryEffect();
-            string newlyAvailableKey = RoomKeyProgression.Instance?.QueueAssessmentKey() ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(newlyAvailableKey))
-                GD.Print($"[StoryPhotoInteractable] The {newlyAvailableKey} key is now available in {RoomKeyProgression.Instance.GetPendingKeyLocationName()}.");
         }
         else
         {
@@ -225,10 +313,11 @@ public partial class StoryPhotoInteractable : Area2D
 
         if (finalMemory)
         {
+            const string briefingPath = "res://Scenes/Ending/GoodEndingBriefing.tscn";
             if (SceneTransition.Instance != null)
-                SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Menu/Main.tscn");
+                SceneTransition.Instance.ChangeSceneToFile(briefingPath, 1.25f);
             else
-                GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, "res://Scenes/Menu/Main.tscn");
+                GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, briefingPath);
         }
     }
 

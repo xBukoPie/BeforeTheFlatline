@@ -1,4 +1,5 @@
 using Godot;
+using System.Collections.Generic;
 using SchoolYardGame;
 
 public partial class TestResults : Control
@@ -25,91 +26,125 @@ public partial class TestResults : Control
             else
                 AudioManager.Instance?.PlayAssessmentFailed();
         }
-        if (DayClock.Instance != null) DayClock.Instance.MarkSchoolChallengeCompletedToday();
 
-        int correct = DailyTestSession.CorrectCount;
-        int score = DailyTestSession.Score;
+        DayClock.Instance?.MarkSchoolChallengeCompletedToday();
 
-        // Correct answers add hidden points. A key appears only when its quota and prior-memory gate are met.
+        // Keep the existing room-key progression, but record only newly appeared keys.
+        string newKeyReward = string.Empty;
         if (!alreadyFinalized)
         {
+            bool keyWasAlreadyWaiting = RoomKeyProgression.Instance?.HasPendingKey == true;
             string roomName = RoomKeyProgression.Instance?.QueueAssessmentKey() ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(roomName))
+            if (!keyWasAlreadyWaiting && !string.IsNullOrWhiteSpace(roomName))
             {
                 string location = RoomKeyProgression.Instance?.GetPendingKeyLocationName() ?? "the house";
-                DailyTestSession.QueueNotification($"KEY AVAILABLE: The {roomName} key is waiting in {location}. Find it to unlock the room.");
-            }
-            else if (RoomKeyProgression.Instance != null && RoomKeyProgression.Instance.TotalKeysEarned >= 4)
-            {
-                DailyTestSession.QueueNotification("All currently key-locked rooms have already been unlocked.");
+                newKeyReward = $"Key available: {roomName} (pickup in {location})";
             }
         }
 
-        _title.Text = _passed ? "ASSESSMENT PASSED" : "ASSESSMENT FAILED";
-        _title.AddThemeColorOverride("font_color", _passed ? new Color("86efac") : new Color("fca5a5"));
-        _summary.Text = $"{score} / {DailyTestSession.MaximumScore} points  •  {correct} / {DailyTestSession.QuestionCount} correct  •  Day {DailyTestSession.Day}";
-
-        var lines = new System.Collections.Generic.List<string>();
-        lines.Add($"ASSESSMENT SCORE: {score} / {DailyTestSession.MaximumScore} points. Each correct answer is worth {DailyTestSession.PointsPerCorrectAnswer} points.");
-        lines.Add(_passed
-            ? $"You reached the {DailyTestSession.MinimumPassingScore}-point passing requirement. The school day continues."
-            : $"You needed at least {DailyTestSession.MinimumPassingScore} points ({DailyTestSession.QuestionsNeededToPass} correct answers) to pass. Your focus has been affected.");
-
-        foreach (var result in DailyTestSession.Results)
-        {
-            int pointsEarned = result.Correct ? DailyTestSession.PointsPerCorrectAnswer : 0;
-            string outcome = result.GaveUp ? "GAVE UP" : result.Correct ? "CORRECT" : "INCORRECT";
-            lines.Add($"{result.ChallengeId.ToUpperInvariant()}: {outcome} (+{pointsEarned} points)");
-        }
-
-        foreach (string notification in DailyTestSession.PendingNotifications)
-            lines.Add(notification);
-
-        var keyProgression = RoomKeyProgression.Instance;
-        if (keyProgression != null)
-        {
-            string[] unlockedKeys = keyProgression.GetUnlockedRoomNames();
-            if (unlockedKeys.Length > 0)
-                lines.Add($"ROOMS UNLOCKED: {string.Join(", ", unlockedKeys)}.");
-
-            if (keyProgression.HasPendingKey)
-                lines.Add($"KEY WAITING IN {keyProgression.GetPendingKeyLocationName().ToUpperInvariant()}: {keyProgression.PendingKeyRoomName}. Find it to unlock the room.");
-            else if (keyProgression.TotalKeysEarned < 4)
-                lines.Add($"NEXT ROOM KEY: {keyProgression.NextRoomKeyName}. Keep completing assessments and finding memory photographs; the key will appear in {keyProgression.GetNextKeyLocationName()} when it is ready.");
-            else
-                lines.Add("All currently key-locked rooms have been unlocked.");
-        }
+        int score = DailyTestSession.Score;
+        int pointsReceived = DailyTestSession.PointsReceived;
+        int sanityChange = 0;
+        string appliedDebuff = string.Empty;
+        int appliedDebuffAmount = 0;
 
         if (_passed)
         {
-            SanityManager.Instance?.Recover(5);
-            StatusEffectsOverlay.Instance?.TriggerTaskPass();
-            lines.Add("Sanity recovered slightly. No new debuff was applied.");
+            if (!alreadyFinalized)
+            {
+                int beforeRecovery = SanityManager.Instance?.CurrentSanity ?? SanityManager.MaxSanity;
+                SanityManager.Instance?.Recover(5);
+                int afterRecovery = SanityManager.Instance?.CurrentSanity ?? beforeRecovery;
+                sanityChange = afterRecovery - beforeRecovery;
+                StatusEffectsOverlay.Instance?.TriggerTaskPass();
+            }
             _continueButton.Text = "Continue";
         }
         else
         {
             if (!alreadyFinalized && !DailyTestSession.FailurePenaltyApplied)
             {
-                int loss = Mathf.Clamp(34 + (DailyTestSession.Day - 1) * 3, 34, 46);
-                var type = NextDebuffType();
+                appliedDebuffAmount = Mathf.Clamp(34 + (DailyTestSession.Day - 1) * 3, 34, 46);
+                SanityManager.DebuffType type = NextDebuffType();
+                appliedDebuff = type.ToString();
                 SanityManager.Instance?.RegisterFailedTest();
-                SanityManager.Instance?.ApplyDebuff("failed_assessment", type, loss);
+                SanityManager.Instance?.ApplyDebuff("failed_assessment", type, appliedDebuffAmount);
                 DailyTestSession.MarkFailurePenaltyApplied();
-                StatusEffectsOverlay.Instance?.TriggerTaskFailure(loss, type.ToString());
-                lines.Add($"Sanity lost: {loss}. Debuff gained: {type}.");
-                lines.Add("The next assessment will be slightly harder.");
-            }
-            else
-            {
-                lines.Add("A debuff was already applied for this assessment.");
+                StatusEffectsOverlay.Instance?.TriggerTaskFailure(appliedDebuffAmount, appliedDebuff);
+                sanityChange = -appliedDebuffAmount;
             }
 
             _continueButton.Text = "Continue";
         }
 
-        _details.Text = string.Join("\n\n", lines);
+        int currentSanity = SanityManager.Instance?.CurrentSanity ?? SanityManager.MaxSanity;
+        _title.Text = _passed ? "ASSESSMENT PASSED" : "ASSESSMENT FAILED";
+        _title.AddThemeColorOverride("font_color", _passed
+            ? new Color("86efac")
+            : new Color("fca5a5"));
+
+        _summary.Text =
+            $"SCORE: {score} / {DailyTestSession.MaximumScore}\n" +
+            $"POINTS RECEIVED: {pointsReceived}\n" +
+            $"PASSING SCORE: {DailyTestSession.MinimumPassingScore}";
+
+        _details.Text = BuildSanitySummary(currentSanity);
         _details.AddThemeColorOverride("font_color", new Color("e2e8f0"));
+
+        if (!alreadyFinalized)
+        {
+            string rewardText = BuildRewardText(
+                sanityChange, appliedDebuff, appliedDebuffAmount, newKeyReward);
+            DailyTestSession.RecordHistory(
+                currentSanity,
+                appliedDebuff,
+                appliedDebuffAmount,
+                rewardText);
+            SaveManager.Instance?.RequestAutoSave();
+        }
+    }
+
+    private string BuildSanitySummary(int currentSanity)
+    {
+        var lines = new List<string>
+        {
+            $"SANITY: {currentSanity} / {SanityManager.MaxSanity}"
+        };
+
+        var penalties = new List<string>();
+        if (SanityManager.Instance != null)
+        {
+            foreach (SanityManager.DebuffType type in System.Enum.GetValues(typeof(SanityManager.DebuffType)))
+            {
+                int level = SanityManager.Instance.GetAssessmentPenaltyLevel(type);
+                if (level > 0)
+                    penalties.Add($"{type} ({level})");
+            }
+        }
+
+        lines.Add(penalties.Count == 0
+            ? "ASSESSMENT DEBUFF: None"
+            : $"ASSESSMENT DEBUFF: {string.Join(", ", penalties)}");
+
+        return string.Join("\n", lines);
+    }
+
+    private static string BuildRewardText(
+        int sanityChange, string debuffType, int debuffAmount, string keyReward)
+    {
+        var rewards = new List<string>();
+        if (sanityChange > 0)
+            rewards.Add($"Sanity +{sanityChange}");
+        else if (sanityChange < 0)
+            rewards.Add($"Sanity {sanityChange}");
+
+        if (debuffAmount > 0 && !string.IsNullOrWhiteSpace(debuffType))
+            rewards.Add($"{debuffType} assessment penalty ({debuffAmount})");
+
+        if (!string.IsNullOrWhiteSpace(keyReward))
+            rewards.Add(keyReward);
+
+        return rewards.Count > 0 ? string.Join("; ", rewards) : "No additional rewards or penalties";
     }
 
     private SanityManager.DebuffType NextDebuffType()
@@ -121,7 +156,11 @@ public partial class TestResults : Control
     private void BuildUi()
     {
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        var background = new ColorRect { Color = new Color("0b1020"), MouseFilter = Control.MouseFilterEnum.Ignore };
+        var background = new ColorRect
+        {
+            Color = new Color("0b1020"),
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
         background.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(background);
 
@@ -129,47 +168,74 @@ public partial class TestResults : Control
         center.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(center);
 
-        var panel = new PanelContainer { CustomMinimumSize = new Vector2(760, 580) };
+        var panel = new PanelContainer { CustomMinimumSize = new Vector2(720, 460) };
         panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color("172033"),
             BorderColor = new Color("46546e"),
-            BorderWidthLeft = 1, BorderWidthRight = 1, BorderWidthTop = 1, BorderWidthBottom = 1,
-            CornerRadiusTopLeft = 12, CornerRadiusTopRight = 12,
-            CornerRadiusBottomLeft = 12, CornerRadiusBottomRight = 12,
-            ContentMarginLeft = 32, ContentMarginRight = 32, ContentMarginTop = 28, ContentMarginBottom = 28
+            BorderWidthLeft = 1,
+            BorderWidthRight = 1,
+            BorderWidthTop = 1,
+            BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 12,
+            CornerRadiusTopRight = 12,
+            CornerRadiusBottomLeft = 12,
+            CornerRadiusBottomRight = 12,
+            ContentMarginLeft = 36,
+            ContentMarginRight = 36,
+            ContentMarginTop = 30,
+            ContentMarginBottom = 30
         });
         center.AddChild(panel);
 
         var stack = new VBoxContainer();
-        stack.AddThemeConstantOverride("separation", 14);
+        stack.AddThemeConstantOverride("separation", 18);
         panel.AddChild(stack);
 
-        var eyebrow = new Label { Text = "BEFORE THE FLATLINE  •  DAILY ASSESSMENT", HorizontalAlignment = HorizontalAlignment.Center };
+        var eyebrow = new Label
+        {
+            Text = "BEFORE THE FLATLINE  •  DAILY ASSESSMENT",
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
         eyebrow.AddThemeColorOverride("font_color", new Color("7dd3fc"));
         eyebrow.AddThemeFontSizeOverride("font_size", 13);
         stack.AddChild(eyebrow);
 
-        _title = new Label { Text = "ASSESSMENT", HorizontalAlignment = HorizontalAlignment.Center };
-        _title.AddThemeFontSizeOverride("font_size", 30);
+        _title = new Label
+        {
+            Text = "ASSESSMENT",
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        _title.AddThemeFontSizeOverride("font_size", 32);
         stack.AddChild(_title);
 
-        _summary = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-        _summary.AddThemeFontSizeOverride("font_size", 17);
+        _summary = new Label
+        {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        _summary.AddThemeFontSizeOverride("font_size", 22);
         _summary.AddThemeColorOverride("font_color", new Color("cbd5e1"));
         stack.AddChild(_summary);
 
-        var scroll = new ScrollContainer { SizeFlagsVertical = SizeFlags.ExpandFill, SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        stack.AddChild(scroll);
-        _details = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        _details.AddThemeFontSizeOverride("font_size", 15);
-        scroll.AddChild(_details);
+        _details = new Label
+        {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        _details.AddThemeFontSizeOverride("font_size", 18);
+        stack.AddChild(_details);
 
         var buttons = new HBoxContainer();
         buttons.AddThemeConstantOverride("separation", 10);
         stack.AddChild(buttons);
 
-        var retry = new Button { Text = "Retry Assessment", CustomMinimumSize = new Vector2(0, 48), SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        var retry = new Button
+        {
+            Text = "Retry Assessment",
+            CustomMinimumSize = new Vector2(0, 48),
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
         retry.Pressed += () =>
         {
             DailyTestSession.Reset();
@@ -180,7 +246,12 @@ public partial class TestResults : Control
         };
         buttons.AddChild(retry);
 
-        _continueButton = new Button { Text = "Continue", CustomMinimumSize = new Vector2(0, 48), SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        _continueButton = new Button
+        {
+            Text = "Continue",
+            CustomMinimumSize = new Vector2(0, 48),
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
         _continueButton.Pressed += () =>
         {
             if (SceneTransition.Instance != null)

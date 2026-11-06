@@ -1,10 +1,13 @@
 using Godot;
+using System;
 
 public partial class FlowchartSymbolControl : Control
 {
     [Export] public string BlockType { get; set; } = "Process";
     [Export] public string InitialText { get; set; } = "";
     private LineEdit _editor;
+
+    public event Action TextChanged;
 
     public string BlockText => _editor?.Text ?? InitialText;
 
@@ -30,6 +33,7 @@ public partial class FlowchartSymbolControl : Control
         };
         _editor.AddThemeColorOverride("font_color", Colors.White);
         _editor.AddThemeColorOverride("font_placeholder_color", new Color("cbd5e1"));
+        _editor.TextChanged += _ => TextChanged?.Invoke();
         AddChild(_editor);
         LayoutEditor();
     }

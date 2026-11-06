@@ -11,6 +11,10 @@ public partial class StatusEffectsOverlay : CanvasLayer
     private ColorRect _brightnessWash;
     private ColorRect _screenFx;
     private ColorRect _effectWash;
+    private CanvasLayer _vignetteLayer;
+    private TextureRect _vignetteOverlay;
+    private readonly HashSet<ulong> _vignetteOwners = new();
+    private float _vignetteAlpha;
     private ColorRect _pressureTop;
     private ColorRect _pressureBottom;
     private Label _noticeLabel;
@@ -45,8 +49,9 @@ public partial class StatusEffectsOverlay : CanvasLayer
         _rng.Randomize();
         _nextConfusionShuffle = _rng.RandfRange(2.5f, 5.5f);
         Layer = 100;
-        ProcessMode = ProcessModeEnum.Pausable;
+        ProcessMode = ProcessModeEnum.Always;
         BuildOverlay();
+        BuildVignetteOverlay();
 
         if (SanityManager.Instance != null)
         {
@@ -64,6 +69,7 @@ public partial class StatusEffectsOverlay : CanvasLayer
 
     public override void _ExitTree()
     {
+        _vignetteOwners.Clear();
         if (SanityManager.Instance != null)
         {
             SanityManager.Instance.OnSanityChanged -= OnSanityChanged;
@@ -96,8 +102,21 @@ public partial class StatusEffectsOverlay : CanvasLayer
             scenePath,
             "res://Scenes/Menu/Main.tscn",
             StringComparison.OrdinalIgnoreCase);
+        bool onEndingPresentation = IsEndingPresentationScene(scenePath);
+        if (onEndingPresentation)
+            _vignetteOwners.Clear();
         _mainMenuFade = Mathf.MoveToward(_mainMenuFade, onMainMenu ? 0f : 1f, dt / 1.25f);
         _pauseFade = Mathf.MoveToward(_pauseFade, _pauseMenuVisible ? 0f : 1f, dt / 0.18f);
+
+        float vignetteTarget = !onEndingPresentation && _vignetteOwners.Count > 0 ? 0.68f : 0f;
+        _vignetteAlpha = Mathf.MoveToward(_vignetteAlpha, vignetteTarget, dt * 2.4f);
+        if (_vignetteLayer != null && GodotObject.IsInstanceValid(_vignetteLayer))
+            _vignetteLayer.Visible = !onEndingPresentation;
+        if (_vignetteOverlay != null && GodotObject.IsInstanceValid(_vignetteOverlay))
+        {
+            _vignetteOverlay.Visible = !onEndingPresentation && _vignetteAlpha > 0.005f;
+            _vignetteOverlay.Modulate = new Color(1f, 1f, 1f, _vignetteAlpha);
+        }
 
         RefreshEffects();
     }
@@ -110,6 +129,50 @@ public partial class StatusEffectsOverlay : CanvasLayer
             _pauseFade = 0f;
 
         RefreshEffects();
+    }
+
+    public void SetCinematicVignette(Node owner, bool visible)
+    {
+        if (owner == null || !GodotObject.IsInstanceValid(owner))
+            return;
+
+        ulong id = owner.GetInstanceId();
+        if (visible)
+            _vignetteOwners.Add(id);
+        else
+            _vignetteOwners.Remove(id);
+    }
+
+    private void BuildVignetteOverlay()
+    {
+        Texture2D texture = GD.Load<Texture2D>("res://Assets/Effects/vignette.png");
+        if (texture == null)
+        {
+            GD.PushWarning("StatusEffectsOverlay: Assets/Effects/vignette.png could not be loaded.");
+            return;
+        }
+
+        // Keep the cinematic edge treatment above world art but below dialogue and interaction UI.
+        _vignetteLayer = new CanvasLayer
+        {
+            Name = "CinematicVignetteLayer",
+            Layer = 50
+        };
+        AddChild(_vignetteLayer);
+
+        _vignetteOverlay = new TextureRect
+        {
+            Name = "CinematicVignette",
+            Texture = texture,
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.Scale,
+            TextureFilter = CanvasItem.TextureFilterEnum.Linear,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            Modulate = new Color(1f, 1f, 1f, 0f),
+            Visible = false
+        };
+        _vignetteOverlay.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        _vignetteLayer.AddChild(_vignetteOverlay);
     }
 
     public void Notify(string message)
@@ -146,21 +209,51 @@ public partial class StatusEffectsOverlay : CanvasLayer
         RefreshEffects();
     }
 
-    // Fade the active effects away before loading the bad ending.
-    public async void FadeForBadEnding(string scenePath)
+    // Re-arm the ending transition when an existing save is loaded.
+    public void ResetForLoadedGame(int currentSanity)
     {
-        if (_endingTransitionStarted)
-            return;
+        _endingTransitionStarted = false;
+        _endingFade = 1f;
+        _pauseMenuVisible = false;
+        _pauseFade = 1f;
+        _sanity = Mathf.Clamp(currentSanity, 0, SanityManager.MaxSanity);
+        _flashTime = 0f;
+        _noticeTime = 0f;
+
+        if (_root != null && GodotObject.IsInstanceValid(_root))
+            _root.Modulate = Colors.White;
+        if (_noticeLabel != null && GodotObject.IsInstanceValid(_noticeLabel))
+            _noticeLabel.Visible = false;
+
+        RefreshEffects();
+    }
+
+    // Returns false when a fade cannot start, allowing SanityManager to use a direct scene transition.
+    public bool FadeForBadEnding(string scenePath)
+    {
+        if (_endingTransitionStarted || _root == null ||
+            !GodotObject.IsInstanceValid(_root) || string.IsNullOrWhiteSpace(scenePath))
+            return false;
 
         _endingTransitionStarted = true;
-        var tween = CreateTween();
+        RunBadEndingFade(scenePath);
+        return true;
+    }
+
+    private async void RunBadEndingFade(string scenePath)
+    {
+        // The bad-ending transition must complete even if another system paused the tree.
+        var tween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
         tween.TweenProperty(_root, "modulate:a", 0f, 1.6f)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
         await ToSignal(tween, Tween.SignalName.Finished);
 
+        if (!IsInsideTree())
+            return;
+
         if (SceneTransition.Instance != null)
-            SceneTransition.Instance.ChangeSceneToFile(scenePath);
+            SceneTransition.Instance.RequestCriticalSceneChange(scenePath);
         else
             GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, scenePath);
     }
@@ -367,7 +460,10 @@ void fragment() {
         int pressure = manager?.GetDebuffLevel(SanityManager.DebuffType.Pressure) ?? 0;
         int total = dizziness + confusion + anxiety + pressure;
 
-        float fade = Mathf.Clamp(_endingFade * _mainMenuFade * _pauseFade, 0f, 1f);
+        bool onEndingPresentation = IsEndingPresentationScene(
+            GetTree()?.CurrentScene?.SceneFilePath ?? string.Empty);
+        float fade = Mathf.Clamp(_endingFade * _mainMenuFade * _pauseFade *
+            (onEndingPresentation ? 0f : 1f), 0f, 1f);
         _root.Visible = fade > 0.005f;
         float wobble = Mathf.Clamp(dizziness / 55f, 0f, 1f) * 0.62f * fade;
         float staticStrength = Mathf.Clamp(anxiety / 38f, 0f, 1f) * fade;
@@ -387,7 +483,7 @@ void fragment() {
         }
 
         float pulse = (Mathf.Sin(_elapsed * (5.5f + pressure / 30f)) + 1f) * 0.5f;
-        _heart.Visible = pressure > 0 && _endingFade > 0.02f;
+        _heart.Visible = !onEndingPresentation && pressure > 0 && _endingFade > 0.02f;
         _heart.Scale = Vector2.One * (0.93f + pulse * (0.09f + pressureStrength * 0.08f));
         _heart.Modulate = new Color(1f, 1f, 1f,
             _heart.Visible ? (0.22f + pulse * 0.28f) * fade : 0f);
@@ -419,6 +515,11 @@ void fragment() {
         _pressureBottom.Visible = pressure > 0;
         _dominantDebuff = FindDominant(dizziness, confusion, anxiety, pressure);
     }
+
+    private static bool IsEndingPresentationScene(string scenePath) =>
+        string.Equals(scenePath, "res://Scenes/Ending/GoodEndingBriefing.tscn", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenePath, "res://Scenes/Ending/EndingCredits.tscn", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenePath, "res://Scenes/Ending/BadEnding.tscn", StringComparison.OrdinalIgnoreCase);
 
     private static SanityManager.DebuffType FindDominant(int d, int c, int a, int p)
     {
