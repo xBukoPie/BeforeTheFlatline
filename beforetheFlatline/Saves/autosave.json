@@ -13,7 +13,7 @@
 				"reward_text": "Key available: Kitchen (pickup in the front yard)",
 				"sanity_after": 100,
 				"score": 40,
-				"timestamp": "2026-11-05 19:01:02"
+				"timestamp": "2026-11-07 05:47:42"
 			},
 			{
 				"attempt": 1,
@@ -27,7 +27,7 @@
 				"reward_text": "Sanity +5; Key available: Laundry (pickup in the kitchen)",
 				"sanity_after": 99,
 				"score": 40,
-				"timestamp": "2026-11-05 19:01:55"
+				"timestamp": "2026-11-07 05:48:36"
 			},
 			{
 				"attempt": 1,
@@ -41,7 +41,7 @@
 				"reward_text": "Sanity +5; Key available: Bathroom (pickup in the laundry room)",
 				"sanity_after": 100,
 				"score": 40,
-				"timestamp": "2026-11-05 19:02:49"
+				"timestamp": "2026-11-07 05:49:36"
 			},
 			{
 				"attempt": 1,
@@ -55,52 +55,52 @@
 				"reward_text": "Sanity +5; Key available: MasterBedroom (pickup in the bathroom)",
 				"sanity_after": 93,
 				"score": 40,
-				"timestamp": "2026-11-05 19:03:38"
+				"timestamp": "2026-11-07 05:50:36"
 			}
 		]
 	},
 	"challenge_progress": {
 		"1": [
 			"final",
+			"sequence",
+			"flowchart",
+			"condition"
+		],
+		"2": [
+			"final",
 			"condition",
 			"flowchart",
 			"sequence"
 		],
-		"2": [
-			"condition",
-			"final",
-			"sequence",
-			"flowchart"
-		],
 		"3": [
 			"sequence",
+			"condition",
 			"flowchart",
-			"final",
-			"condition"
+			"final"
 		],
 		"4": [
-			"final",
 			"flowchart",
-			"sequence",
-			"condition"
+			"final",
+			"condition",
+			"sequence"
 		]
 	},
 	"clock_running": true,
 	"daily_house_activities": {
 		"bath_available": true,
-		"bath_used": true,
-		"bicycle_available": false,
+		"bath_used": false,
+		"bicycle_available": true,
 		"bicycle_used": false,
 		"tv_available": true,
 		"tv_used": false
 	},
 	"day": 4,
 	"first_day_special_greeting_pending": false,
-	"hour": 18.6109371185303,
+	"hour": 18.1769161224365,
 	"kind": "autosave",
 	"mystery_encounter_seen": true,
-	"player_x": 25.1666603088379,
-	"player_y": 28.5353527069092,
+	"player_x": 25.8951435089111,
+	"player_y": 27.6031761169434,
 	"room_keys": {
 		"bathroom_unlocked_day": 3,
 		"hidden_points": 460,
@@ -125,7 +125,7 @@
 			"Dizziness": 0,
 			"Pressure": 0
 		},
-		"current_sanity": 100,
+		"current_sanity": 98,
 		"debuffs": {
 			"Anxiety": 0,
 			"Confusion": 0,
@@ -141,7 +141,7 @@
 			"Pressure": 100
 		}
 	},
-	"saved_at": "2026-11-05 19:25:13",
+	"saved_at": "2026-11-07 05:51:13",
 	"scene_path": "res://Scenes/Home/Areas/World.tscn",
 	"school_completed": true,
 	"school_deadline_penalty_applied": false,
@@ -154,7 +154,13 @@
 		"classroom_greeter": "Jepoy",
 		"created": true,
 		"day": 4,
-		"entries": []
+		"entries": [
+			{
+				"name": "Mich",
+				"x": -190.0,
+				"y": -25.0
+			}
+		]
 	},
 	"school_started": true,
 	"slot": 0,
@@ -165,11 +171,7 @@
 			"Bathroom",
 			"MasterBedroom"
 		],
-		"guardian_stages_seen": [
-			1,
-			2,
-			3
-		],
+		"guardian_stages_seen": [],
 		"memory_choices": {}
 	},
 	"version": 1,
