@@ -8,7 +8,9 @@ public partial class EndingCredits : Control
     [Export]
     public string[] TeamMemberCredits { get; set; } = new[]
     {
-        "[Insert member name] — [Insert role]"
+        "Aniciete, Edward — Project Manager / Team Lead",
+        "Palaña, Chelzie Nicole — Game Design Handler",
+        "Guevarra, Dominique — Game Assets Handler"
     };
 
     public override void _Ready()
