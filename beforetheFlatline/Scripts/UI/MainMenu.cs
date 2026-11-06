@@ -160,6 +160,7 @@ public partial class MainMenu : Control
         ChallengeProgress.Reset();
         RoomKeyProgression.Instance?.ResetForNewRun();
         StoryProgression.Instance?.ResetForNewRun();
+        AudioManager.Instance?.ResetGoodEndingHeartbeat();
 
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
