@@ -20,6 +20,12 @@ public partial class EndingCredits : Control
             DayClock.Instance.Running = false;
 
         BuildUi();
+        AudioManager.Instance?.PlayGoodEnding2();
+    }
+
+    public override void _ExitTree()
+    {
+        AudioManager.Instance?.FadeOutGoodEnding2(0.75);
     }
 
     private void BuildUi()
