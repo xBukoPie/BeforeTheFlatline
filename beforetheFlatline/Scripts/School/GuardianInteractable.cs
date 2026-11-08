@@ -240,35 +240,33 @@ public partial class GuardianInteractable : Node2D
 
     private static IReadOnlyList<DialogueLine> BuildLines(int stage, bool mandatory)
     {
-        var lines = new List<DialogueLine>();
-
+        // A forced conversation is a separate route: it acknowledges the attempted
+        // shortcut and delivers the stage message without replaying normal choices.
         if (mandatory)
-        {
-            lines.Add(new DialogueLine(
-                "...",
-                "Hey now, don't go trying to shrug me off or something, would ya?",
-                DialogueSide.Right));
-            lines.Add(new DialogueLine(
-                "...",
-                "What I'm telling you is important, ya know? I'm trying to help you...",
-                DialogueSide.Right));
-        }
+            return BuildShortcutLines(stage);
+
+        var lines = new List<DialogueLine>();
 
         if (stage == 1)
         {
             lines.Add(new DialogueLine("...", "Oh, you're finally here.", DialogueSide.Right));
             lines.Add(new DialogueLine("...", "I'm glad you're starting to remember some of your memories.", DialogueSide.Right));
+            
+            int falseRealityReply = lines.Count + 1;
+            int explanationReply = lines.Count + 2;
+            int sharedFollowUp = lines.Count + 3;
+
             lines.Add(new DialogueLine(
                 "...",
                 "I was starting to think you were going to lose yourself in this false reality.",
                 DialogueSide.Right,
                 Choices: new[]
                 {
-                    new DialogueChoice("False reality?", Goto: 3),
-                    new DialogueChoice("What are you talking about?", Goto: 4)
+                    new DialogueChoice("False reality?", Goto: falseRealityReply),
+                    new DialogueChoice("What are you talking about?", Goto: explanationReply)
                 }));
-            lines.Add(new DialogueLine("You", "False reality?", DialogueSide.Left, Next: 5));
-            lines.Add(new DialogueLine("You", "What are you talking about?", DialogueSide.Left, Next: 5));
+            lines.Add(new DialogueLine("You", "False reality?", DialogueSide.Left, Next: sharedFollowUp));
+            lines.Add(new DialogueLine("You", "What are you talking about?", DialogueSide.Left, Next: sharedFollowUp));
             lines.Add(new DialogueLine("...", "Hm? Don't mind me. Class is starting soon, you better get going now.", DialogueSide.Right));
             lines.Add(new DialogueLine("...", "Don't forget to eat well. It might not seem like it, but a lot of people care about you, including me.", DialogueSide.Right));
         }
@@ -276,15 +274,18 @@ public partial class GuardianInteractable : Node2D
         {
             lines.Add(new DialogueLine("...", "You're here early.", DialogueSide.Right));
             lines.Add(new DialogueLine("...", "You're one step closer to finding the truth.", DialogueSide.Right));
+
+            int responseIndex = lines.Count + 1;
+            int farewellIndex = lines.Count + 2;
             lines.Add(new DialogueLine(
                 "...",
                 "When the time comes, I want you to face it bravely. Okay?",
                 DialogueSide.Right,
                 Choices: new[]
                 {
-                    new DialogueChoice("Okay...", Goto: 3)
+                    new DialogueChoice("Okay...", Goto: responseIndex)
                 }));
-            lines.Add(new DialogueLine("You", "Okay...", DialogueSide.Left));
+            lines.Add(new DialogueLine("You", "Okay...", DialogueSide.Left, Next: farewellIndex));
             lines.Add(new DialogueLine("...", "Class is starting... *sigh* I'll see you around.", DialogueSide.Right));
         }
         else if (stage == 3)
@@ -294,6 +295,35 @@ public partial class GuardianInteractable : Node2D
             lines.Add(new DialogueLine("...", "It feels easier to just swim down and let the currents sweep you away.", DialogueSide.Right));
             lines.Add(new DialogueLine("...", "But you're almost there...", DialogueSide.Right));
             lines.Add(new DialogueLine("...", "If you keep going, I promise you'll overcome it and this will all be over soon.", DialogueSide.Right));
+        }
+
+        return lines;
+    }
+
+    private static IReadOnlyList<DialogueLine> BuildShortcutLines(int stage)
+    {
+        var lines = new List<DialogueLine>();
+
+        if (stage == 1)
+        {
+            lines.Add(new DialogueLine("...", "Heading straight for class? I won't keep you long.", DialogueSide.Right));
+            lines.Add(new DialogueLine("...", "Those photographs you've found are pieces of your own memories. Don't dismiss what they bring back, even when it feels strange.", DialogueSide.Right));
+            lines.Add(new DialogueLine("...", "This place may feel familiar, but that doesn't mean everything here is as it seems.", DialogueSide.Right));
+            lines.Add(new DialogueLine("...", "Go on. Just keep looking for the truth, alright?", DialogueSide.Right));
+        }
+        else if (stage == 2)
+        {
+            lines.Add(new DialogueLine("...", "Trying to slip past me? Alright, I'll be brief.", DialogueSide.Right));
+            lines.Add(new DialogueLine("...", "You're closer to the truth now. Don't let the next part scare you into turning away.", DialogueSide.Right));
+            lines.Add(new DialogueLine("...", "When the time comes, face what you remember. You don't have to understand it all at once.", DialogueSide.Right));
+            lines.Add(new DialogueLine("...", "That's all. Go on before you're late.", DialogueSide.Right));
+        }
+        else if (stage == 3)
+        {
+            lines.Add(new DialogueLine("...", "You're in a hurry... but wait just a moment.", DialogueSide.Right));
+            lines.Add(new DialogueLine("...", "I can see how heavy this has become. The pressure can make it feel like there's no way forward.", DialogueSide.Right));
+            lines.Add(new DialogueLine("...", "Don't mistake that feeling for the truth. You're almost there. Keep going, and let someone help when you need it.", DialogueSide.Right));
+            lines.Add(new DialogueLine("...", "Now, go. I'll be here.", DialogueSide.Right));
         }
 
         return lines;
