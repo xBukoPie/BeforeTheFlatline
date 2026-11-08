@@ -44,10 +44,18 @@ if ([System.IO.Path]::GetExtension($GodotPath) -ne ".exe") {
 }
 
 # The setup-godot CI action exposes an extensionless symlink; locate the real editor binary.
+if ([System.IO.Path]::GetExtension($GodotPath) -eq ".exe" -and
+    $GodotPath -notmatch "_console\.exe$") {
+    $consoleCandidate = Join-Path (Split-Path -Parent $GodotPath) (([System.IO.Path]::GetFileNameWithoutExtension($GodotPath)) + "_console.exe")
+    if (Test-Path -LiteralPath $consoleCandidate -PathType Leaf) {
+        $GodotPath = $consoleCandidate
+    }
+}
+
 if ([System.IO.Path]::GetExtension($GodotPath) -ne ".exe") {
     $GodotInstallRoot = Join-Path $env:USERPROFILE "godot"
     if (Test-Path -LiteralPath $GodotInstallRoot -PathType Container) {
-        $GodotExecutable = Get-ChildItem -LiteralPath $GodotInstallRoot -Filter "Godot_v*_mono_win64.exe" -Recurse -File -ErrorAction SilentlyContinue |
+        $GodotExecutable = Get-ChildItem -LiteralPath $GodotInstallRoot -Filter "Godot_v*_mono_win64_console.exe" -Recurse -File -ErrorAction SilentlyContinue |
             Select-Object -First 1
         if ($null -ne $GodotExecutable) {
             $GodotPath = $GodotExecutable.FullName
