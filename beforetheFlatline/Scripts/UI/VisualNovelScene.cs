@@ -84,6 +84,8 @@ public partial class VisualNovelScene : Control
 
     public override void _Ready()
     {
+        InteractionPromptManager.Instance?.SetPromptsSuppressed(this, true);
+
         // Memory dialogue is displayed while the world tree is paused.
         // Explicit Always mode keeps typewriter tweens and dialogue processing alive.
         if (!AllowPauseMenu)
@@ -156,6 +158,7 @@ public partial class VisualNovelScene : Control
 
     public override void _ExitTree()
     {
+        InteractionPromptManager.Instance?.SetPromptsSuppressed(this, false);
         VisibilityChanged -= OnVisibilityChanged;
         // Prevent a local dialogue pause from leaving the global status overlay hidden after this scene closes.
         StatusEffectsOverlay.Instance?.SetPauseMenuVisible(false);
