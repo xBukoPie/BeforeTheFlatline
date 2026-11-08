@@ -2,9 +2,29 @@ using Godot;
 
 public partial class Room : Node2D
 {
+	public const int BackgroundZIndex = -100;
+	public const int PlayerZIndex = 0;
+	public const int ObjectBehindPlayerZIndex = -1;
+	public const int ObjectInFrontOfPlayerZIndex = 1;
+	public const uint WorldLightMask = 1;
+
 	[Export] public string RoomName { get; set; } = "";
 	[Export] public bool Outdoor { get; set; } = false;      // outdoor rooms get sunlight and night-only lamps
 	[Export] public float CameraZoom { get; set; } = 2.5f;
+
+	public override void _Ready()
+	{
+		// Direct room sprites are painted backdrops; keep them below movable world objects.
+		foreach (Node child in GetChildren())
+		{
+			if (child is not Sprite2D sprite)
+				continue;
+
+			sprite.ZAsRelative = true;
+			sprite.ZIndex = BackgroundZIndex;
+			sprite.LightMask = WorldLightMask;
+		}
+	}
 
 	public Rect2 GetBounds()
 	{
