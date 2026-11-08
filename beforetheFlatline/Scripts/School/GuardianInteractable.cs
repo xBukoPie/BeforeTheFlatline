@@ -1,4 +1,5 @@
 using Godot;
+using System;
 using System.Collections.Generic;
 using SchoolYardGame;
 
@@ -19,10 +20,12 @@ public partial class GuardianInteractable : Node2D
     private bool _previousClockRunning;
     private VisualNovelScene _dialogue;
     private CanvasLayer _dialogueLayer;
+    private Action _afterConversation;
 
     public override void _Ready()
     {
         Name = "Guardian";
+        AddToGroup("guardian_interactable");
         BuildMysteriousPersonModel();
 
         Node roomManager = GetTree().GetFirstNodeInGroup("room_manager");
@@ -75,12 +78,13 @@ public partial class GuardianInteractable : Node2D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (!_isAvailable || !_playerInside || _conversationOpen ||
-            !@event.IsActionPressed("interact"))
+        if (!_isAvailable || !_playerInside || _conversationOpen)
             return;
 
-        if (InteractionPromptManager.Instance != null &&
-            !InteractionPromptManager.Instance.IsPrimary(this))
+        bool inputMatches = InteractionPromptManager.Instance != null
+            ? InteractionPromptManager.Instance.IsInputFor(this, @event)
+            : @event.IsActionPressed("interact");
+        if (!inputMatches)
             return;
 
         GetViewport().SetInputAsHandled();
@@ -176,17 +180,34 @@ public partial class GuardianInteractable : Node2D
         InteractionPromptManager.Instance?.HidePrompt(this);
     }
 
-    private void BeginConversation()
+    public bool TryBeginMandatoryConversation(Action afterConversation)
+    {
+        int stage = GetAvailableStage();
+        if (stage == 0 || _conversationOpen)
+            return false;
+
+        _activeStage = stage;
+        _isAvailable = true;
+        Visible = true;
+        if (_talkArea != null && GodotObject.IsInstanceValid(_talkArea))
+            _talkArea.Monitoring = true;
+
+        return BeginConversation(true, afterConversation);
+    }
+
+    private bool BeginConversation(bool mandatory = false, Action afterConversation = null)
     {
         if (_activeStage == 0 || _conversationOpen)
-            return;
+            return false;
 
         PackedScene scene = GD.Load<PackedScene>(DialogueScenePath);
         if (scene == null)
         {
             GD.PushError("Guardian: VisualNovelScene.tscn could not be loaded.");
-            return;
+            return false;
         }
+
+        _afterConversation = afterConversation;
 
         _conversationOpen = true;
         InteractionPromptManager.Instance?.HidePrompt(this);
@@ -213,12 +234,25 @@ public partial class GuardianInteractable : Node2D
         _dialogue.SetPortrait(DialogueSide.Left, null);
         _dialogue.SetPortrait(DialogueSide.Right, GD.Load<Texture2D>(PortraitPath));
         _dialogue.DialogueFinished += OnDialogueFinished;
-        _dialogue.StartDialogue(BuildLines(_activeStage));
+        _dialogue.StartDialogue(BuildLines(_activeStage, mandatory));
+        return true;
     }
 
-    private static IReadOnlyList<DialogueLine> BuildLines(int stage)
+    private static IReadOnlyList<DialogueLine> BuildLines(int stage, bool mandatory)
     {
         var lines = new List<DialogueLine>();
+
+        if (mandatory)
+        {
+            lines.Add(new DialogueLine(
+                "...",
+                "Hey now, don't go trying to shrug me off or something, would ya?",
+                DialogueSide.Right));
+            lines.Add(new DialogueLine(
+                "...",
+                "What I'm telling you is important, ya know? I'm trying to help you...",
+                DialogueSide.Right));
+        }
 
         if (stage == 1)
         {
@@ -283,6 +317,10 @@ public partial class GuardianInteractable : Node2D
 
         RestorePlayer();
         RefreshAvailability();
+
+        Action continueAction = _afterConversation;
+        _afterConversation = null;
+        continueAction?.Invoke();
     }
 
     private void FreezePlayer()
