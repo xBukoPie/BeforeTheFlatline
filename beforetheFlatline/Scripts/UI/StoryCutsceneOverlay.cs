@@ -344,7 +344,7 @@ void fragment()
         }
         _dialogue.PlayDemoOnReady = false;
         _dialogue.LoopDemo = false;
-        _dialogue.BeforeLinePresentationAsync = null;
+        _dialogue.BeforeLinePresentationAsync = PrepareEndingDialogueBeatAsync;
         _dialogue.LinePresented += OnLinePresented;
         _dialogue.ChoiceSelectedAtLine += OnChoiceSelectedAtLine;
         _dialogue.DialogueFinished += OnDialogueFinished;
@@ -365,6 +365,66 @@ void fragment()
         _dialogue.StartDialogue(lines);
     }
 
+    private async Task PrepareEndingDialogueBeatAsync(int index, DialogueLine line)
+    {
+        if (!_isEnding || _finished)
+            return;
+
+        const string goodEndingImageOne = "res://Assets/Cutscenes/cutsceneGoodEnding1.jpg";
+        const string goodEndingImageTwo = "res://Assets/Cutscenes/cutsceneGoodEnding2.jpg";
+
+        if (index == 5)
+            await TransitionEndingArtworkAsync(goodEndingImageOne, playHeartbeat: true);
+        else if (index == 7)
+            await TransitionEndingArtworkAsync(goodEndingImageTwo, playHeartbeat: false);
+    }
+
+    private async Task TransitionEndingArtworkAsync(string imagePath, bool playHeartbeat)
+    {
+        if (_finished || !IsInsideTree() ||
+            _transitionCover == null || !GodotObject.IsInstanceValid(_transitionCover) ||
+            _art == null || !GodotObject.IsInstanceValid(_art))
+            return;
+
+        if (_masterBedroomBeatTween != null && _masterBedroomBeatTween.IsValid())
+            _masterBedroomBeatTween.Kill();
+        if (_artTween != null && _artTween.IsValid())
+            _artTween.Kill();
+
+        _dialogue?.SetMemoryTransitionBlocked(true);
+        _transitionCover.Visible = true;
+        _transitionText.Visible = false;
+        _transitionRoot.MoveChild(_transitionCover, _transitionRoot.GetChildCount() - 1);
+        _transitionCover.Modulate = new Color(1f, 1f, 1f, 0f);
+
+        Tween coverIn = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        coverIn.TweenProperty(_transitionCover, "modulate:a", 1f, 0.62f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(coverIn, Tween.SignalName.Finished);
+
+        if (_finished || !IsInsideTree())
+            return;
+
+        // Swap the hospital artwork only while the screen is fully covered.
+        SetArtworkImmediately(imagePath);
+
+        if (playHeartbeat)
+            AudioManager.Instance?.PlayGoodEndingHeartbeat(2.15);
+
+        Tween reveal = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        reveal.TweenProperty(_transitionCover, "modulate:a", 0f, playHeartbeat ? 2.15f : 1.05f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(reveal, Tween.SignalName.Finished);
+
+        if (_finished || !IsInsideTree())
+            return;
+
+        _transitionCover.Visible = false;
+        _dialogue?.SetMemoryTransitionBlocked(false);
+    }
+
     private void OnChoiceSelectedAtLine(int lineIndex, int choiceIndex)
     {
         if (string.IsNullOrWhiteSpace(_memoryId) || StoryProgression.Instance == null)
@@ -383,16 +443,6 @@ void fragment()
 
         StoryCutsceneBeat beat = _beats[index];
         GD.Print($"[StoryCutsceneOverlay] Beat {index + 1}/{_beats.Count}: {beat.Dialogue.Speaker} [{beat.EffectCue}]");
-
-        if (_isEnding &&
-            beat.Dialogue.Text.Contains("heart-monitor", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!_goodEndingHeartbeatStarted)
-            {
-                _goodEndingHeartbeatStarted = true;
-                AudioManager.Instance?.PlayGoodEndingHeartbeat();
-            }
-        }
 
         bool collapseCue =
             string.Equals(beat.EffectCue, "blackout", StringComparison.OrdinalIgnoreCase) ||
