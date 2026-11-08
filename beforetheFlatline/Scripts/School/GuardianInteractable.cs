@@ -19,6 +19,7 @@ public partial class GuardianInteractable : Node2D
     private ProcessModeEnum _previousPlayerMode;
     private bool _previousClockRunning;
     private bool _playerModeCaptured;
+    private bool _roomHandoffStarted;
     private bool _finishStarted;
     private int _conversationStage;
     private VisualNovelScene _dialogue;
@@ -107,7 +108,10 @@ public partial class GuardianInteractable : Node2D
             _dialogue.DialogueFinished -= OnDialogueFinished;
 
         _afterConversation = null;
-        RestorePlayer();
+        if (_roomHandoffStarted)
+            _playerModeCaptured = false; // RoomManager owns the player's transition lock.
+        else
+            RestorePlayer();
 
         // If the interaction was interrupted by an unrelated scene exit,
         // never leave the global screen fade locked over the next scene.
@@ -233,6 +237,7 @@ public partial class GuardianInteractable : Node2D
         _dialogue = null;
         _dialogueLayer = null;
         _finishStarted = false;
+        _roomHandoffStarted = false;
         _conversationStage = stage;
         _activeStage = stage;
         _afterConversation = afterConversation;
@@ -465,13 +470,16 @@ public partial class GuardianInteractable : Node2D
 
         RefreshAvailability();
 
-        // The door continuation starts RoomManager.GoTo synchronously. Keep the
-        // global fade closed until that room transition has completed.
-        continueAction?.Invoke();
-
+        // The door continuation starts RoomManager.GoTo synchronously. Once it
+        // owns the transition, do not restore the player's process mode ourselves.
         RoomManager roomManager = tree.GetFirstNodeInGroup("room_manager") as RoomManager;
-        if (continueAction != null && roomManager != null)
+        continueAction?.Invoke();
+        _roomHandoffStarted = continueAction != null &&
+            roomManager != null && roomManager.IsRoomTransitionBusy;
+
+        if (_roomHandoffStarted)
         {
+            _playerModeCaptured = false;
             while (roomManager.IsRoomTransitionBusy)
                 await ToSignal(tree, SceneTree.SignalName.ProcessFrame);
         }
@@ -479,7 +487,8 @@ public partial class GuardianInteractable : Node2D
         if (DayClock.Instance != null)
             DayClock.Instance.Running = _previousClockRunning;
 
-        RestorePlayer();
+        if (!_roomHandoffStarted)
+            RestorePlayer();
 
         if (covered && GodotObject.IsInstanceValid(transition))
             await transition.FadeFromBlackForOverlayAsync(0.36f);
