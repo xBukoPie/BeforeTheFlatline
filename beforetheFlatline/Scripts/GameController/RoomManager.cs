@@ -47,6 +47,7 @@ public partial class RoomManager : Node2D
     private ColorRect _fade;
     private Room _room;
     private bool _busy;
+    public bool IsRoomTransitionBusy => _busy;
     private float _currentDaylight = 1f;
     private bool _hasLightingSample;
 
