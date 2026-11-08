@@ -42,6 +42,7 @@ public partial class AudioManager : Node
     private int _goodEnding1RequestId;
     private AudioStreamPlayer _goodEndingHeartbeatPlayer;
     private AudioStream _goodEndingHeartbeatStream;
+    private Tween _goodEndingHeartbeatTween;
     private bool _goodEndingHeartbeatStarted;
     private bool _goodEndingHeartbeatFading;
 
@@ -334,7 +335,7 @@ public partial class AudioManager : Node
         _sadEndingPlayer = PlaySoundEffect("Ending/sadEnding.mp3", -3f);
     }
 
-    public double PlayGoodEndingHeartbeat()
+    public double PlayGoodEndingHeartbeat(double fadeInDuration = 2.0)
     {
         if (_goodEndingHeartbeatPlayer != null &&
             GodotObject.IsInstanceValid(_goodEndingHeartbeatPlayer) &&
@@ -356,17 +357,27 @@ public partial class AudioManager : Node
                 Name = "GoodEndingHeartbeatPlayer",
                 ProcessMode = ProcessModeEnum.Always,
                 Bus = EffectsBusName,
-                VolumeDb = 0f
+                VolumeDb = MusicSilentDb
             };
             AddChild(_goodEndingHeartbeatPlayer);
         }
 
+        if (_goodEndingHeartbeatTween != null && _goodEndingHeartbeatTween.IsValid())
+            _goodEndingHeartbeatTween.Kill();
+
         _goodEndingHeartbeatPlayer.Stream = _goodEndingHeartbeatStream;
-        _goodEndingHeartbeatPlayer.VolumeDb = 0f;
+        _goodEndingHeartbeatPlayer.VolumeDb = MusicSilentDb;
         _goodEndingHeartbeatPlayer.Play();
         _goodEndingHeartbeatStarted = true;
         _goodEndingHeartbeatFading = false;
-        GD.Print("[AudioManager] Good-ending heartbeat started.");
+
+        _goodEndingHeartbeatTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        _goodEndingHeartbeatTween.TweenProperty(
+            _goodEndingHeartbeatPlayer, "volume_db", -1f, Math.Max(0.1, fadeInDuration))
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+
+        GD.Print("[AudioManager] Good-ending heartbeat fade-in started.");
         return _goodEndingHeartbeatStream.GetLength();
     }
 
@@ -376,6 +387,9 @@ public partial class AudioManager : Node
             GodotObject.IsInstanceValid(_goodEndingHeartbeatPlayer))
             _goodEndingHeartbeatPlayer.Stop();
 
+        if (_goodEndingHeartbeatTween != null && _goodEndingHeartbeatTween.IsValid())
+            _goodEndingHeartbeatTween.Kill();
+        _goodEndingHeartbeatTween = null;
         _goodEndingHeartbeatStarted = false;
         _goodEndingHeartbeatFading = false;
     }
@@ -410,7 +424,11 @@ public partial class AudioManager : Node
             return;
 
         _goodEndingHeartbeatFading = true;
+        if (_goodEndingHeartbeatTween != null && _goodEndingHeartbeatTween.IsValid())
+            _goodEndingHeartbeatTween.Kill();
+
         Tween tween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        _goodEndingHeartbeatTween = tween;
         tween.TweenProperty(player, "volume_db", MusicSilentDb, Math.Max(0.1, duration))
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
@@ -418,6 +436,9 @@ public partial class AudioManager : Node
 
         if (GodotObject.IsInstanceValid(player))
             player.Stop();
+
+        if (_goodEndingHeartbeatTween == tween)
+            _goodEndingHeartbeatTween = null;
     }
 
     public double PlayGameOver()
