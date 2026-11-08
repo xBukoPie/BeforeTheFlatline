@@ -9,13 +9,19 @@ public partial class InteractionPromptManager : Node
 
     private sealed record PromptEntry(ulong OwnerId, string Text, int Priority, long Order);
 
+    private static readonly string[] InputActions = { "interact", "interact_alt", "interact_alt2" };
+    private static readonly string[] InputLabels = { "E", "F", "G" };
+    private static readonly Key[] InputKeys = { Key.E, Key.F, Key.G };
+
     private readonly Dictionary<ulong, PromptEntry> _prompts = new();
+    private readonly HashSet<ulong> _suppressedOwners = new();
     private CanvasLayer _layer;
     private Control _root;
     private VBoxContainer _stack;
     private long _order;
     private string _noticeText = string.Empty;
     private float _noticeRemaining;
+    private bool _lastSuppressedState;
 
     public override void _Ready()
     {
@@ -27,25 +33,36 @@ public partial class InteractionPromptManager : Node
 
         Instance = this;
         ProcessMode = ProcessModeEnum.Always;
+        EnsureInputActions();
         BuildUi();
+        RefreshPrompts();
     }
 
     public override void _Process(double delta)
     {
-        if (_noticeRemaining <= 0f)
-            return;
-
-        _noticeRemaining = Mathf.Max(0f, _noticeRemaining - (float)delta);
-        if (_noticeRemaining <= 0f)
+        bool suppressed = ShouldSuppressPrompts();
+        if (suppressed != _lastSuppressedState)
         {
-            _noticeText = string.Empty;
-            RefreshPrompts();
+            _lastSuppressedState = suppressed;
+            if (_root != null && GodotObject.IsInstanceValid(_root))
+                _root.Visible = !suppressed;
+        }
+
+        if (_noticeRemaining > 0f)
+        {
+            _noticeRemaining = Mathf.Max(0f, _noticeRemaining - (float)delta);
+            if (_noticeRemaining <= 0f)
+            {
+                _noticeText = string.Empty;
+                RefreshPrompts();
+            }
         }
     }
 
     public override void _ExitTree()
     {
         _prompts.Clear();
+        _suppressedOwners.Clear();
         if (Instance == this)
             Instance = null;
     }
@@ -85,23 +102,102 @@ public partial class InteractionPromptManager : Node
         RefreshPrompts();
     }
 
-    public bool IsPrimary(Node owner)
+    public void SetPromptsSuppressed(Node owner, bool suppressed)
     {
         if (owner == null || !GodotObject.IsInstanceValid(owner))
+            return;
+
+        ulong id = owner.GetInstanceId();
+        bool changed = suppressed ? _suppressedOwners.Add(id) : _suppressedOwners.Remove(id);
+        if (changed)
+            RefreshPrompts();
+    }
+
+    public bool IsInputFor(Node owner, InputEvent @event)
+    {
+        if (owner == null || !GodotObject.IsInstanceValid(owner) || @event == null)
             return false;
 
-        PromptEntry primary = GetOrderedPrompts().FirstOrDefault();
-        return primary != null && primary.OwnerId == owner.GetInstanceId();
+        string action = GetAssignedAction(owner);
+        return !string.IsNullOrWhiteSpace(action) && @event.IsActionPressed(action);
     }
+
+    public string GetAssignedAction(Node owner)
+    {
+        if (owner == null || !GodotObject.IsInstanceValid(owner))
+            return string.Empty;
+
+        int slot = GetPromptSlot(owner.GetInstanceId());
+        return slot >= 0 && slot < InputActions.Length
+            ? InputActions[slot]
+            : string.Empty;
+    }
+
+    public string GetAssignedKeyLabel(Node owner)
+    {
+        if (owner == null || !GodotObject.IsInstanceValid(owner))
+            return string.Empty;
+
+        int slot = GetPromptSlot(owner.GetInstanceId());
+        return slot >= 0 && slot < InputLabels.Length
+            ? InputLabels[slot]
+            : string.Empty;
+    }
+
+    // Kept for scripts that only need to check which prompt currently has E.
+    public bool IsPrimary(Node owner) =>
+        owner != null && GodotObject.IsInstanceValid(owner) &&
+        GetPromptSlot(owner.GetInstanceId()) == 0;
 
     public bool HasPrompt(Node owner) =>
         owner != null && GodotObject.IsInstanceValid(owner) &&
         _prompts.ContainsKey(owner.GetInstanceId());
 
+    private int GetPromptSlot(ulong ownerId)
+    {
+        int slot = 0;
+        foreach (PromptEntry entry in GetOrderedPrompts())
+        {
+            if (entry.OwnerId == ownerId)
+                return slot;
+            slot++;
+        }
+
+        return -1;
+    }
+
     private IEnumerable<PromptEntry> GetOrderedPrompts() =>
         _prompts.Values
             .OrderByDescending(entry => entry.Priority)
             .ThenByDescending(entry => entry.Order);
+
+    private bool ShouldSuppressPrompts()
+    {
+        if (_suppressedOwners.Count > 0 || GetTree().Paused ||
+            SceneTransition.Instance?.IsBusy == true)
+            return true;
+
+        Node currentScene = GetTree().CurrentScene;
+        return currentScene != null &&
+            !string.Equals(currentScene.SceneFilePath, SaveManager.WorldScenePath, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void EnsureInputActions()
+    {
+        for (int i = 0; i < InputActions.Length; i++)
+        {
+            string action = InputActions[i];
+            if (!InputMap.HasAction(action))
+                InputMap.AddAction(action);
+
+            Key requiredKey = InputKeys[i];
+            bool alreadyBound = InputMap.ActionGetEvents(action)
+                .OfType<InputEventKey>()
+                .Any(input => input.PhysicalKeycode == requiredKey);
+            if (!alreadyBound)
+                InputMap.ActionAddEvent(action, new InputEventKey { PhysicalKeycode = requiredKey });
+        }
+    }
 
     private void BuildUi()
     {
@@ -143,25 +239,30 @@ public partial class InteractionPromptManager : Node
         if (_stack == null || !GodotObject.IsInstanceValid(_stack))
             return;
 
+        bool suppressed = ShouldSuppressPrompts();
+        _lastSuppressedState = suppressed;
+        _root.Visible = !suppressed;
         foreach (Node child in _stack.GetChildren())
         {
             _stack.RemoveChild(child);
             child.QueueFree();
         }
 
+        if (suppressed)
+            return;
+
         if (!string.IsNullOrWhiteSpace(_noticeText))
             AddNoticeRow(_noticeText);
 
-        List<PromptEntry> entries = GetOrderedPrompts().Take(3).ToList();
+        List<PromptEntry> entries = GetOrderedPrompts().Take(InputActions.Length).ToList();
         for (int i = 0; i < entries.Count; i++)
         {
-            bool primary = i == 0;
             string text = RemoveKeyHint(entries[i].Text);
-            AddPromptRow(primary, text);
+            AddPromptRow(i, text);
         }
 
         if (_prompts.Count > entries.Count)
-            AddPromptRow(false, $"+ {_prompts.Count - entries.Count} more nearby");
+            AddPromptRow(-1, $"+ {_prompts.Count - entries.Count} more nearby");
     }
 
     private void AddNoticeRow(string text)
@@ -205,8 +306,9 @@ public partial class InteractionPromptManager : Node
         panel.AddChild(label);
     }
 
-    private void AddPromptRow(bool primary, string text)
+    private void AddPromptRow(int slot, string text)
     {
+        bool primary = slot == 0;
         var panel = new PanelContainer
         {
             MouseFilter = Control.MouseFilterEnum.Ignore,
@@ -232,18 +334,15 @@ public partial class InteractionPromptManager : Node
         });
         _stack.AddChild(panel);
 
-        var row = new HBoxContainer
-        {
-            MouseFilter = Control.MouseFilterEnum.Ignore
-        };
+        var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         row.AddThemeConstantOverride("separation", 10);
         panel.AddChild(row);
 
-        if (primary)
+        if (slot >= 0 && slot < InputLabels.Length)
         {
             var key = new Label
             {
-                Text = "E",
+                Text = InputLabels[slot],
                 CustomMinimumSize = new Vector2(24, 24),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
@@ -253,7 +352,7 @@ public partial class InteractionPromptManager : Node
             key.AddThemeColorOverride("font_color", new Color("f6eefe"));
             key.AddThemeStyleboxOverride("normal", new StyleBoxFlat
             {
-                BgColor = new Color("66558a"),
+                BgColor = primary ? new Color("66558a") : new Color("4b4560"),
                 CornerRadiusTopLeft = 4,
                 CornerRadiusTopRight = 4,
                 CornerRadiusBottomLeft = 4,
@@ -293,7 +392,10 @@ public partial class InteractionPromptManager : Node
     private static string RemoveKeyHint(string text)
     {
         string value = (text ?? string.Empty).Trim();
-        if (value.StartsWith("[E]", StringComparison.OrdinalIgnoreCase))
+        if (value.Length >= 3 && value[0] == '[' && value[2] == ']' &&
+            (value[1] == 'E' || value[1] == 'e' ||
+             value[1] == 'F' || value[1] == 'f' ||
+             value[1] == 'G' || value[1] == 'g'))
             value = value.Substring(3).TrimStart(' ', ':', '-', '—');
         return value;
     }
