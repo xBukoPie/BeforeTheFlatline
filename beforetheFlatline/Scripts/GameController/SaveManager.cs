@@ -133,6 +133,35 @@ public partial class SaveManager : Node
         return true;
     }
 
+    public bool DeleteAutoSave()
+    {
+        // Resolve/migrate legacy data first, then remove every known copy.
+        _ = GetAutoSavePath();
+        string[] paths =
+        {
+            $"{SaveDirectory}/{AutoSaveFileName}",
+            "user://Saves/autosave.json",
+            "user://autosave.json"
+        };
+
+        foreach (string path in paths)
+        {
+            if (!FileAccess.FileExists(path))
+                continue;
+
+            Error error = DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(path));
+            if (error != Error.Ok)
+            {
+                GD.PushError($"SaveManager: could not delete autosave '{path}' ({error}).");
+                return false;
+            }
+        }
+
+        _autosaveElapsed = 0;
+        _pendingWorldAutosave = false;
+        return true;
+    }
+
     public bool SaveAutoSave()
     {
         if (_writingAutosave)
