@@ -111,8 +111,8 @@ public partial class GuardianInteractable : Node2D
 
         // If the interaction was interrupted by an unrelated scene exit,
         // never leave the global screen fade locked over the next scene.
-        if (_conversationOpen && SceneTransition.Instance?.IsBusy == true)
-            SceneTransition.Instance.FadeFromBlackForOverlayAsync(0.18f);
+        if (_conversationOpen)
+            SceneTransition.Instance?.CancelOverlayFade();
     }
 
     private void RefreshAvailability()
@@ -294,7 +294,11 @@ public partial class GuardianInteractable : Node2D
         if (!GodotObject.IsInstanceValid(this) || !IsInsideTree() ||
             !_conversationOpen || _dialogue == null ||
             !GodotObject.IsInstanceValid(_dialogue))
+        {
+            if (covered && GodotObject.IsInstanceValid(transition))
+                await transition.FadeFromBlackForOverlayAsync(0.18f);
             return;
+        }
 
         _dialogue.StartDialogue(lines);
 
