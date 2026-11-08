@@ -12,9 +12,14 @@ private AnimatedSprite2D _animatedSprite;
 
     public override void _Ready()
     {
+        ZAsRelative = false;
+        ZIndex = Room.PlayerZIndex;
+        LightMask = Room.WorldLightMask;
 
         _animatedSprite = GetNode<AnimatedSprite2D>("AnimatedSprite2D");
-
+        _animatedSprite.ZAsRelative = true;
+        _animatedSprite.ZIndex = 0;
+        _animatedSprite.LightMask = Room.WorldLightMask;
         _animatedSprite.Play("frontIdle");
     }
 
