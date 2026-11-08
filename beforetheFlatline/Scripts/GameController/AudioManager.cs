@@ -265,7 +265,10 @@ public partial class AudioManager : Node
     private void StopTrackedEndingPlayer(AudioStreamPlayer player)
     {
         if (player != null && GodotObject.IsInstanceValid(player))
+        {
             player.Stop();
+            player.QueueFree();
+        }
     }
 
     private async void FadeTrackedEndingPlayer(AudioStreamPlayer player, double duration)
@@ -280,7 +283,10 @@ public partial class AudioManager : Node
         await ToSignal(fade, Tween.SignalName.Finished);
 
         if (GodotObject.IsInstanceValid(player))
+        {
             player.Stop();
+            player.QueueFree();
+        }
     }
 
     private bool IsCurrentScene(string scenePath)
