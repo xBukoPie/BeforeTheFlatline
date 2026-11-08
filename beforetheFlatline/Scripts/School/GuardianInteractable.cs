@@ -18,6 +18,9 @@ public partial class GuardianInteractable : Node2D
     private int _activeStage;
     private ProcessModeEnum _previousPlayerMode;
     private bool _previousClockRunning;
+    private bool _playerModeCaptured;
+    private bool _finishStarted;
+    private int _conversationStage;
     private VisualNovelScene _dialogue;
     private CanvasLayer _dialogueLayer;
     private Action _afterConversation;
@@ -55,6 +58,9 @@ public partial class GuardianInteractable : Node2D
 
     public override void _Process(double delta)
     {
+        if (_conversationOpen)
+            return;
+
         int stage = GetAvailableStage();
         bool available = stage != 0;
 
@@ -96,7 +102,17 @@ public partial class GuardianInteractable : Node2D
         InteractionPromptManager.Instance?.HidePrompt(this);
         if (_conversationOpen && DayClock.Instance != null)
             DayClock.Instance.Running = _previousClockRunning;
+
+        if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
+            _dialogue.DialogueFinished -= OnDialogueFinished;
+
+        _afterConversation = null;
         RestorePlayer();
+
+        // If the interaction was interrupted by an unrelated scene exit,
+        // never leave the global screen fade locked over the next scene.
+        if (_conversationOpen && SceneTransition.Instance?.IsBusy == true)
+            SceneTransition.Instance.FadeFromBlackForOverlayAsync(0.18f);
     }
 
     private void RefreshAvailability()
@@ -197,7 +213,11 @@ public partial class GuardianInteractable : Node2D
 
     private bool BeginConversation(bool mandatory = false, Action afterConversation = null)
     {
-        if (_activeStage == 0 || _conversationOpen)
+        if (_conversationOpen)
+            return false;
+
+        int stage = GetAvailableStage();
+        if (stage == 0)
             return false;
 
         PackedScene scene = GD.Load<PackedScene>(DialogueScenePath);
@@ -207,15 +227,49 @@ public partial class GuardianInteractable : Node2D
             return false;
         }
 
+        // Reset transient state before every interaction; no previous door
+        // continuation or dialogue instance may leak into this conversation.
+        _afterConversation = null;
+        _dialogue = null;
+        _dialogueLayer = null;
+        _finishStarted = false;
+        _conversationStage = stage;
+        _activeStage = stage;
         _afterConversation = afterConversation;
-
         _conversationOpen = true;
+
+        if (_talkArea != null && GodotObject.IsInstanceValid(_talkArea))
+            _talkArea.Monitoring = false;
+
         InteractionPromptManager.Instance?.HidePrompt(this);
         FreezePlayer();
 
         _previousClockRunning = DayClock.Instance?.Running ?? false;
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
+
+        ShowDialogueAfterTransition(
+            scene,
+            BuildLines(_conversationStage, mandatory, StoryProgression.Instance));
+        return true;
+    }
+
+    private async void ShowDialogueAfterTransition(
+        PackedScene scene, IReadOnlyList<DialogueLine> lines)
+    {
+        SceneTree tree = GetTree();
+        SceneTransition transition = SceneTransition.Instance;
+        bool covered = false;
+
+        if (transition != null)
+            covered = await transition.FadeToBlackForOverlayAsync(0.26f);
+
+        if (!GodotObject.IsInstanceValid(this) || !IsInsideTree() || !_conversationOpen)
+        {
+            if (covered && GodotObject.IsInstanceValid(transition))
+                await transition.FadeFromBlackForOverlayAsync(0.18f);
+            return;
+        }
 
         _dialogueLayer = new CanvasLayer
         {
@@ -225,6 +279,7 @@ public partial class GuardianInteractable : Node2D
         AddChild(_dialogueLayer);
 
         _dialogue = scene.Instantiate<VisualNovelScene>();
+        _dialogue.ProcessMode = ProcessModeEnum.Always;
         _dialogue.PlayDemoOnReady = false;
         _dialogue.LoopDemo = false;
         _dialogue.ShowBackground = false;
@@ -234,16 +289,24 @@ public partial class GuardianInteractable : Node2D
         _dialogue.SetPortrait(DialogueSide.Left, null);
         _dialogue.SetPortrait(DialogueSide.Right, GD.Load<Texture2D>(PortraitPath));
         _dialogue.DialogueFinished += OnDialogueFinished;
-        _dialogue.StartDialogue(BuildLines(_activeStage, mandatory));
-        return true;
+
+        await ToSignal(tree, SceneTree.SignalName.ProcessFrame);
+        if (!GodotObject.IsInstanceValid(this) || !IsInsideTree() ||
+            !_conversationOpen || _dialogue == null ||
+            !GodotObject.IsInstanceValid(_dialogue))
+            return;
+
+        _dialogue.StartDialogue(lines);
+
+        if (covered && GodotObject.IsInstanceValid(transition))
+            await transition.FadeFromBlackForOverlayAsync(0.34f);
     }
 
-    private static IReadOnlyList<DialogueLine> BuildLines(int stage, bool mandatory)
+    private static IReadOnlyList<DialogueLine> BuildLines(
+        int stage, bool mandatory, StoryProgression progression)
     {
-        // A forced conversation is a separate route: it acknowledges the attempted
-        // shortcut and delivers the stage message without replaying normal choices.
         if (mandatory)
-            return BuildShortcutLines(stage);
+            return BuildShortcutLines(stage, progression);
 
         var lines = new List<DialogueLine>();
 
@@ -251,7 +314,7 @@ public partial class GuardianInteractable : Node2D
         {
             lines.Add(new DialogueLine("...", "Oh, you're finally here.", DialogueSide.Right));
             lines.Add(new DialogueLine("...", "I'm glad you're starting to remember some of your memories.", DialogueSide.Right));
-            
+
             int falseRealityReply = lines.Count + 1;
             int explanationReply = lines.Count + 2;
             int sharedFollowUp = lines.Count + 3;
@@ -300,76 +363,151 @@ public partial class GuardianInteractable : Node2D
         return lines;
     }
 
-    private static IReadOnlyList<DialogueLine> BuildShortcutLines(int stage)
+    private static IReadOnlyList<DialogueLine> BuildShortcutLines(
+        int stage, StoryProgression progression)
     {
         var lines = new List<DialogueLine>();
 
+        bool kitchenRemembered = progression?.HasSeenMemory("Kitchen") == true;
+        bool laundryRemembered = progression?.HasSeenMemory("Laundry") == true;
+        bool bathroomRemembered = progression?.HasSeenMemory("Bathroom") == true;
+        bool bedroomRemembered = progression?.HasSeenMemory("MasterBedroom") == true;
+
+        lines.Add(new DialogueLine(
+            "...",
+            stage == 1
+                ? "Heading straight for class? I won't keep you long."
+                : "Trying to slip past me again? I'll keep this brief.",
+            DialogueSide.Right));
+
+        if (bedroomRemembered)
+        {
+            lines.Add(new DialogueLine("...", "You've remembered the bedroom too. You finally reached the place where you wanted to ask for help.", DialogueSide.Right));
+            lines.Add(new DialogueLine("...", "Hold on to that moment. Waking up does not mean you have to carry everything by yourself.", DialogueSide.Right));
+        }
+        else if (bathroomRemembered)
+        {
+            lines.Add(new DialogueLine("...", "The bathroom brought back the pressure and the way you kept comparing yourself to everyone around you.", DialogueSide.Right));
+            lines.Add(new DialogueLine("...", "That memory was painful, but it is not proof that you are failing. You deserve help with what you have been carrying.", DialogueSide.Right));
+        }
+        else if (laundryRemembered)
+        {
+            lines.Add(new DialogueLine("...", "You remembered the laundry room too. Even the small, repeated tasks had started to feel exhausting.", DialogueSide.Right));
+            lines.Add(new DialogueLine("...", "You kept pushing through the numbness and fatigue as if you had to manage everything alone.", DialogueSide.Right));
+        }
+        else if (kitchenRemembered)
+        {
+            lines.Add(new DialogueLine("...", "That kitchen photograph brought back how difficult even an ordinary meal had become.", DialogueSide.Right));
+            lines.Add(new DialogueLine("...", "Do not dismiss that memory just because the room looked familiar. It is part of what you have been trying to understand.", DialogueSide.Right));
+        }
+        else
+        {
+            lines.Add(new DialogueLine("...", "There are memories waiting behind the doors you have opened. Pay attention to what returns, even when it is uncomfortable.", DialogueSide.Right));
+        }
+
         if (stage == 1)
-        {
-            lines.Add(new DialogueLine("...", "Heading straight for class? I won't keep you long.", DialogueSide.Right));
-            lines.Add(new DialogueLine("...", "Those photographs you've found are pieces of your own memories. Don't dismiss what they bring back, even when it feels strange.", DialogueSide.Right));
-            lines.Add(new DialogueLine("...", "This place may feel familiar, but that doesn't mean everything here is as it seems.", DialogueSide.Right));
-            lines.Add(new DialogueLine("...", "Go on. Just keep looking for the truth, alright?", DialogueSide.Right));
-        }
+            lines.Add(new DialogueLine("...", "This place may feel familiar, but not everything here is as it seems. Keep looking for the truth.", DialogueSide.Right));
         else if (stage == 2)
-        {
-            lines.Add(new DialogueLine("...", "Trying to slip past me? Alright, I'll be brief.", DialogueSide.Right));
-            lines.Add(new DialogueLine("...", "You're closer to the truth now. Don't let the next part scare you into turning away.", DialogueSide.Right));
-            lines.Add(new DialogueLine("...", "When the time comes, face what you remember. You don't have to understand it all at once.", DialogueSide.Right));
-            lines.Add(new DialogueLine("...", "That's all. Go on before you're late.", DialogueSide.Right));
-        }
-        else if (stage == 3)
-        {
-            lines.Add(new DialogueLine("...", "You're in a hurry... but wait just a moment.", DialogueSide.Right));
-            lines.Add(new DialogueLine("...", "I can see how heavy this has become. The pressure can make it feel like there's no way forward.", DialogueSide.Right));
-            lines.Add(new DialogueLine("...", "Don't mistake that feeling for the truth. You're almost there. Keep going, and let someone help when you need it.", DialogueSide.Right));
-            lines.Add(new DialogueLine("...", "Now, go. I'll be here.", DialogueSide.Right));
-        }
+            lines.Add(new DialogueLine("...", "You know more than you did before. Do not let the next part frighten you into turning away.", DialogueSide.Right));
+        else
+            lines.Add(new DialogueLine("...", "You're close now. Do not mistake the feeling of being overwhelmed for a reason to give up. Let someone help when you need it.", DialogueSide.Right));
+
+        lines.Add(new DialogueLine(
+            "...",
+            stage == 3
+                ? "That's all for now. Go on; I'll be here."
+                : "I won't hold you here. Go on, and keep what you remembered with you.",
+            DialogueSide.Right));
 
         return lines;
     }
 
-    private void OnDialogueFinished()
+    private async void OnDialogueFinished()
     {
-        if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
-            _dialogue.DialogueFinished -= OnDialogueFinished;
+        if (!_conversationOpen || _finishStarted)
+            return;
 
-        if (StoryProgression.Instance?.MarkGuardianStageSeen(_activeStage) == true)
+        _finishStarted = true;
+        SceneTree tree = GetTree();
+        SceneTransition transition = SceneTransition.Instance;
+        bool covered = false;
+
+        if (transition != null)
+            covered = await transition.FadeToBlackForOverlayAsync(0.28f);
+
+        int completedStage = _conversationStage;
+        StoryProgression progression = StoryProgression.Instance;
+        bool marked = progression?.CompleteGuardianStage(completedStage) == true;
+        if (marked)
             SaveManager.Instance?.RequestAutoSave();
+        else if (progression?.HasSeenGuardianStage(completedStage) != true)
+            GD.PushWarning($"Guardian: stage {completedStage} could not be completed; its required memory may be missing.");
 
-        _dialogueLayer?.QueueFree();
+        if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
+        {
+            _dialogue.DialogueFinished -= OnDialogueFinished;
+            _dialogue.QueueFree();
+        }
+
+        if (_dialogueLayer != null && GodotObject.IsInstanceValid(_dialogueLayer))
+            _dialogueLayer.QueueFree();
+
         _dialogue = null;
         _dialogueLayer = null;
         _conversationOpen = false;
+
+        Action continueAction = _afterConversation;
+        _afterConversation = null;
+
+        RefreshAvailability();
+
+        // The door continuation starts RoomManager.GoTo synchronously. Keep the
+        // global fade closed until that room transition has completed.
+        continueAction?.Invoke();
+
+        RoomManager roomManager = tree.GetFirstNodeInGroup("room_manager") as RoomManager;
+        if (continueAction != null && roomManager != null)
+        {
+            while (roomManager.IsRoomTransitionBusy)
+                await ToSignal(tree, SceneTree.SignalName.ProcessFrame);
+        }
 
         if (DayClock.Instance != null)
             DayClock.Instance.Running = _previousClockRunning;
 
         RestorePlayer();
-        RefreshAvailability();
 
-        Action continueAction = _afterConversation;
-        _afterConversation = null;
-        continueAction?.Invoke();
+        if (covered && GodotObject.IsInstanceValid(transition))
+            await transition.FadeFromBlackForOverlayAsync(0.36f);
+
+        if (IsInsideTree())
+            _finishStarted = false;
     }
 
     private void FreezePlayer()
     {
+        _playerModeCaptured = false;
         if (_player == null || !GodotObject.IsInstanceValid(_player) ||
             _player.ProcessMode == ProcessModeEnum.Disabled)
             return;
 
         _previousPlayerMode = _player.ProcessMode;
+        _playerModeCaptured = true;
         _player.Velocity = Vector2.Zero;
         _player.ProcessMode = ProcessModeEnum.Disabled;
     }
 
     private void RestorePlayer()
     {
+        if (!_playerModeCaptured)
+            return;
+
         if (_player != null && GodotObject.IsInstanceValid(_player))
         {
             _player.Velocity = Vector2.Zero;
             _player.ProcessMode = _previousPlayerMode;
         }
+
+        _playerModeCaptured = false;
     }
 }
