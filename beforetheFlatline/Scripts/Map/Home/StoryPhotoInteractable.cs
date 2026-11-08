@@ -28,8 +28,10 @@ public partial class StoryPhotoInteractable : Area2D
             return;
         }
 
+        LightMask = Room.WorldLightMask;
         _sprite.ZIndex = 0;
         _sprite.ZAsRelative = true;
+        _sprite.LightMask = Room.WorldLightMask;
         ZAsRelative = false;
 
         Node roomManager = GetTree().GetFirstNodeInGroup("room_manager");
@@ -100,7 +102,9 @@ public partial class StoryPhotoInteractable : Area2D
 
         // The player and room objects are siblings under different parents, so compare global Y.
         ZAsRelative = false;
-        ZIndex = GlobalPosition.Y >= _player.GlobalPosition.Y ? 1 : -1;
+        ZIndex = GlobalPosition.Y >= _player.GlobalPosition.Y
+            ? Room.ObjectInFrontOfPlayerZIndex
+            : Room.ObjectBehindPlayerZIndex;
     }
 
     private void RefreshAvailability()
