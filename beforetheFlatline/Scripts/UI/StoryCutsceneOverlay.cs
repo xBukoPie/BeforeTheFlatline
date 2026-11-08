@@ -377,7 +377,7 @@ void fragment()
 
         if (index == 5)
             await TransitionEndingArtworkAsync(goodEndingImageOne, playHeartbeat: true);
-        else if (index == 6)
+        else if (index == 7)
             await TransitionEndingArtworkAsync(goodEndingImageTwo, playHeartbeat: false);
     }
 
