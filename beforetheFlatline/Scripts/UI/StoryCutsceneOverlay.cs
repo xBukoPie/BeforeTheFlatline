@@ -69,6 +69,7 @@ void fragment()
     private bool _collapseTransitionRunning;
     private bool _collapseTransitionPlayed;
     private bool _goodEndingHeartbeatStarted;
+    private bool _goodEndingRevealAudioStarted;
     private Tween _collapseTween;
     private VisualNovelScene _dialogue;
     private Tween _artTween;
@@ -381,11 +382,20 @@ void fragment()
         StoryCutsceneBeat beat = _beats[index];
         GD.Print($"[StoryCutsceneOverlay] Beat {index + 1}/{_beats.Count}: {beat.Dialogue.Speaker} [{beat.EffectCue}]");
 
-        if (_isEnding && !_goodEndingHeartbeatStarted &&
+        if (_isEnding &&
             beat.Dialogue.Text.Contains("heart-monitor", StringComparison.OrdinalIgnoreCase))
         {
-            _goodEndingHeartbeatStarted = true;
-            AudioManager.Instance?.PlayGoodEndingHeartbeat();
+            if (!_goodEndingRevealAudioStarted)
+            {
+                _goodEndingRevealAudioStarted = true;
+                AudioManager.Instance?.PlayGoodEnding1();
+            }
+
+            if (!_goodEndingHeartbeatStarted)
+            {
+                _goodEndingHeartbeatStarted = true;
+                AudioManager.Instance?.PlayGoodEndingHeartbeat();
+            }
         }
 
         bool collapseCue =
