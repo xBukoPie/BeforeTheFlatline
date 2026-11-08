@@ -197,7 +197,8 @@ public partial class AudioManager : Node
         }
 
         Node currentScene = GetTree().CurrentScene;
-        if (currentScene == null ||
+        if (SceneTransition.Instance?.IsBusy == true ||
+            currentScene == null ||
             !string.Equals(currentScene.SceneFilePath, "res://Scenes/Ending/BadEnding.tscn",
                 StringComparison.OrdinalIgnoreCase))
             return;
