@@ -16,7 +16,7 @@ public partial class BadEnding : Control
         BuildUi();
 
         double flatlineLength = AudioManager.Instance?.PlayGameOver() ?? 0.0;
-        AudioManager.Instance?.PlaySadEndingAfter(Math.Max(0.1, flatlineLength));
+        AudioManager.Instance?.PlaySadEndingAfter(System.Math.Max(0.1, flatlineLength));
     }
 
     private void OpenCredits()
