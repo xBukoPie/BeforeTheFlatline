@@ -127,6 +127,31 @@ public partial class SceneTransition : CanvasLayer
         _busy = false;
     }
 
+    // Covers or reveals an in-world dialogue overlay without changing the current scene.
+    public async Task<bool> FadeToBlackForOverlayAsync(float duration = 0.28f)
+    {
+        if (_busy || _fade == null || !GodotObject.IsInstanceValid(_fade))
+            return false;
+
+        _busy = true;
+        _fade.Visible = true;
+        _fade.Modulate = new Color(1f, 1f, 1f, 0f);
+        _fade.MouseFilter = Control.MouseFilterEnum.Stop;
+        await FadeTo(1f, Math.Max(0.05f, duration));
+        return true;
+    }
+
+    public async Task FadeFromBlackForOverlayAsync(float duration = 0.34f)
+    {
+        if (!_busy || _fade == null || !GodotObject.IsInstanceValid(_fade))
+            return;
+
+        await FadeTo(0f, Math.Max(0.05f, duration));
+        _fade.MouseFilter = Control.MouseFilterEnum.Ignore;
+        _fade.Visible = false;
+        _busy = false;
+    }
+
     // Loads a scene while showing progress..
     public async Task<bool> LoadSceneWithLoadingScreen(string path)
     {
