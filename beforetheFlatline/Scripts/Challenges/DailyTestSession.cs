@@ -103,6 +103,30 @@ public static class DailyTestSession
         return true;
     }
 
+    // Starting from the hub may reset an unfinished attempt, but it cannot revoke a secured pass.
+    public static void BeginFromHub(int day)
+    {
+        if (_day != day || _outcomeResolved)
+        {
+            Begin(day);
+            return;
+        }
+
+        bool keepPassingResult = _passedForDay;
+        int bestScore = keepPassingResult ? BestScore : 0;
+        int bestPoints = keepPassingResult ? BestPointsReceived : 0;
+
+        Attempts.Clear();
+        Notifications.Clear();
+        _pointsReceived = 0;
+        _bestScore = bestScore;
+        _bestPointsReceived = bestPoints;
+        _passedForDay = keepPassingResult;
+        _active = true;
+        _finalized = false;
+        ShuffleQuestionOrder();
+    }
+
     public static void BeginIfNeeded(int day)
     {
         if (!_active || _day != day || _finalized)
