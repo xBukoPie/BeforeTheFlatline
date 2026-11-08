@@ -27,6 +27,26 @@ if (-not (Test-Path -LiteralPath $GodotPath -PathType Leaf)) {
     throw "Godot executable not found: $GodotPath"
 }
 
+$GodotItem = Get-Item -LiteralPath $GodotPath
+if ($GodotItem.LinkType -eq "SymbolicLink" -and $GodotItem.Target) {
+    $GodotTarget = [string]$GodotItem.Target
+    if (-not [System.IO.Path]::IsPathRooted($GodotTarget)) {
+        $GodotTarget = Join-Path $GodotItem.DirectoryName $GodotTarget
+    }
+    $GodotPath = $GodotTarget
+}
+
+if ([System.IO.Path]::GetExtension($GodotPath) -ne ".exe") {
+    $ExecutableCandidate = "$GodotPath.exe"
+    if (Test-Path -LiteralPath $ExecutableCandidate -PathType Leaf) {
+        $GodotPath = $ExecutableCandidate
+    }
+}
+
+if ([System.IO.Path]::GetExtension($GodotPath) -ne ".exe") {
+    throw "The selected Godot path is not a Windows executable: $GodotPath"
+}
+
 $GodotPath = (Resolve-Path -LiteralPath $GodotPath).Path
 $GodotVersion = (& $GodotPath --version 2>&1 | Out-String).Trim()
 if ($LASTEXITCODE -ne 0) {
