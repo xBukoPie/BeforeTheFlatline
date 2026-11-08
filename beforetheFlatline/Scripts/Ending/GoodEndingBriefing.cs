@@ -5,6 +5,7 @@ public partial class GoodEndingBriefing : Control
 {
     private const string CreditsPath = "res://Scenes/Ending/EndingCredits.tscn";
     private bool _creditsStarted;
+    private Button _creditsButton;
 
     public override void _Ready()
     {
@@ -12,9 +13,15 @@ public partial class GoodEndingBriefing : Control
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
-        AudioManager.Instance?.PlayGoodEnding2();
-        AudioManager.Instance?.FadeOutGoodEndingHeartbeat(1.45);
+        AudioManager.Instance?.PlayGoodEnding1();
+        AudioManager.Instance?.FadeOutGoodEndingHeartbeat(0.7);
         BuildUi();
+        RevealCreditsButton();
+    }
+
+    public override void _ExitTree()
+    {
+        AudioManager.Instance?.FadeOutGoodEnding1(0.75);
     }
 
     private void BuildUi()
@@ -120,9 +127,33 @@ public partial class GoodEndingBriefing : Control
         };
         stack.AddChild(buttons);
 
-        var credits = CreateButton("Continue to Credits");
-        credits.Pressed += OpenCredits;
-        buttons.AddChild(credits);
+        _creditsButton = CreateButton("Continue to Credits");
+        _creditsButton.Disabled = true;
+        _creditsButton.Visible = false;
+        _creditsButton.Modulate = new Color(1f, 1f, 1f, 0f);
+        _creditsButton.Pressed += OpenCredits;
+        buttons.AddChild(_creditsButton);
+    }
+
+    private async void RevealCreditsButton()
+    {
+        SceneTreeTimer timer = GetTree().CreateTimer(2.6, true);
+        await ToSignal(timer, SceneTreeTimer.SignalName.Timeout);
+
+        if (!IsInsideTree() || _creditsStarted ||
+            _creditsButton == null || !GodotObject.IsInstanceValid(_creditsButton))
+            return;
+
+        _creditsButton.Visible = true;
+        Tween reveal = CreateTween();
+        reveal.TweenProperty(_creditsButton, "modulate:a", 1f, 0.5f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.Out);
+        await ToSignal(reveal, Tween.SignalName.Finished);
+
+        if (IsInsideTree() && !_creditsStarted &&
+            _creditsButton != null && GodotObject.IsInstanceValid(_creditsButton))
+            _creditsButton.Disabled = false;
     }
 
     private static Button CreateButton(string text)
@@ -170,6 +201,9 @@ public partial class GoodEndingBriefing : Control
             return;
 
         _creditsStarted = true;
+        if (_creditsButton != null && GodotObject.IsInstanceValid(_creditsButton))
+            _creditsButton.Disabled = true;
+
         if (SceneTransition.Instance != null)
             SceneTransition.Instance.ChangeSceneToFile(CreditsPath, 1.25f);
         else
