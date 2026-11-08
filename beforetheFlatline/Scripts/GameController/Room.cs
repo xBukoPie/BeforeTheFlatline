@@ -6,7 +6,7 @@ public partial class Room : Node2D
 	public const int PlayerZIndex = 0;
 	public const int ObjectBehindPlayerZIndex = -1;
 	public const int ObjectInFrontOfPlayerZIndex = 1;
-	public const uint WorldLightMask = 1;
+	public const int WorldLightMask = 1;
 
 	[Export] public string RoomName { get; set; } = "";
 	[Export] public bool Outdoor { get; set; } = false;      // outdoor rooms get sunlight and night-only lamps
