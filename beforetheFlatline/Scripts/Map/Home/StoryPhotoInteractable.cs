@@ -301,7 +301,7 @@ public partial class StoryPhotoInteractable : Area2D
                     "A steady heart-monitor beep fills the room. I slowly open my eyes.",
                     DialogueSide.Right),
                     "relief"),
-                new(goodEndingImageTwo, new DialogueLine(
+                new(goodEndingImageOne, new DialogueLine(
                     "Memory",
                     "My parents are beside me, their eyes full of tears. They thank the heavens that I finally woke up.",
                     DialogueSide.Left),
