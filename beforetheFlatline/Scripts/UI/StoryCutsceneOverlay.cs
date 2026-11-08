@@ -68,7 +68,6 @@ void fragment()
     private Label _transitionText;
     private bool _collapseTransitionRunning;
     private bool _collapseTransitionPlayed;
-    private bool _goodEndingHeartbeatStarted;
     private Tween _collapseTween;
     private VisualNovelScene _dialogue;
     private Tween _artTween;
@@ -375,7 +374,7 @@ void fragment()
 
         if (index == 5)
             await TransitionEndingArtworkAsync(goodEndingImageOne, playHeartbeat: true);
-        else if (index == 7)
+        else if (index == 6)
             await TransitionEndingArtworkAsync(goodEndingImageTwo, playHeartbeat: false);
     }
 
@@ -451,7 +450,7 @@ void fragment()
 
         if (_isEnding && index == 0)
             SetArtwork(beat.ImagePath);
-        else if (_isEnding && index > 0 && !beginCollapse)
+        else if (_isEnding && index > 0 && index < 5 && !beginCollapse)
             TransitionMasterBedroomArtwork(beat.ImagePath);
 
         ApplyMemoryCue(beat.EffectCue);
