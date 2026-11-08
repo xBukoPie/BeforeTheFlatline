@@ -170,19 +170,18 @@ public partial class AudioManager : Node
 
     public void PlayGoodEnding1()
     {
-        AudioStream stream = LoadSound("Ending/goodEnding1.mp3");
-        if (stream == null)
-            stream = LoadSound("Ending/goodEnding.mp3");
+        string preferredPath = ResolveSoundPath(SoundRoot + "Ending/goodEnding1.mp3");
+        string selectedPath = ResourceLoader.Exists(preferredPath)
+            ? "Ending/goodEnding1.mp3"
+            : "Ending/goodEnding.mp3";
 
-        if (stream == null)
+        if (LoadSound(selectedPath) == null)
         {
             GD.PushWarning("AudioManager: good-ending reveal audio was not found.");
             return;
         }
 
-        PlaySoundEffect(stream == null ? "Ending/goodEnding1.mp3" :
-            (ResourceLoader.Exists(SoundRoot + "Ending/goodEnding1.mp3")
-                ? "Ending/goodEnding1.mp3" : "Ending/goodEnding.mp3"), -2f);
+        PlaySoundEffect(selectedPath, -2f);
     }
 
     public void PlayGoodEnding2() =>
