@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Godot;
 
@@ -250,6 +251,15 @@ public partial class RoomManager : Node2D
         ConfigureCamera();
         SetNight(IsNight);
         ApplyTimeOfDayLighting();
+
+        // Resolve the assessment only after the destination home room is actually loaded.
+        if (path.StartsWith("res://Scenes/Home/Areas/", StringComparison.OrdinalIgnoreCase) &&
+            global::DailyTestSession.HasPendingHomeResolution)
+        {
+            SchoolYardGame.DayClock.Instance?.MarkSchoolChallengeCompletedToday();
+            global::DailyTestSession.ResolveAtHome();
+        }
+
         SaveManager.Instance?.RequestAutoSave();
     }
 
