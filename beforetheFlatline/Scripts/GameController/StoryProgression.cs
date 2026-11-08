@@ -127,6 +127,10 @@ public partial class StoryProgression : Node
         if (RoomKeyProgression.Instance == null || !RoomKeyProgression.Instance.IsRoomUnlocked(roomId))
             return false;
 
+        // Guardian dialogue must follow the matching photograph, not merely the key unlock.
+        if (!HasSeenMemory(roomId))
+            return false;
+
         // Legacy saves without an unlock date make the conversation available from day two onward.
         return unlockedDay >= 1 ? currentDay > unlockedDay : currentDay >= 2;
     }
