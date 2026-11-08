@@ -106,6 +106,7 @@ void fragment()
     public override void _Ready()
     {
         AddToGroup("story_cutscene");
+        InteractionPromptManager.Instance?.SetPromptsSuppressed(this, true);
         ProcessMode = ProcessModeEnum.Always;
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
@@ -114,6 +115,9 @@ void fragment()
 
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
+
+        if (_isEnding)
+            AudioManager.Instance?.PlayGoodEnding1();
 
         // Keep persistent HUD distortion from competing with the memory-specific effects.
         StatusEffectsOverlay.Instance?.SetPauseMenuVisible(true);
@@ -153,6 +157,7 @@ void fragment()
 
     public override void _ExitTree()
     {
+        InteractionPromptManager.Instance?.SetPromptsSuppressed(this, false);
         if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
         {
             _dialogue.BeforeLinePresentationAsync = null;
