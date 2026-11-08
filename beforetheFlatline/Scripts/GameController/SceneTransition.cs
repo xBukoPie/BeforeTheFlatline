@@ -23,6 +23,7 @@ public partial class SceneTransition : CanvasLayer
     private ColorRect _overlayFade;
     private Tween _overlayFadeTween;
     private bool _overlayFadeAnimating;
+    private int _overlayFadeRequestId;
     private bool _busy;
     private string _queuedCriticalScenePath;
 
@@ -145,42 +146,52 @@ public partial class SceneTransition : CanvasLayer
     // Covers or reveals an in-world dialogue overlay without blocking scene changes.
     public async Task<bool> FadeToBlackForOverlayAsync(float duration = 0.28f)
     {
-        if (_overlayFade == null || _overlayFadeAnimating ||
-            !GodotObject.IsInstanceValid(_overlayFade))
+        if (_overlayFade == null || !GodotObject.IsInstanceValid(_overlayFade))
             return false;
 
-        _overlayFadeAnimating = true;
+        int requestId = ++_overlayFadeRequestId;
         if (_overlayFadeTween != null && _overlayFadeTween.IsValid())
             _overlayFadeTween.Kill();
 
+        _overlayFadeAnimating = true;
         _overlayFade.Visible = true;
         _overlayFade.Modulate = new Color(1f, 1f, 1f, 0f);
         _overlayFade.MouseFilter = Control.MouseFilterEnum.Stop;
 
-        _overlayFadeTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
-        _overlayFadeTween.TweenProperty(_overlayFade, "modulate:a", 1f, Math.Max(0.05f, duration))
+        Tween tween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        _overlayFadeTween = tween;
+        tween.TweenProperty(_overlayFade, "modulate:a", 1f, Math.Max(0.05f, duration))
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
-        await ToSignal(_overlayFadeTween, Tween.SignalName.Finished);
+        await ToSignal(tween, Tween.SignalName.Finished);
+
+        if (requestId != _overlayFadeRequestId)
+            return false;
+
         _overlayFadeAnimating = false;
         return true;
     }
 
     public async Task FadeFromBlackForOverlayAsync(float duration = 0.34f)
     {
-        if (_overlayFade == null || !_overlayFade.Visible || _overlayFadeAnimating ||
+        if (_overlayFade == null || !_overlayFade.Visible ||
             !GodotObject.IsInstanceValid(_overlayFade))
             return;
 
-        _overlayFadeAnimating = true;
+        int requestId = ++_overlayFadeRequestId;
         if (_overlayFadeTween != null && _overlayFadeTween.IsValid())
             _overlayFadeTween.Kill();
 
-        _overlayFadeTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
-        _overlayFadeTween.TweenProperty(_overlayFade, "modulate:a", 0f, Math.Max(0.05f, duration))
+        _overlayFadeAnimating = true;
+        Tween tween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        _overlayFadeTween = tween;
+        tween.TweenProperty(_overlayFade, "modulate:a", 0f, Math.Max(0.05f, duration))
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
-        await ToSignal(_overlayFadeTween, Tween.SignalName.Finished);
+        await ToSignal(tween, Tween.SignalName.Finished);
+
+        if (requestId != _overlayFadeRequestId)
+            return;
 
         if (GodotObject.IsInstanceValid(_overlayFade))
         {
@@ -192,6 +203,7 @@ public partial class SceneTransition : CanvasLayer
 
     public void CancelOverlayFade()
     {
+        _overlayFadeRequestId++;
         if (_overlayFadeTween != null && _overlayFadeTween.IsValid())
             _overlayFadeTween.Kill();
 
