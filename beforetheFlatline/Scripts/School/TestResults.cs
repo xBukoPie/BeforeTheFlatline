@@ -58,8 +58,12 @@ public partial class TestResults : Control
             ? "A passing result is secured. Retrying cannot revoke it. Sanity recovery will be applied after you return home."
             : "Any failure penalty will be applied once, after you return home. Retrying before then will not repeatedly reduce sanity.";
 
+        if (!string.IsNullOrWhiteSpace(newKeyReward))
+            returnNote += "\n" + newKeyReward;
+
         _details.Text = BuildSanitySummary(currentSanity) + "\n\n" + returnNote;
         _details.AddThemeColorOverride("font_color", new Color("e2e8f0"));
+    }
 
     private string BuildSanitySummary(int currentSanity)
     {
