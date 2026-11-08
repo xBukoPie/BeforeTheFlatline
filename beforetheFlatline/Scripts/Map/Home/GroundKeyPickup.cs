@@ -28,9 +28,11 @@ public partial class GroundKeyPickup : Area2D
         Node roomManager = GetTree().GetFirstNodeInGroup("room_manager");
         _player = roomManager?.GetNodeOrNull<CharacterBody2D>("Player");
 
+        LightMask = Room.WorldLightMask;
         _sprite = GetNode<Sprite2D>("Sprite2D");
         _sprite.ZIndex = 0;
         _sprite.ZAsRelative = true;
+        _sprite.LightMask = Room.WorldLightMask;
         ZAsRelative = false;
 
         string texturePath = GetKeyTexturePath(KeyRoomId);
@@ -149,7 +151,9 @@ public partial class GroundKeyPickup : Area2D
 
         // Compare world-space ground positions because the player and room are separate branches.
         ZAsRelative = false;
-        ZIndex = GlobalPosition.Y >= _player.GlobalPosition.Y ? 1 : -1;
+        ZIndex = GlobalPosition.Y >= _player.GlobalPosition.Y
+            ? Room.ObjectInFrontOfPlayerZIndex
+            : Room.ObjectBehindPlayerZIndex;
     }
 
     private static string GetPickupThought(string roomName) => roomName switch
