@@ -43,6 +43,18 @@ if ([System.IO.Path]::GetExtension($GodotPath) -ne ".exe") {
     }
 }
 
+# The setup-godot CI action exposes an extensionless symlink; locate the real editor binary.
+if ([System.IO.Path]::GetExtension($GodotPath) -ne ".exe") {
+    $GodotInstallRoot = Join-Path $env:USERPROFILE "godot"
+    if (Test-Path -LiteralPath $GodotInstallRoot -PathType Container) {
+        $GodotExecutable = Get-ChildItem -LiteralPath $GodotInstallRoot -Filter "Godot_v*_mono_win64.exe" -Recurse -File -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+        if ($null -ne $GodotExecutable) {
+            $GodotPath = $GodotExecutable.FullName
+        }
+    }
+}
+
 if ([System.IO.Path]::GetExtension($GodotPath) -ne ".exe") {
     throw "The selected Godot path is not a Windows executable: $GodotPath"
 }
