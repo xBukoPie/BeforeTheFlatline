@@ -88,10 +88,10 @@ New-Item -ItemType Directory -Path $ExportDirectory -Force | Out-Null
 Push-Location $ProjectRoot
 try {
     Write-Host "Godot: $GodotVersion"
-    Write-Host "Importing project resources and generating the Godot editor cache..."
-    & $GodotPath --headless --editor --path $ProjectRoot --quit
+    Write-Host "Importing resources and building the Godot C# solution..."
+    & $GodotPath --headless --editor --path $ProjectRoot --build-solutions --quit
     if ($LASTEXITCODE -ne 0) {
-        throw "Godot project import/editor initialization failed."
+        throw "Godot resource import or C# solution build failed."
     }
 
     Write-Host "Building C# solution (ExportRelease)..."
@@ -101,7 +101,7 @@ try {
     }
 
     Write-Host "Exporting Windows Desktop release..."
-    & $GodotPath --headless --path $ProjectRoot --export-release "Windows Desktop" $ExportRelativePath
+    & $GodotPath --headless --path $ProjectRoot --verbose --export-release "Windows Desktop" $ExportRelativePath
     if ($LASTEXITCODE -ne 0) {
         throw "Godot Windows export failed. Confirm the matching 4.7.2 .NET export templates are installed."
     }
