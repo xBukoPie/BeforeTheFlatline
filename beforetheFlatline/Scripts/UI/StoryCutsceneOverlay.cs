@@ -116,7 +116,10 @@ void fragment()
             DayClock.Instance.Running = false;
 
         if (_isEnding)
+        {
+            AudioManager.Instance?.ResetGoodEndingHeartbeat();
             AudioManager.Instance?.FadeOutBackgroundMusic(0.8);
+        }
 
         // Keep persistent HUD distortion from competing with the memory-specific effects.
         StatusEffectsOverlay.Instance?.SetPauseMenuVisible(true);
