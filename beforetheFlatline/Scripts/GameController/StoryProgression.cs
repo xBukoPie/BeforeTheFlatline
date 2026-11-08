@@ -147,6 +147,32 @@ public partial class StoryProgression : Node
         return true;
     }
 
+    // Completes a stage whose availability was already validated when its dialogue began.
+    public bool CompleteGuardianStage(int stage)
+    {
+        if (stage < 1 || stage > 3)
+            return false;
+
+        if (HasSeenGuardianStage(stage))
+            return true;
+
+        string requiredMemory = stage switch
+        {
+            1 => "Kitchen",
+            2 => "Laundry",
+            3 => "Bathroom",
+            _ => string.Empty
+        };
+
+        if (!HasSeenMemory(requiredMemory) ||
+            (stage > 1 && !HasSeenGuardianStage(stage - 1)))
+            return false;
+
+        _guardianStagesSeen.Add(stage);
+        GD.Print($"[StoryProgression] Guardian conversation {stage}/3 completed.");
+        return true;
+    }
+
     public bool MarkMemorySeen(string roomId)
     {
         if (!CanTriggerMemory(roomId))
