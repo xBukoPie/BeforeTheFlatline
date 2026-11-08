@@ -69,7 +69,6 @@ void fragment()
     private bool _collapseTransitionRunning;
     private bool _collapseTransitionPlayed;
     private bool _goodEndingHeartbeatStarted;
-    private bool _goodEndingRevealAudioStarted;
     private Tween _collapseTween;
     private VisualNovelScene _dialogue;
     private Tween _artTween;
