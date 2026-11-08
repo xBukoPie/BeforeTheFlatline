@@ -168,6 +168,38 @@ public partial class AudioManager : Node
     public void PlayAssessmentFailed() => PlaySoundEffect("Tasks/failedTask.mp3", -1f);
     public void PlayFallThud() => PlaySoundEffect("SoundFX/fallThud.mp3", -1f);
 
+    public void PlayGoodEnding1()
+    {
+        AudioStream stream = LoadSound("Ending/goodEnding1.mp3");
+        if (stream == null)
+            stream = LoadSound("Ending/goodEnding.mp3");
+
+        if (stream == null)
+        {
+            GD.PushWarning("AudioManager: good-ending reveal audio was not found.");
+            return;
+        }
+
+        PlaySoundEffect(stream == null ? "Ending/goodEnding1.mp3" :
+            (ResourceLoader.Exists(SoundRoot + "Ending/goodEnding1.mp3")
+                ? "Ending/goodEnding1.mp3" : "Ending/goodEnding.mp3"), -2f);
+    }
+
+    public void PlayGoodEnding2() =>
+        PlaySoundEffect("Ending/goodEnding2.wav", -2f);
+
+    public async void PlaySadEndingAfter(double delay)
+    {
+        if (delay > 0.0)
+        {
+            SceneTreeTimer timer = GetTree().CreateTimer(delay, true);
+            await ToSignal(timer, SceneTreeTimer.SignalName.Timeout);
+        }
+
+        FadeOutGameOver(0.55);
+        PlaySoundEffect("Ending/sadEnding.mp3", -3f);
+    }
+
     public double PlayGoodEndingHeartbeat()
     {
         if (_goodEndingHeartbeatPlayer != null &&
