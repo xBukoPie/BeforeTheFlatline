@@ -117,6 +117,9 @@ void fragment()
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
+        if (_isEnding)
+            AudioManager.Instance?.FadeOutBackgroundMusic(0.8);
+
         // Keep persistent HUD distortion from competing with the memory-specific effects.
         StatusEffectsOverlay.Instance?.SetPauseMenuVisible(true);
         StatusEffectsOverlay.Instance?.SetCinematicVignette(this, true);
@@ -385,12 +388,6 @@ void fragment()
         if (_isEnding &&
             beat.Dialogue.Text.Contains("heart-monitor", StringComparison.OrdinalIgnoreCase))
         {
-            if (!_goodEndingRevealAudioStarted)
-            {
-                _goodEndingRevealAudioStarted = true;
-                AudioManager.Instance?.PlayGoodEnding1();
-            }
-
             if (!_goodEndingHeartbeatStarted)
             {
                 _goodEndingHeartbeatStarted = true;
