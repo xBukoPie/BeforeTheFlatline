@@ -16,10 +16,10 @@ If Godot is on your PATH:
 .\Build-Windows.ps1
 ```
 
-Or provide the exact Godot .NET executable:
+Or provide the Godot .NET Windows console executable (the build script also locates the matching console binary when given the regular editor executable):
 
 ```powershell
-.\Build-Windows.ps1 -GodotPath "C:\Godot\Godot_v4.7.2-stable_mono_win64.exe"
+.\Build-Windows.ps1 -GodotPath "C:\Godot\Godot_v4.7.2-stable_mono_win64_console.exe"
 ```
 
 You can also set `GODOT_PATH` before running the script:
