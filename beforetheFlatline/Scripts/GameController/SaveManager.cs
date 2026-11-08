@@ -11,7 +11,7 @@ public partial class SaveManager : Node
     public const int ManualSlotCount = 3;
     public const string WorldScenePath = "res://Scenes/Home/Areas/World.tscn";
     private const string DefaultRoomPath = "res://Scenes/Home/Areas/PlayerRoom.tscn";
-    private const string SaveDirectory = "res://Saves";
+    private static string SaveDirectory => OS.HasFeature("editor") ? "res://Saves" : "user://Saves";
     private const string AutoSaveFileName = "autosave.json";
     private const double AutoSaveIntervalSeconds = 60.0;
 
