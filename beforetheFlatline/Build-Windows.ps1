@@ -56,16 +56,16 @@ New-Item -ItemType Directory -Path $ExportDirectory -Force | Out-Null
 Push-Location $ProjectRoot
 try {
     Write-Host "Godot: $GodotVersion"
+    Write-Host "Importing project resources and generating the Godot editor cache..."
+    & $GodotPath --headless --editor --path $ProjectRoot --quit
+    if ($LASTEXITCODE -ne 0) {
+        throw "Godot project import/editor initialization failed."
+    }
+
     Write-Host "Building C# solution (ExportRelease)..."
     & dotnet build $SolutionPath --configuration ExportRelease
     if ($LASTEXITCODE -ne 0) {
         throw "The C# ExportRelease build failed."
-    }
-
-    Write-Host "Importing project resources..."
-    & $GodotPath --headless --path $ProjectRoot --import
-    if ($LASTEXITCODE -ne 0) {
-        throw "Godot resource import failed."
     }
 
     Write-Host "Exporting Windows Desktop release..."
