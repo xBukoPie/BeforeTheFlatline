@@ -37,6 +37,8 @@ public partial class AudioManager : Node
     private AudioStreamPlayer _sadEndingPlayer;
     private AudioStreamPlayer _goodEnding1Player;
     private AudioStreamPlayer _goodEnding2Player;
+    private Tween _goodEnding1FadeTween;
+    private Tween _goodEnding2FadeTween;
     private int _goodEnding1RequestId;
     private AudioStreamPlayer _goodEndingHeartbeatPlayer;
     private AudioStream _goodEndingHeartbeatStream;
@@ -200,6 +202,7 @@ public partial class AudioManager : Node
             return;
         }
 
+        KillEndingFadeTween(ref _goodEnding1FadeTween);
         StopTrackedEndingPlayer(_goodEnding1Player);
         _goodEnding1Player = PlayTrackedEndingMusic("GoodEnding1Player", stream, -2f);
     }
@@ -207,6 +210,7 @@ public partial class AudioManager : Node
     public void FadeOutGoodEnding1(double duration = 0.75)
     {
         _goodEnding1RequestId++;
+        KillEndingFadeTween(ref _goodEnding1FadeTween);
         AudioStreamPlayer player = _goodEnding1Player;
         _goodEnding1Player = null;
         FadeTrackedEndingPlayer(player, duration);
@@ -227,12 +231,14 @@ public partial class AudioManager : Node
             return;
         }
 
+        KillEndingFadeTween(ref _goodEnding2FadeTween);
         StopTrackedEndingPlayer(_goodEnding2Player);
         _goodEnding2Player = PlayTrackedEndingMusic("GoodEnding2Player", stream, -2f);
     }
 
     public void FadeOutGoodEnding2(double duration = 0.75)
     {
+        KillEndingFadeTween(ref _goodEnding2FadeTween);
         AudioStreamPlayer player = _goodEnding2Player;
         _goodEnding2Player = null;
         FadeTrackedEndingPlayer(player, duration);
@@ -259,7 +265,20 @@ public partial class AudioManager : Node
         fadeIn.TweenProperty(player, "volume_db", targetVolumeDb, 0.48)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
+
+        if (playerName == "GoodEnding1Player")
+            _goodEnding1FadeTween = fadeIn;
+        else if (playerName == "GoodEnding2Player")
+            _goodEnding2FadeTween = fadeIn;
+
         return player;
+    }
+
+    private static void KillEndingFadeTween(ref Tween tween)
+    {
+        if (tween != null && tween.IsValid())
+            tween.Kill();
+        tween = null;
     }
 
     private void StopTrackedEndingPlayer(AudioStreamPlayer player)
