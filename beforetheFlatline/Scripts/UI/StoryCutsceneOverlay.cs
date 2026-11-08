@@ -116,9 +116,6 @@ void fragment()
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
-        if (_isEnding)
-            AudioManager.Instance?.PlayGoodEnding1();
-
         // Keep persistent HUD distortion from competing with the memory-specific effects.
         StatusEffectsOverlay.Instance?.SetPauseMenuVisible(true);
         StatusEffectsOverlay.Instance?.SetCinematicVignette(this, true);
