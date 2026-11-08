@@ -35,6 +35,9 @@ public partial class AudioManager : Node
     private AudioStream _nightTrack;
     private AudioStreamPlayer _gameOverPlayer;
     private AudioStreamPlayer _sadEndingPlayer;
+    private AudioStreamPlayer _goodEnding1Player;
+    private AudioStreamPlayer _goodEnding2Player;
+    private int _goodEnding1RequestId;
     private AudioStreamPlayer _goodEndingHeartbeatPlayer;
     private AudioStream _goodEndingHeartbeatStream;
     private bool _goodEndingHeartbeatStarted;
@@ -169,24 +172,123 @@ public partial class AudioManager : Node
     public void PlayAssessmentFailed() => PlaySoundEffect("Tasks/failedTask.mp3", -1f);
     public void PlayFallThud() => PlaySoundEffect("SoundFX/fallThud.mp3", -1f);
 
-    public void PlayGoodEnding1()
+    public void FadeOutBackgroundMusic(double duration = 0.75) =>
+        FadeOutMusic(duration);
+
+    public async void PlayGoodEnding1()
     {
+        int requestId = ++_goodEnding1RequestId;
+        FadeOutMusic(0.65);
+
+        // Let the world score finish fading before the summary cue begins.
+        SceneTreeTimer timer = GetTree().CreateTimer(0.68, true);
+        await ToSignal(timer, SceneTreeTimer.SignalName.Timeout);
+
+        if (requestId != _goodEnding1RequestId ||
+            !IsCurrentScene("res://Scenes/Ending/GoodEndingBriefing.tscn"))
+            return;
+
         string preferredPath = ResolveSoundPath(SoundRoot + "Ending/goodEnding1.mp3");
         string selectedPath = ResourceLoader.Exists(preferredPath)
             ? "Ending/goodEnding1.mp3"
             : "Ending/goodEnding.mp3";
+        AudioStream stream = LoadSound(selectedPath);
 
-        if (LoadSound(selectedPath) == null)
+        if (stream == null)
         {
-            GD.PushWarning("AudioManager: good-ending reveal audio was not found.");
+            GD.PushWarning("AudioManager: good-ending summary audio was not found.");
             return;
         }
 
-        PlaySoundEffect(selectedPath, -2f);
+        StopTrackedEndingPlayer(_goodEnding1Player);
+        _goodEnding1Player = PlayTrackedEndingMusic("GoodEnding1Player", stream, -2f);
     }
 
-    public void PlayGoodEnding2() =>
-        PlaySoundEffect("Ending/goodEnding2.wav", -2f);
+    public void FadeOutGoodEnding1(double duration = 0.75)
+    {
+        _goodEnding1RequestId++;
+        AudioStreamPlayer player = _goodEnding1Player;
+        _goodEnding1Player = null;
+        FadeTrackedEndingPlayer(player, duration);
+    }
+
+    public void PlayGoodEnding2()
+    {
+        if (!IsCurrentScene("res://Scenes/Ending/EndingCredits.tscn"))
+            return;
+
+        FadeOutMusic(0.55);
+        FadeOutGoodEnding1(0.55);
+
+        AudioStream stream = LoadSound("Ending/goodEnding2.wav");
+        if (stream == null)
+        {
+            GD.PushWarning("AudioManager: good-ending credits audio was not found.");
+            return;
+        }
+
+        StopTrackedEndingPlayer(_goodEnding2Player);
+        _goodEnding2Player = PlayTrackedEndingMusic("GoodEnding2Player", stream, -2f);
+    }
+
+    public void FadeOutGoodEnding2(double duration = 0.75)
+    {
+        AudioStreamPlayer player = _goodEnding2Player;
+        _goodEnding2Player = null;
+        FadeTrackedEndingPlayer(player, duration);
+    }
+
+    private AudioStreamPlayer PlayTrackedEndingMusic(
+        string playerName, AudioStream stream, float targetVolumeDb)
+    {
+        if (stream == null)
+            return null;
+
+        var player = new AudioStreamPlayer
+        {
+            Name = playerName,
+            ProcessMode = ProcessModeEnum.Always,
+            Bus = MusicBusName,
+            Stream = stream,
+            VolumeDb = MusicSilentDb
+        };
+        AddChild(player);
+        player.Play();
+
+        Tween fadeIn = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        fadeIn.TweenProperty(player, "volume_db", targetVolumeDb, 0.48)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        return player;
+    }
+
+    private void StopTrackedEndingPlayer(AudioStreamPlayer player)
+    {
+        if (player != null && GodotObject.IsInstanceValid(player))
+            player.Stop();
+    }
+
+    private async void FadeTrackedEndingPlayer(AudioStreamPlayer player, double duration)
+    {
+        if (player == null || !GodotObject.IsInstanceValid(player) || !player.Playing)
+            return;
+
+        Tween fade = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        fade.TweenProperty(player, "volume_db", MusicSilentDb, Math.Max(0.1, duration))
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(fade, Tween.SignalName.Finished);
+
+        if (GodotObject.IsInstanceValid(player))
+            player.Stop();
+    }
+
+    private bool IsCurrentScene(string scenePath)
+    {
+        Node current = GetTree().CurrentScene;
+        return current != null &&
+            string.Equals(current.SceneFilePath, scenePath, StringComparison.OrdinalIgnoreCase);
+    }
 
     public async void PlaySadEndingAfter(double delay)
     {
