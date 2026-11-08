@@ -195,6 +195,12 @@ public partial class AudioManager : Node
             await ToSignal(timer, SceneTreeTimer.SignalName.Timeout);
         }
 
+        Node currentScene = GetTree().CurrentScene;
+        if (currentScene == null ||
+            !string.Equals(currentScene.SceneFilePath, "res://Scenes/Ending/BadEnding.tscn",
+                StringComparison.OrdinalIgnoreCase))
+            return;
+
         FadeOutGameOver(0.55);
         PlaySoundEffect("Ending/sadEnding.mp3", -3f);
     }
