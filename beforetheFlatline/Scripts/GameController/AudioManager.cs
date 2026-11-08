@@ -34,6 +34,7 @@ public partial class AudioManager : Node
     private AudioStream _dayTrack;
     private AudioStream _nightTrack;
     private AudioStreamPlayer _gameOverPlayer;
+    private AudioStreamPlayer _sadEndingPlayer;
     private AudioStreamPlayer _goodEndingHeartbeatPlayer;
     private AudioStream _goodEndingHeartbeatStream;
     private bool _goodEndingHeartbeatStarted;
@@ -202,7 +203,7 @@ public partial class AudioManager : Node
             return;
 
         FadeOutGameOver(0.55);
-        PlaySoundEffect("Ending/sadEnding.mp3", -3f);
+        _sadEndingPlayer = PlaySoundEffect("Ending/sadEnding.mp3", -3f);
     }
 
     public double PlayGoodEndingHeartbeat()
@@ -304,19 +305,24 @@ public partial class AudioManager : Node
 
     public async void FadeOutGameOver(double duration = 0.65)
     {
-        AudioStreamPlayer player = _gameOverPlayer;
+        AudioStreamPlayer[] players = { _gameOverPlayer, _sadEndingPlayer };
         _gameOverPlayer = null;
-        if (player == null || !GodotObject.IsInstanceValid(player) || !player.Playing)
-            return;
+        _sadEndingPlayer = null;
 
-        Tween tween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
-        tween.TweenProperty(player, "volume_db", MusicSilentDb, Math.Max(0.1, duration))
-            .SetTrans(Tween.TransitionType.Sine)
-            .SetEase(Tween.EaseType.InOut);
-        await ToSignal(tween, Tween.SignalName.Finished);
+        foreach (AudioStreamPlayer player in players)
+        {
+            if (player == null || !GodotObject.IsInstanceValid(player) || !player.Playing)
+                continue;
 
-        if (GodotObject.IsInstanceValid(player))
-            player.Stop();
+            Tween tween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+            tween.TweenProperty(player, "volume_db", MusicSilentDb, Math.Max(0.1, duration))
+                .SetTrans(Tween.TransitionType.Sine)
+                .SetEase(Tween.EaseType.InOut);
+            await ToSignal(tween, Tween.SignalName.Finished);
+
+            if (GodotObject.IsInstanceValid(player))
+                player.Stop();
+        }
     }
 
     private AudioStreamPlayer CreateMusicPlayer(string playerName)
