@@ -14,6 +14,7 @@ public partial class DialoguePanel : Control
 
     public override void _Ready()
     {
+        InteractionPromptManager.Instance?.SetPromptsSuppressed(this, true);
         _nameLabel = GetNode<Label>("PanelBackground/NameLabel");
         _portrait = GetNode<TextureRect>("PanelBackground/Portrait");
         _textLabel = GetNode<RichTextLabel>("PanelBackground/TextLabel");
@@ -27,6 +28,7 @@ public partial class DialoguePanel : Control
 
     public override void _ExitTree()
     {
+        InteractionPromptManager.Instance?.SetPromptsSuppressed(this, false);
         VisibilityChanged -= OnVisibilityChanged;
         StatusEffectsOverlay.Instance?.SetCinematicVignette(this, false);
     }
