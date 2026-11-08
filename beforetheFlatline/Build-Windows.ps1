@@ -96,10 +96,10 @@ New-Item -ItemType Directory -Path $ExportDirectory -Force | Out-Null
 Push-Location $ProjectRoot
 try {
     Write-Host "Godot: $GodotVersion"
-    Write-Host "Importing resources and building the Godot C# solution..."
-    & $GodotPath --headless --editor --path $ProjectRoot --build-solutions --quit
+    Write-Host "Importing project resources..."
+    & $GodotPath --headless --path $ProjectRoot --import
     if ($LASTEXITCODE -ne 0) {
-        throw "Godot resource import or C# solution build failed."
+        throw "Godot resource import failed."
     }
 
     Write-Host "Building C# solution (ExportRelease)..."
