@@ -20,6 +20,9 @@ public partial class SceneTransition : CanvasLayer
     private Control _activeLoadingOverlay;
     private ProgressBar _activeLoadingProgress;
     private Label _activeLoadingStatus;
+    private ColorRect _overlayFade;
+    private Tween _overlayFadeTween;
+    private bool _overlayFadeAnimating;
     private bool _busy;
     private string _queuedCriticalScenePath;
 
@@ -45,6 +48,18 @@ public partial class SceneTransition : CanvasLayer
         };
         _fade.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         AddChild(_fade);
+
+        _overlayFade = new ColorRect
+        {
+            Name = "DialogueOverlayFade",
+            Color = Colors.Black,
+            Modulate = new Color(1f, 1f, 1f, 0f),
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            Visible = false,
+            ProcessMode = ProcessModeEnum.Always
+        };
+        _overlayFade.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        AddChild(_overlayFade);
 
         BuildLoadingOverlay();
         BuildSchoolTravelOverlay();
@@ -127,29 +142,66 @@ public partial class SceneTransition : CanvasLayer
         _busy = false;
     }
 
-    // Covers or reveals an in-world dialogue overlay without changing the current scene.
+    // Covers or reveals an in-world dialogue overlay without blocking scene changes.
     public async Task<bool> FadeToBlackForOverlayAsync(float duration = 0.28f)
     {
-        if (_busy || _fade == null || !GodotObject.IsInstanceValid(_fade))
+        if (_overlayFade == null || _overlayFadeAnimating ||
+            !GodotObject.IsInstanceValid(_overlayFade))
             return false;
 
-        _busy = true;
-        _fade.Visible = true;
-        _fade.Modulate = new Color(1f, 1f, 1f, 0f);
-        _fade.MouseFilter = Control.MouseFilterEnum.Stop;
-        await FadeTo(1f, Math.Max(0.05f, duration));
+        _overlayFadeAnimating = true;
+        if (_overlayFadeTween != null && _overlayFadeTween.IsValid())
+            _overlayFadeTween.Kill();
+
+        _overlayFade.Visible = true;
+        _overlayFade.Modulate = new Color(1f, 1f, 1f, 0f);
+        _overlayFade.MouseFilter = Control.MouseFilterEnum.Stop;
+
+        _overlayFadeTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        _overlayFadeTween.TweenProperty(_overlayFade, "modulate:a", 1f, Math.Max(0.05f, duration))
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(_overlayFadeTween, Tween.SignalName.Finished);
+        _overlayFadeAnimating = false;
         return true;
     }
 
     public async Task FadeFromBlackForOverlayAsync(float duration = 0.34f)
     {
-        if (!_busy || _fade == null || !GodotObject.IsInstanceValid(_fade))
+        if (_overlayFade == null || !_overlayFade.Visible || _overlayFadeAnimating ||
+            !GodotObject.IsInstanceValid(_overlayFade))
             return;
 
-        await FadeTo(0f, Math.Max(0.05f, duration));
-        _fade.MouseFilter = Control.MouseFilterEnum.Ignore;
-        _fade.Visible = false;
-        _busy = false;
+        _overlayFadeAnimating = true;
+        if (_overlayFadeTween != null && _overlayFadeTween.IsValid())
+            _overlayFadeTween.Kill();
+
+        _overlayFadeTween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        _overlayFadeTween.TweenProperty(_overlayFade, "modulate:a", 0f, Math.Max(0.05f, duration))
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(_overlayFadeTween, Tween.SignalName.Finished);
+
+        if (GodotObject.IsInstanceValid(_overlayFade))
+        {
+            _overlayFade.Visible = false;
+            _overlayFade.MouseFilter = Control.MouseFilterEnum.Ignore;
+        }
+        _overlayFadeAnimating = false;
+    }
+
+    public void CancelOverlayFade()
+    {
+        if (_overlayFadeTween != null && _overlayFadeTween.IsValid())
+            _overlayFadeTween.Kill();
+
+        _overlayFadeAnimating = false;
+        if (_overlayFade == null || !GodotObject.IsInstanceValid(_overlayFade))
+            return;
+
+        _overlayFade.Modulate = new Color(1f, 1f, 1f, 0f);
+        _overlayFade.Visible = false;
+        _overlayFade.MouseFilter = Control.MouseFilterEnum.Ignore;
     }
 
     // Loads a scene while showing progress..
