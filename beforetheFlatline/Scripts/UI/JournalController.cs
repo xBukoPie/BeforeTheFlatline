@@ -571,13 +571,26 @@ public partial class JournalController : CanvasLayer
     {
         var card = CreateCard();
         _pageBody.AddChild(card);
-        var row = new HBoxContainer();
+
+        var row = new HBoxContainer
+        {
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
+        };
+        row.AddThemeConstantOverride("separation", 16);
         card.AddChild(row);
 
         var left = CreatePageTitle(label);
         left.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        left.AutowrapMode = TextServer.AutowrapMode.Off;
         row.AddChild(left);
+
+        // Keep numeric stats in a fixed-width, single-line column so HBox sizing
+        // cannot squeeze each digit onto its own line at narrower resolutions.
         var right = CreatePageTitle(value);
+        right.CustomMinimumSize = new Vector2(150, 0);
+        right.SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd;
+        right.HorizontalAlignment = HorizontalAlignment.Right;
+        right.AutowrapMode = TextServer.AutowrapMode.Off;
         right.AddThemeColorOverride("font_color", new Color("d8c6ff"));
         row.AddChild(right);
     }
