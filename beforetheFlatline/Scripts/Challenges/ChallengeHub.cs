@@ -56,7 +56,7 @@ public partial class ChallengeHub : Control
         };
         start.Pressed += () =>
         {
-            DailyTestSession.Reset();
+            DailyTestSession.BeginFromHub(DayClock.Instance?.DayNumber ?? 1);
             if (SceneTransition.Instance != null)
                 SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Challenges/SequenceChallenge.tscn");
             else

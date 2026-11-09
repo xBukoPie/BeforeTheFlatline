@@ -68,7 +68,6 @@ void fragment()
     private Label _transitionText;
     private bool _collapseTransitionRunning;
     private bool _collapseTransitionPlayed;
-    private bool _goodEndingHeartbeatStarted;
     private Tween _collapseTween;
     private VisualNovelScene _dialogue;
     private Tween _artTween;
@@ -106,6 +105,7 @@ void fragment()
     public override void _Ready()
     {
         AddToGroup("story_cutscene");
+        InteractionPromptManager.Instance?.SetPromptsSuppressed(this, true);
         ProcessMode = ProcessModeEnum.Always;
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
@@ -114,6 +114,12 @@ void fragment()
 
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
+
+        if (_isEnding)
+        {
+            AudioManager.Instance?.ResetGoodEndingHeartbeat();
+            AudioManager.Instance?.FadeOutBackgroundMusic(0.8);
+        }
 
         // Keep persistent HUD distortion from competing with the memory-specific effects.
         StatusEffectsOverlay.Instance?.SetPauseMenuVisible(true);
@@ -153,6 +159,7 @@ void fragment()
 
     public override void _ExitTree()
     {
+        InteractionPromptManager.Instance?.SetPromptsSuppressed(this, false);
         if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
         {
             _dialogue.BeforeLinePresentationAsync = null;
@@ -339,7 +346,7 @@ void fragment()
         }
         _dialogue.PlayDemoOnReady = false;
         _dialogue.LoopDemo = false;
-        _dialogue.BeforeLinePresentationAsync = null;
+        _dialogue.BeforeLinePresentationAsync = PrepareEndingDialogueBeatAsync;
         _dialogue.LinePresented += OnLinePresented;
         _dialogue.ChoiceSelectedAtLine += OnChoiceSelectedAtLine;
         _dialogue.DialogueFinished += OnDialogueFinished;
@@ -358,6 +365,66 @@ void fragment()
 
         GD.Print($"[StoryCutsceneOverlay] Starting {_beats.Count} dialogue beats for '{_heading}'.");
         _dialogue.StartDialogue(lines);
+    }
+
+    private async Task PrepareEndingDialogueBeatAsync(int index, DialogueLine line)
+    {
+        if (!_isEnding || _finished)
+            return;
+
+        const string goodEndingImageOne = "res://Assets/Cutscenes/cutsceneGoodEnding1.jpg";
+        const string goodEndingImageTwo = "res://Assets/Cutscenes/cutsceneGoodEnding2.jpg";
+
+        if (index == 5)
+            await TransitionEndingArtworkAsync(goodEndingImageOne, playHeartbeat: true);
+        else if (index == 7)
+            await TransitionEndingArtworkAsync(goodEndingImageTwo, playHeartbeat: false);
+    }
+
+    private async Task TransitionEndingArtworkAsync(string imagePath, bool playHeartbeat)
+    {
+        if (_finished || !IsInsideTree() ||
+            _transitionCover == null || !GodotObject.IsInstanceValid(_transitionCover) ||
+            _art == null || !GodotObject.IsInstanceValid(_art))
+            return;
+
+        if (_masterBedroomBeatTween != null && _masterBedroomBeatTween.IsValid())
+            _masterBedroomBeatTween.Kill();
+        if (_artTween != null && _artTween.IsValid())
+            _artTween.Kill();
+
+        _dialogue?.SetMemoryTransitionBlocked(true);
+        _transitionCover.Visible = true;
+        _transitionText.Visible = false;
+        _transitionRoot.MoveChild(_transitionCover, _transitionRoot.GetChildCount() - 1);
+        _transitionCover.Modulate = new Color(1f, 1f, 1f, 0f);
+
+        Tween coverIn = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        coverIn.TweenProperty(_transitionCover, "modulate:a", 1f, 0.62f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(coverIn, Tween.SignalName.Finished);
+
+        if (_finished || !IsInsideTree())
+            return;
+
+        // Swap the hospital artwork only while the screen is fully covered.
+        SetArtworkImmediately(imagePath);
+
+        if (playHeartbeat)
+            AudioManager.Instance?.PlayGoodEndingHeartbeat(2.15);
+
+        Tween reveal = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        reveal.TweenProperty(_transitionCover, "modulate:a", 0f, playHeartbeat ? 2.15f : 1.05f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(reveal, Tween.SignalName.Finished);
+
+        if (_finished || !IsInsideTree())
+            return;
+
+        _transitionCover.Visible = false;
+        _dialogue?.SetMemoryTransitionBlocked(false);
     }
 
     private void OnChoiceSelectedAtLine(int lineIndex, int choiceIndex)
@@ -379,13 +446,6 @@ void fragment()
         StoryCutsceneBeat beat = _beats[index];
         GD.Print($"[StoryCutsceneOverlay] Beat {index + 1}/{_beats.Count}: {beat.Dialogue.Speaker} [{beat.EffectCue}]");
 
-        if (_isEnding && !_goodEndingHeartbeatStarted &&
-            beat.Dialogue.Text.Contains("heart-monitor", StringComparison.OrdinalIgnoreCase))
-        {
-            _goodEndingHeartbeatStarted = true;
-            AudioManager.Instance?.PlayGoodEndingHeartbeat();
-        }
-
         bool collapseCue =
             string.Equals(beat.EffectCue, "blackout", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(beat.EffectCue, "collapse", StringComparison.OrdinalIgnoreCase);
@@ -393,7 +453,7 @@ void fragment()
 
         if (_isEnding && index == 0)
             SetArtwork(beat.ImagePath);
-        else if (_isEnding && index > 0 && !beginCollapse)
+        else if (_isEnding && index > 0 && index < 5 && !beginCollapse)
             TransitionMasterBedroomArtwork(beat.ImagePath);
 
         ApplyMemoryCue(beat.EffectCue);

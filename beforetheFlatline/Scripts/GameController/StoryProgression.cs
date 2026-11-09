@@ -127,6 +127,10 @@ public partial class StoryProgression : Node
         if (RoomKeyProgression.Instance == null || !RoomKeyProgression.Instance.IsRoomUnlocked(roomId))
             return false;
 
+        // Guardian dialogue must follow the matching photograph, not merely the key unlock.
+        if (!HasSeenMemory(roomId))
+            return false;
+
         // Legacy saves without an unlock date make the conversation available from day two onward.
         return unlockedDay >= 1 ? currentDay > unlockedDay : currentDay >= 2;
     }
@@ -136,6 +140,32 @@ public partial class StoryProgression : Node
     public bool MarkGuardianStageSeen(int stage)
     {
         if (!CanShowGuardianStage(stage))
+            return false;
+
+        _guardianStagesSeen.Add(stage);
+        GD.Print($"[StoryProgression] Guardian conversation {stage}/3 completed.");
+        return true;
+    }
+
+    // Completes a stage whose availability was already validated when its dialogue began.
+    public bool CompleteGuardianStage(int stage)
+    {
+        if (stage < 1 || stage > 3)
+            return false;
+
+        if (HasSeenGuardianStage(stage))
+            return true;
+
+        string requiredMemory = stage switch
+        {
+            1 => "Kitchen",
+            2 => "Laundry",
+            3 => "Bathroom",
+            _ => string.Empty
+        };
+
+        if (!HasSeenMemory(requiredMemory) ||
+            (stage > 1 && !HasSeenGuardianStage(stage - 1)))
             return false;
 
         _guardianStagesSeen.Add(stage);

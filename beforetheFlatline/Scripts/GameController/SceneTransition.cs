@@ -20,6 +20,10 @@ public partial class SceneTransition : CanvasLayer
     private Control _activeLoadingOverlay;
     private ProgressBar _activeLoadingProgress;
     private Label _activeLoadingStatus;
+    private ColorRect _overlayFade;
+    private Tween _overlayFadeTween;
+    private bool _overlayFadeAnimating;
+    private int _overlayFadeRequestId;
     private bool _busy;
     private string _queuedCriticalScenePath;
 
@@ -45,6 +49,18 @@ public partial class SceneTransition : CanvasLayer
         };
         _fade.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         AddChild(_fade);
+
+        _overlayFade = new ColorRect
+        {
+            Name = "DialogueOverlayFade",
+            Color = Colors.Black,
+            Modulate = new Color(1f, 1f, 1f, 0f),
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            Visible = false,
+            ProcessMode = ProcessModeEnum.Always
+        };
+        _overlayFade.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        AddChild(_overlayFade);
 
         BuildLoadingOverlay();
         BuildSchoolTravelOverlay();
@@ -125,6 +141,79 @@ public partial class SceneTransition : CanvasLayer
         _fade.MouseFilter = Control.MouseFilterEnum.Ignore;
         _fade.Visible = false;
         _busy = false;
+    }
+
+    // Covers or reveals an in-world dialogue overlay without blocking scene changes.
+    public async Task<bool> FadeToBlackForOverlayAsync(float duration = 0.28f)
+    {
+        if (_overlayFade == null || !GodotObject.IsInstanceValid(_overlayFade))
+            return false;
+
+        int requestId = ++_overlayFadeRequestId;
+        if (_overlayFadeTween != null && _overlayFadeTween.IsValid())
+            _overlayFadeTween.Kill();
+
+        _overlayFadeAnimating = true;
+        _overlayFade.Visible = true;
+        _overlayFade.Modulate = new Color(1f, 1f, 1f, 0f);
+        _overlayFade.MouseFilter = Control.MouseFilterEnum.Stop;
+
+        Tween tween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        _overlayFadeTween = tween;
+        tween.TweenProperty(_overlayFade, "modulate:a", 1f, Math.Max(0.05f, duration))
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(tween, Tween.SignalName.Finished);
+
+        if (requestId != _overlayFadeRequestId)
+            return false;
+
+        _overlayFadeAnimating = false;
+        return true;
+    }
+
+    public async Task FadeFromBlackForOverlayAsync(float duration = 0.34f)
+    {
+        if (_overlayFade == null || !_overlayFade.Visible ||
+            !GodotObject.IsInstanceValid(_overlayFade))
+            return;
+
+        int requestId = ++_overlayFadeRequestId;
+        if (_overlayFadeTween != null && _overlayFadeTween.IsValid())
+            _overlayFadeTween.Kill();
+
+        _overlayFadeAnimating = true;
+        Tween tween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
+        _overlayFadeTween = tween;
+        tween.TweenProperty(_overlayFade, "modulate:a", 0f, Math.Max(0.05f, duration))
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
+        await ToSignal(tween, Tween.SignalName.Finished);
+
+        if (requestId != _overlayFadeRequestId)
+            return;
+
+        if (GodotObject.IsInstanceValid(_overlayFade))
+        {
+            _overlayFade.Visible = false;
+            _overlayFade.MouseFilter = Control.MouseFilterEnum.Ignore;
+        }
+        _overlayFadeAnimating = false;
+    }
+
+    public void CancelOverlayFade()
+    {
+        _overlayFadeRequestId++;
+        if (_overlayFadeTween != null && _overlayFadeTween.IsValid())
+            _overlayFadeTween.Kill();
+
+        _overlayFadeAnimating = false;
+        if (_overlayFade == null || !GodotObject.IsInstanceValid(_overlayFade))
+            return;
+
+        _overlayFade.Modulate = new Color(1f, 1f, 1f, 0f);
+        _overlayFade.Visible = false;
+        _overlayFade.MouseFilter = Control.MouseFilterEnum.Ignore;
     }
 
     // Loads a scene while showing progress..

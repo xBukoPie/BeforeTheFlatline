@@ -28,6 +28,8 @@ public static class WorldInteractableGlow
             Texture = GetRadialTexture(),
             Centered = true,
             ZIndex = 0,
+            ZAsRelative = true,
+            LightMask = Room.WorldLightMask,
             Scale = Vector2.One * baseScale,
             Modulate = new Color(tint.R, tint.G, tint.B, 0.62f),
             TextureFilter = CanvasItem.TextureFilterEnum.Linear,

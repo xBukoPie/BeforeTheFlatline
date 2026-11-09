@@ -4,10 +4,8 @@ using SchoolYardGame;
 public partial class GoodEndingBriefing : Control
 {
     private const string CreditsPath = "res://Scenes/Ending/EndingCredits.tscn";
-    private const double HeartbeatFadeSeconds = 2.2;
-    private const double CreditsTransitionSeconds = 1.25;
-
     private bool _creditsStarted;
+    private Button _creditsButton;
 
     public override void _Ready()
     {
@@ -15,22 +13,15 @@ public partial class GoodEndingBriefing : Control
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
-        double heartbeatRemaining = AudioManager.Instance?.PlayGoodEndingHeartbeat() ?? 0.0;
+        AudioManager.Instance?.PlayGoodEnding1();
+        AudioManager.Instance?.FadeOutGoodEndingHeartbeat(0.7);
         BuildUi();
-
-        if (heartbeatRemaining > 0.05)
-            ScheduleAutomaticCredits(heartbeatRemaining);
+        RevealCreditsButton();
     }
 
-    private async void ScheduleAutomaticCredits(double heartbeatRemaining)
+    public override void _ExitTree()
     {
-        double leadTime = HeartbeatFadeSeconds + CreditsTransitionSeconds + 0.8;
-        double waitSeconds = System.Math.Max(0.0, heartbeatRemaining - leadTime);
-        SceneTreeTimer timer = GetTree().CreateTimer(waitSeconds, true);
-        await ToSignal(timer, SceneTreeTimer.SignalName.Timeout);
-
-        if (IsInsideTree())
-            OpenCredits();
+        AudioManager.Instance?.FadeOutGoodEnding1(0.75);
     }
 
     private void BuildUi()
@@ -40,7 +31,7 @@ public partial class GoodEndingBriefing : Control
         var background = new TextureRect
         {
             Name = "HospitalBackground",
-            Texture = GD.Load<Texture2D>("res://Assets/Cutscenes/cutsceneGoodEnding.jpg"),
+            Texture = GD.Load<Texture2D>("res://Assets/Cutscenes/cutsceneGoodEnding2.jpg"),
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
             TextureFilter = CanvasItem.TextureFilterEnum.Linear,
@@ -51,7 +42,7 @@ public partial class GoodEndingBriefing : Control
 
         var shade = new ColorRect
         {
-            Color = new Color(0.015f, 0.025f, 0.05f, 0.82f),
+            Color = new Color(0.015f, 0.025f, 0.05f, 0.78f),
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
         shade.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
@@ -64,12 +55,12 @@ public partial class GoodEndingBriefing : Control
         var panel = new PanelContainer
         {
             Name = "GoodEndingBriefingPanel",
-            CustomMinimumSize = new Vector2(1190, 670),
+            CustomMinimumSize = new Vector2(940, 440),
             MouseFilter = Control.MouseFilterEnum.Stop
         };
         panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
-            BgColor = new Color(0.035f, 0.055f, 0.09f, 0.98f),
+            BgColor = new Color(0.035f, 0.055f, 0.09f, 0.97f),
             BorderColor = new Color("c6a77a"),
             BorderWidthLeft = 2,
             BorderWidthRight = 2,
@@ -79,15 +70,15 @@ public partial class GoodEndingBriefing : Control
             CornerRadiusTopRight = 12,
             CornerRadiusBottomLeft = 12,
             CornerRadiusBottomRight = 12,
-            ContentMarginLeft = 38,
-            ContentMarginRight = 38,
-            ContentMarginTop = 28,
-            ContentMarginBottom = 26
+            ContentMarginLeft = 42,
+            ContentMarginRight = 42,
+            ContentMarginTop = 34,
+            ContentMarginBottom = 30
         });
         center.AddChild(panel);
 
         var stack = new VBoxContainer();
-        stack.AddThemeConstantOverride("separation", 13);
+        stack.AddThemeConstantOverride("separation", 18);
         panel.AddChild(stack);
 
         var eyebrow = new Label
@@ -95,7 +86,7 @@ public partial class GoodEndingBriefing : Control
             Text = "BEFORE THE FLATLINE  •  GOOD ENDING",
             HorizontalAlignment = HorizontalAlignment.Center
         };
-        eyebrow.AddThemeFontSizeOverride("font_size", 15);
+        eyebrow.AddThemeFontSizeOverride("font_size", 14);
         eyebrow.AddThemeColorOverride("font_color", new Color("d7b98b"));
         stack.AddChild(eyebrow);
 
@@ -104,88 +95,65 @@ public partial class GoodEndingBriefing : Control
             Text = "YOU FOUND YOUR WAY BACK",
             HorizontalAlignment = HorizontalAlignment.Center
         };
-        title.AddThemeFontSizeOverride("font_size", 38);
+        title.AddThemeFontSizeOverride("font_size", 34);
         title.AddThemeColorOverride("font_color", new Color("f1e4d2"));
         stack.AddChild(title);
 
-        var subtitle = new Label
+        var summary = new Label
         {
-            Text = "THE STORY BEHIND THE ENDING",
+            Text = "The school days and familiar rooms were part of a world your mind built while you were in a coma. Each photograph returned a piece of the life you had been struggling through. When you finally reached your parents, you woke in the hospital. They were there, waiting for you.",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill
+        };
+        summary.AddThemeFontSizeOverride("font_size", 21);
+        summary.AddThemeColorOverride("font_color", new Color("e8edf5"));
+        summary.AddThemeConstantOverride("line_spacing", 7);
+        stack.AddChild(summary);
+
+        var closing = new Label
+        {
+            Text = "You are awake. You do not have to face everything alone.",
             HorizontalAlignment = HorizontalAlignment.Center
         };
-        subtitle.AddThemeFontSizeOverride("font_size", 19);
-        subtitle.AddThemeColorOverride("font_color", new Color("a9d8bc"));
-        stack.AddChild(subtitle);
+        closing.AddThemeFontSizeOverride("font_size", 19);
+        closing.AddThemeColorOverride("font_color", new Color("a9d8bc"));
+        stack.AddChild(closing);
 
-        var scroll = new ScrollContainer
+        var buttons = new HBoxContainer
         {
-            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
-            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled
+            Alignment = BoxContainer.AlignmentMode.Center
         };
-        stack.AddChild(scroll);
-
-        var story = new VBoxContainer
-        {
-            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-        };
-        story.AddThemeConstantOverride("separation", 17);
-        scroll.AddChild(story);
-
-        AddStorySection(story, "THE ROUTINE THAT FELT REAL",
-            "At the beginning, you wake in a familiar home and move through what seems to be an ordinary day. You get ready, make your way to school, meet classmates, complete assessments, and return home. Keys open rooms that were previously out of reach. The clock keeps moving, and each day appears to lead naturally into the next. Nothing about the routine immediately explains why you are there or why some moments feel strangely distant. It becomes the world you know, even as small details begin to feel wrong.");
-
-        AddStorySection(story, "THE KITCHEN — WHEN EVEN EATING BECAME DIFFICULT",
-            "The first photograph brings back a memory connected to food. Meals no longer feel comforting: food tastes bland, and its smell can turn your stomach. What should be a familiar, everyday activity has become difficult. The memory is not simply about a room or a meal. It is a fragment of how you were feeling before the events of the story, returning in pieces rather than as one clear explanation.");
-
-        AddStorySection(story, "THE LAUNDRY — EXHAUSTION THAT BUILT UP",
-            "The laundry memory reveals how tiring the repeated routine had become. Washing your uniform day after day leaves your hands feeling numb, and you admit how exhausted you are. You also feel reluctant to return to school. The memory adds another part of the pressure you had been carrying: even ordinary responsibilities had begun to feel heavy, and the same routine kept demanding that you continue.");
-
-        AddStorySection(story, "THE BATHROOM — PRESSURE AND COMPARISON",
-            "The bathroom memory brings the pressure closer to the surface. You are struggling with comparison and the feeling that expectations are closing in. The memory shows how deeply those thoughts affect you. It is another fragment of the life you had been living before the coma, and it helps explain why the familiar school routine in the false world never felt entirely peaceful.");
-
-        AddStorySection(story, "THE MASTER BEDROOM — THE MOMENT YOU TRIED TO ASK FOR HELP",
-            "The final memory takes place in the master bedroom. You try to reach out to your parents and tell them that something is wrong. Before you can fully express what you have been carrying, the moment overwhelms you. You collapse. This is the point where the separate memories connect to what happened outside the world you have been experiencing: you had fallen into a coma, and the home-and-school routine was not your present reality.");
-
-        AddStorySection(story, "THE MYSTERIOUS GUIDE",
-            "A mysterious person appears throughout the journey and encourages you to keep moving toward the memories. They speak as though they understand that the world around you is not the whole truth. Their identity is deliberately left unknown. The story does not confirm who they are or provide a final explanation for their presence. What matters is the direction they offer: keep remembering, face what has been hidden, and find your way back.");
-
-        AddStorySection(story, "WAKING UP — THE PEOPLE WHO WAITED",
-            "As the bedroom memory reaches its breaking point, the familiar world gives way to the sound of a hospital monitor. You open your eyes in a hospital room. Your parents are there, close beside you, and their relief makes it clear that they have been waiting for you to wake. You reach for them and embrace them. The reunion is emotional because the distance that separated you from them has finally ended. You are no longer alone inside the false routine.");
-
-        AddStorySection(story, "WHAT THE ENDING MEANS",
-            "The school days, assessments, keys, locked rooms, classmates, and photographs formed the path through which your memories returned. The photographs were fragments of your life before the coma; recovering them brought you closer to understanding what had happened. The ordinary routine gave structure to the world you experienced, but it could not replace the people and reality waiting outside it. Reaching the good ending does not mean every difficulty has disappeared. It means you have returned, you have people beside you, and you have the possibility of speaking up and moving forward with support.");
-
-        var buttons = new HBoxContainer();
-        buttons.Alignment = BoxContainer.AlignmentMode.End;
         stack.AddChild(buttons);
 
-        var credits = CreateButton("Continue to Credits");
-        credits.Pressed += OpenCredits;
-        buttons.AddChild(credits);
+        _creditsButton = CreateButton("Continue to Credits");
+        _creditsButton.Disabled = true;
+        _creditsButton.Visible = false;
+        _creditsButton.Modulate = new Color(1f, 1f, 1f, 0f);
+        _creditsButton.Pressed += OpenCredits;
+        buttons.AddChild(_creditsButton);
     }
 
-    private static void AddStorySection(VBoxContainer parent, string heading, string body)
+    private async void RevealCreditsButton()
     {
-        var title = new Label
-        {
-            Text = heading,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart
-        };
-        title.AddThemeFontSizeOverride("font_size", 22);
-        title.AddThemeColorOverride("font_color", new Color("e4c99f"));
-        parent.AddChild(title);
+        SceneTreeTimer timer = GetTree().CreateTimer(2.6, true);
+        await ToSignal(timer, SceneTreeTimer.SignalName.Timeout);
 
-        var paragraph = new Label
-        {
-            Text = body,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-        };
-        paragraph.AddThemeFontSizeOverride("font_size", 20);
-        paragraph.AddThemeConstantOverride("line_spacing", 5);
-        paragraph.AddThemeColorOverride("font_color", new Color("e8edf5"));
-        parent.AddChild(paragraph);
+        if (!IsInsideTree() || _creditsStarted ||
+            _creditsButton == null || !GodotObject.IsInstanceValid(_creditsButton))
+            return;
+
+        _creditsButton.Visible = true;
+        Tween reveal = CreateTween();
+        reveal.TweenProperty(_creditsButton, "modulate:a", 1f, 0.5f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.Out);
+        await ToSignal(reveal, Tween.SignalName.Finished);
+
+        if (IsInsideTree() && !_creditsStarted &&
+            _creditsButton != null && GodotObject.IsInstanceValid(_creditsButton))
+            _creditsButton.Disabled = false;
     }
 
     private static Button CreateButton(string text)
@@ -193,10 +161,10 @@ public partial class GoodEndingBriefing : Control
         var button = new Button
         {
             Text = text,
-            CustomMinimumSize = new Vector2(250, 52),
+            CustomMinimumSize = new Vector2(270, 50),
             FocusMode = Control.FocusModeEnum.All
         };
-        button.AddThemeFontSizeOverride("font_size", 19);
+        button.AddThemeFontSizeOverride("font_size", 18);
         button.AddThemeColorOverride("font_color", new Color("f5f2ff"));
         button.AddThemeStyleboxOverride("normal", new StyleBoxFlat
         {
@@ -233,10 +201,11 @@ public partial class GoodEndingBriefing : Control
             return;
 
         _creditsStarted = true;
-        AudioManager.Instance?.FadeOutGoodEndingHeartbeatAfter(CreditsTransitionSeconds, HeartbeatFadeSeconds);
+        if (_creditsButton != null && GodotObject.IsInstanceValid(_creditsButton))
+            _creditsButton.Disabled = true;
 
         if (SceneTransition.Instance != null)
-            SceneTransition.Instance.ChangeSceneToFile(CreditsPath, (float)CreditsTransitionSeconds);
+            SceneTransition.Instance.ChangeSceneToFile(CreditsPath, 1.25f);
         else
             GetTree().ChangeSceneToFile(CreditsPath);
     }

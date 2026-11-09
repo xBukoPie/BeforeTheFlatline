@@ -59,11 +59,13 @@ public partial class HouseActivityInteractable : Area2D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (!_playerInside || _runningActivity || !@event.IsActionPressed("interact"))
+        if (!_playerInside || _runningActivity)
             return;
 
-        if (InteractionPromptManager.Instance != null &&
-            !InteractionPromptManager.Instance.IsPrimary(this))
+        bool inputMatches = InteractionPromptManager.Instance != null
+            ? InteractionPromptManager.Instance.IsInputFor(this, @event)
+            : @event.IsActionPressed("interact");
+        if (!inputMatches)
             return;
 
         GetViewport().SetInputAsHandled();

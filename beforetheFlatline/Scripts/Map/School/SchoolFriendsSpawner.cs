@@ -250,9 +250,13 @@ public partial class SchoolFriendsSpawner : Node2D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (_conversationOpen ||
-            (InteractionPromptManager.Instance != null && !InteractionPromptManager.Instance.IsPrimary(this)) ||
-            !@event.IsActionPressed("interact"))
+        if (_conversationOpen)
+            return;
+
+        bool inputMatches = InteractionPromptManager.Instance != null
+            ? InteractionPromptManager.Instance.IsInputFor(this, @event)
+            : @event.IsActionPressed("interact");
+        if (!inputMatches)
             return;
 
         FriendActor friend = GetNearestFriend();

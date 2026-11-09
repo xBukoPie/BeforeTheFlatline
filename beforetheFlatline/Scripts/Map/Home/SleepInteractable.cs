@@ -41,11 +41,13 @@ public partial class SleepInteractable : Area2D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (!_playerInside || _sleeping || !@event.IsActionPressed("interact"))
+        if (!_playerInside || _sleeping)
             return;
 
-        if (InteractionPromptManager.Instance != null &&
-            !InteractionPromptManager.Instance.IsPrimary(this))
+        bool inputMatches = InteractionPromptManager.Instance != null
+            ? InteractionPromptManager.Instance.IsInputFor(this, @event)
+            : @event.IsActionPressed("interact");
+        if (!inputMatches)
             return;
 
         GetViewport().SetInputAsHandled();

@@ -11,7 +11,7 @@ public partial class SaveManager : Node
     public const int ManualSlotCount = 3;
     public const string WorldScenePath = "res://Scenes/Home/Areas/World.tscn";
     private const string DefaultRoomPath = "res://Scenes/Home/Areas/PlayerRoom.tscn";
-    private const string SaveDirectory = "res://Saves";
+    private static string SaveDirectory => OS.HasFeature("editor") ? "res://Saves" : "user://Saves";
     private const string AutoSaveFileName = "autosave.json";
     private const double AutoSaveIntervalSeconds = 60.0;
 
@@ -130,6 +130,35 @@ public partial class SaveManager : Node
 
         }
 
+        return true;
+    }
+
+    public bool DeleteAutoSave()
+    {
+        // Resolve/migrate legacy data first, then remove every known copy.
+        _ = GetAutoSavePath();
+        string[] paths =
+        {
+            $"{SaveDirectory}/{AutoSaveFileName}",
+            "user://Saves/autosave.json",
+            "user://autosave.json"
+        };
+
+        foreach (string path in paths)
+        {
+            if (!FileAccess.FileExists(path))
+                continue;
+
+            Error error = DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(path));
+            if (error != Error.Ok)
+            {
+                GD.PushError($"SaveManager: could not delete autosave '{path}' ({error}).");
+                return false;
+            }
+        }
+
+        _autosaveElapsed = 0;
+        _pendingWorldAutosave = false;
         return true;
     }
 

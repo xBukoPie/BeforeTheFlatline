@@ -108,7 +108,6 @@ public partial class PostChallengeConversation : Control
         var clock = DayClock.Instance;
         if (clock != null)
         {
-            clock.MarkSchoolChallengeCompletedToday();
             clock.Running = false;
             float homeTime = Mathf.Min(23.75f, clock.SchoolClosingHour + 0.25f);
             if (clock.Hour < homeTime)

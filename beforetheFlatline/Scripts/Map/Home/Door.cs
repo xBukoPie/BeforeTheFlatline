@@ -64,9 +64,11 @@ public partial class Door : Area2D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (_playerInside && !AutoEnter && !_wrongRoomFeedbackRunning &&
-            (InteractionPromptManager.Instance == null || InteractionPromptManager.Instance.IsPrimary(this)) &&
-            @event.IsActionPressed("interact"))
+        bool inputMatches = InteractionPromptManager.Instance != null
+            ? InteractionPromptManager.Instance.IsInputFor(this, @event)
+            : @event.IsActionPressed("interact");
+
+        if (_playerInside && !AutoEnter && !_wrongRoomFeedbackRunning && inputMatches)
         {
             if (DebugLog) GD.Print($"[Door] {Name}: interact pressed -> {TargetRoom} @ {TargetSpawn}");
             GetViewport().SetInputAsHandled();
@@ -133,6 +135,18 @@ public partial class Door : Area2D
             return;
         }
 
+        if (RequiresSchoolHours)
+        {
+            var guardian = GetTree().GetFirstNodeInGroup("guardian_interactable") as GuardianInteractable;
+            if (guardian != null && guardian.TryBeginMandatoryConversation(ContinueToTargetRoom))
+                return;
+        }
+
+        ContinueToTargetRoom();
+    }
+
+    private void ContinueToTargetRoom()
+    {
         var manager = GetTree().GetFirstNodeInGroup("room_manager") as RoomManager;
         if (manager == null)
         {

@@ -8,6 +8,7 @@ public partial class StoryPhotoInteractable : Area2D
 
     private Sprite2D _sprite;
     private Sprite2D _glow;
+    private CharacterBody2D _player;
     private bool _playerInside;
     private double _elapsed;
     private bool _triggered;
@@ -27,6 +28,14 @@ public partial class StoryPhotoInteractable : Area2D
             return;
         }
 
+        LightMask = Room.WorldLightMask;
+        _sprite.ZIndex = 0;
+        _sprite.ZAsRelative = true;
+        _sprite.LightMask = Room.WorldLightMask;
+        ZAsRelative = false;
+
+        Node roomManager = GetTree().GetFirstNodeInGroup("room_manager");
+        _player = roomManager?.GetNodeOrNull<CharacterBody2D>("Player");
         _glow = WorldInteractableGlow.AddGlow(this, new Color("f8d98a"), 3.3f);
 
         BodyEntered += OnBodyEntered;
@@ -42,6 +51,7 @@ public partial class StoryPhotoInteractable : Area2D
     public override void _Process(double delta)
     {
         _elapsed += delta;
+        UpdateDepthSorting();
         WorldInteractableGlow.Animate(_glow, _elapsed, 0.7f);
 
         bool available = StoryProgression.Instance?.CanTriggerMemory(MemoryId) == true;
@@ -66,13 +76,35 @@ public partial class StoryPhotoInteractable : Area2D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (_triggered || !_playerInside ||
-            (InteractionPromptManager.Instance != null && !InteractionPromptManager.Instance.IsPrimary(this)) ||
-            !@event.IsActionPressed("interact"))
+        if (_triggered || !_playerInside)
+            return;
+
+        bool inputMatches = InteractionPromptManager.Instance != null
+            ? InteractionPromptManager.Instance.IsInputFor(this, @event)
+            : @event.IsActionPressed("interact");
+        if (!inputMatches)
             return;
 
         GetViewport().SetInputAsHandled();
         BeginMemory();
+    }
+
+    private void UpdateDepthSorting()
+    {
+        if (_player == null || !GodotObject.IsInstanceValid(_player))
+        {
+            Node roomManager = GetTree().GetFirstNodeInGroup("room_manager");
+            _player = roomManager?.GetNodeOrNull<CharacterBody2D>("Player");
+        }
+
+        if (_player == null || !GodotObject.IsInstanceValid(_player))
+            return;
+
+        // The player and room objects are siblings under different parents, so compare global Y.
+        ZAsRelative = false;
+        ZIndex = GlobalPosition.Y >= _player.GlobalPosition.Y
+            ? Room.ObjectInFrontOfPlayerZIndex
+            : Room.ObjectBehindPlayerZIndex;
     }
 
     private void RefreshAvailability()
@@ -303,6 +335,7 @@ public partial class StoryPhotoInteractable : Area2D
         if (!finalMemory)
         {
             ApplyMemoryEffect();
+            InteractionPromptManager.Instance?.ShowNotice(this, GetMemoryFollowUpThought(MemoryId), 3.6f);
         }
         else
         {
@@ -320,6 +353,14 @@ public partial class StoryPhotoInteractable : Area2D
                 GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, briefingPath);
         }
     }
+
+    private static string GetMemoryFollowUpThought(string memoryId) => memoryId switch
+    {
+        "Kitchen" => "That photograph brought something back... There may be more memories hidden in the other rooms.",
+        "Laundry" => "I should keep looking. Another locked room might hold the next piece of my memory.",
+        "Bathroom" => "There is still one more room I need to reach. I should find the next key.",
+        _ => "I should keep looking for the rest of my memories."
+    };
 
     private void ApplyMemoryEffect()
     {

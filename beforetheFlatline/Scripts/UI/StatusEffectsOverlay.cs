@@ -17,6 +17,7 @@ public partial class StatusEffectsOverlay : CanvasLayer
     private float _vignetteAlpha;
     private ColorRect _pressureTop;
     private ColorRect _pressureBottom;
+    private ColorRect _pressureVignette;
     private Label _noticeLabel;
     private Label _statusLabel;
     private Label _heart;
@@ -307,6 +308,27 @@ void fragment() {
         _screenFx.Material = _fxMaterial;
         _effectWash = MakeRect("SanityTint");
 
+        _pressureVignette = MakeRect("PressureRedVignette");
+        _pressureVignette.Material = new ShaderMaterial
+        {
+            Shader = new Shader
+            {
+                Code = @"
+shader_type canvas_item;
+uniform float pressure_strength = 0.0;
+uniform float time_seconds = 0.0;
+
+void fragment() {
+    vec2 edge = min(UV, vec2(1.0) - UV);
+    float nearest_edge = min(edge.x, edge.y);
+    float border = 1.0 - smoothstep(0.015, 0.24, nearest_edge);
+    float pulse = (sin(time_seconds * 6.2) + 1.0) * 0.5;
+    float alpha = border * pressure_strength * (0.24 + pulse * 0.20);
+    COLOR = vec4(0.82, 0.012, 0.075, alpha);
+}"
+            }
+        };
+
         _pressureTop = MakeRect("PressureTop");
         _pressureTop.AnchorLeft = 0f;
         _pressureTop.AnchorRight = 1f;
@@ -381,10 +403,10 @@ void fragment() {
             Visible = false,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        _heart.AddThemeFontSizeOverride("font_size", 36);
-        _heart.AddThemeColorOverride("font_color", new Color("df3a52"));
-        _heart.AddThemeColorOverride("font_outline_color", new Color("130910"));
-        _heart.AddThemeConstantOverride("outline_size", 5);
+        _heart.AddThemeFontSizeOverride("font_size", 50);
+        _heart.AddThemeColorOverride("font_color", new Color("ff315c"));
+        _heart.AddThemeColorOverride("font_outline_color", new Color("26040d"));
+        _heart.AddThemeConstantOverride("outline_size", 7);
         _root.AddChild(_heart);
 
         _confusionWords.Add(CreateConfusionWord("why...", 0.04f, 0.36f, -1f));
@@ -467,11 +489,19 @@ void fragment() {
         _root.Visible = fade > 0.005f;
         float wobble = Mathf.Clamp(dizziness / 55f, 0f, 1f) * 0.62f * fade;
         float staticStrength = Mathf.Clamp(anxiety / 38f, 0f, 1f) * fade;
-        float pressureStrength = Mathf.Clamp(pressure / 50f, 0f, 1f) * fade;
+        float pressureStrength = pressure > 0
+            ? Mathf.Clamp(0.42f + pressure / 38f, 0.42f, 1f) * fade
+            : 0f;
         _fxMaterial.SetShaderParameter("dizziness_strength", wobble);
         _fxMaterial.SetShaderParameter("anxiety_strength", staticStrength);
         _fxMaterial.SetShaderParameter("pressure_strength", pressureStrength);
         _fxMaterial.SetShaderParameter("time_seconds", _elapsed);
+
+        if (_pressureVignette?.Material is ShaderMaterial pressureMaterial)
+        {
+            pressureMaterial.SetShaderParameter("pressure_strength", pressureStrength);
+            pressureMaterial.SetShaderParameter("time_seconds", _elapsed);
+        }
 
         for (int i = 0; i < _confusionWords.Count; i++)
         {
@@ -483,13 +513,13 @@ void fragment() {
         }
 
         float pulse = (Mathf.Sin(_elapsed * (5.5f + pressure / 30f)) + 1f) * 0.5f;
-        _heart.Visible = !onEndingPresentation && pressure > 0 && _endingFade > 0.02f;
-        _heart.Scale = Vector2.One * (0.93f + pulse * (0.09f + pressureStrength * 0.08f));
+        _heart.Visible = !onEndingPresentation && pressure > 0 && fade > 0.02f;
+        _heart.Scale = Vector2.One * (0.92f + pulse * (0.16f + pressureStrength * 0.12f));
         _heart.Modulate = new Color(1f, 1f, 1f,
-            _heart.Visible ? (0.22f + pulse * 0.28f) * fade : 0f);
+            _heart.Visible ? (0.56f + pulse * 0.34f) * fade : 0f);
 
-        float squeeze = pressure > 0 ? 4f + pressureStrength * 20f + pulse * 5f : 0f;
-        float pressureAlpha = Mathf.Clamp(pressureStrength * (0.08f + pulse * 0.06f) * fade, 0f, 0.16f);
+        float squeeze = pressure > 0 ? 6f + pressureStrength * 28f + pulse * 7f : 0f;
+        float pressureAlpha = Mathf.Clamp(pressureStrength * (0.18f + pulse * 0.10f), 0f, 0.34f);
         _pressureTop.OffsetBottom = squeeze;
         _pressureBottom.OffsetTop = -squeeze;
         _pressureTop.Color = new Color(0.72f, 0.08f, 0.18f, pressureAlpha);
@@ -513,6 +543,7 @@ void fragment() {
 
         _pressureTop.Visible = pressure > 0;
         _pressureBottom.Visible = pressure > 0;
+        _pressureVignette.Visible = pressure > 0 && fade > 0.005f;
         _dominantDebuff = FindDominant(dizziness, confusion, anxiety, pressure);
     }
 

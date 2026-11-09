@@ -3,6 +3,7 @@ using Godot;
 using System.Collections.Generic;
 using System.Linq;
 using System.Globalization;
+using SchoolYardGame;
 
 public static class DailyTestSession
 {
@@ -20,6 +21,10 @@ public static class DailyTestSession
     private static bool _active;
     private static bool _finalized;
     private static bool _failurePenaltyApplied;
+    private static bool _passedForDay;
+    private static bool _outcomeResolved;
+    private static int _bestScore;
+    private static int _bestPointsReceived;
 
     public const int QuestionCount = 4;
     public const int QuestionsNeededToPass = 3;
@@ -31,10 +36,14 @@ public static class DailyTestSession
     public static bool IsActive => _active;
     public static bool IsFinalized => _finalized;
     public static bool FailurePenaltyApplied => _failurePenaltyApplied;
+    public static bool PassedForDay => _passedForDay;
+    public static bool HasPendingHomeResolution => _finalized && !_outcomeResolved;
     public static IReadOnlyList<TaskAttemptResult> Results => Attempts;
     public static IReadOnlyList<string> PendingNotifications => Notifications;
     public static IReadOnlyList<AssessmentHistoryEntry> AssessmentHistory => History;
     public static int PointsReceived => _pointsReceived;
+    public static int BestScore => Math.Max(_bestScore, Score);
+    public static int BestPointsReceived => Math.Max(_bestPointsReceived, _pointsReceived);
     public static int AttemptCount => Attempts.Count;
     public static string CurrentQuestionId =>
         Attempts.Count < QuestionOrder.Count ? QuestionOrder[Attempts.Count] : string.Empty;
@@ -43,7 +52,11 @@ public static class DailyTestSession
     public static int CorrectCount => Attempts.Count(result => result.Correct);
     public static int AnsweredCount => Attempts.Count(result => !result.GaveUp);
     public static int Score => CorrectCount * PointsPerCorrectAnswer;
-    public static bool Passed => Attempts.Count >= QuestionCount && Score >= MinimumPassingScore;
+    public static bool CurrentAttemptPassed =>
+        Attempts.Count >= QuestionCount && Score >= MinimumPassingScore;
+
+    // A passing attempt is secured for the day and cannot be downgraded by a later retry.
+    public static bool Passed => _passedForDay || CurrentAttemptPassed;
 
     public static void Begin(int day)
     {
@@ -51,6 +64,19 @@ public static class DailyTestSession
         Attempts.Clear();
         Notifications.Clear();
         _pointsReceived = 0;
+        _bestScore = 0;
+        _bestPointsReceived = 0;
+        _passedForDay = false;
+        _outcomeResolved = false;
+        _failurePenaltyApplied = false;
+        ShuffleQuestionOrder();
+
+        _active = true;
+        _finalized = false;
+    }
+
+    private static void ShuffleQuestionOrder()
+    {
         QuestionOrder.Clear();
         QuestionOrder.AddRange(StandardQuestionIds);
 
@@ -61,10 +87,44 @@ public static class DailyTestSession
             int j = rng.Next(i + 1);
             (QuestionOrder[i], QuestionOrder[j]) = (QuestionOrder[j], QuestionOrder[i]);
         }
+    }
 
+    public static bool RetryCurrentAssessment()
+    {
+        if (!_finalized || _outcomeResolved)
+            return false;
+
+        Attempts.Clear();
+        Notifications.Clear();
+        _pointsReceived = 0;
+        ShuffleQuestionOrder();
         _active = true;
         _finalized = false;
-        _failurePenaltyApplied = false;
+        return true;
+    }
+
+    // Starting from the hub may reset an unfinished attempt, but it cannot revoke a secured pass.
+    public static void BeginFromHub(int day)
+    {
+        if (_day != day || _outcomeResolved)
+        {
+            Begin(day);
+            return;
+        }
+
+        bool keepPassingResult = _passedForDay;
+        int bestScore = keepPassingResult ? BestScore : 0;
+        int bestPoints = keepPassingResult ? BestPointsReceived : 0;
+
+        Attempts.Clear();
+        Notifications.Clear();
+        _pointsReceived = 0;
+        _bestScore = bestScore;
+        _bestPointsReceived = bestPoints;
+        _passedForDay = keepPassingResult;
+        _active = true;
+        _finalized = false;
+        ShuffleQuestionOrder();
     }
 
     public static void BeginIfNeeded(int day)
@@ -108,10 +168,10 @@ public static class DailyTestSession
         History.Add(new AssessmentHistoryEntry(
             _day,
             attempt,
-            Score,
+            BestScore,
             MaximumScore,
             MinimumPassingScore,
-            _pointsReceived,
+            BestPointsReceived,
             Passed,
             sanityAfter,
             debuffType ?? string.Empty,
@@ -229,9 +289,65 @@ public static class DailyTestSession
         if (_finalized)
             return Passed;
 
+        _bestScore = Math.Max(_bestScore, Score);
+        _bestPointsReceived = Math.Max(_bestPointsReceived, _pointsReceived);
+        _passedForDay |= CurrentAttemptPassed;
         _active = false;
         _finalized = true;
         return Passed;
+    }
+
+    // The final assessment consequence is resolved only after RoomManager has loaded a home room.
+    public static bool ResolveAtHome()
+    {
+        if (!HasPendingHomeResolution)
+            return false;
+
+        _outcomeResolved = true;
+        int before = SanityManager.Instance?.CurrentSanity ?? SanityManager.MaxSanity;
+        int sanityChange = 0;
+        string debuffType = string.Empty;
+        int debuffAmount = 0;
+
+        if (_passedForDay)
+        {
+            SanityManager.Instance?.Recover(5);
+            int afterRecovery = SanityManager.Instance?.CurrentSanity ?? before;
+            sanityChange = afterRecovery - before;
+            StatusEffectsOverlay.Instance?.TriggerTaskPass();
+        }
+        else if (!_failurePenaltyApplied)
+        {
+            debuffAmount = Mathf.Clamp(34 + (_day - 1) * 3, 34, 46);
+            int failedCount = SanityManager.Instance?.FailedTestCount ?? 0;
+            SanityManager.DebuffType type = (SanityManager.DebuffType)(failedCount % 4);
+            debuffType = type.ToString();
+
+            SanityManager.Instance?.RegisterFailedTest();
+            SanityManager.Instance?.ApplyDebuff("failed_assessment", type, debuffAmount);
+            _failurePenaltyApplied = true;
+            StatusEffectsOverlay.Instance?.TriggerTaskFailure(debuffAmount, debuffType);
+            sanityChange = -debuffAmount;
+        }
+
+        int sanityAfter = SanityManager.Instance?.CurrentSanity ?? before;
+        string rewardText = sanityChange > 0
+            ? $"Sanity +{sanityChange}"
+            : sanityChange < 0
+                ? $"Sanity {sanityChange}; {debuffType} assessment penalty ({debuffAmount})"
+                : "No additional sanity change";
+
+        if (RoomKeyProgression.Instance?.HasPendingKey == true)
+        {
+            string keyName = RoomKeyProgression.Instance.PendingKeyRoomName;
+            string keyLocation = RoomKeyProgression.Instance.GetPendingKeyLocationName();
+            rewardText += $"; Key available: {keyName} (pickup in {keyLocation})";
+        }
+
+        RecordHistory(sanityAfter, debuffType, debuffAmount, rewardText);
+        SaveManager.Instance?.RequestAutoSave();
+        GD.Print($"[DailyTestSession] Home assessment resolution: passed={_passedForDay}, sanity {before}->{sanityAfter}.");
+        return true;
     }
 
     public static void MarkFailurePenaltyApplied() => _failurePenaltyApplied = true;
@@ -245,6 +361,10 @@ public static class DailyTestSession
         _active = false;
         _finalized = false;
         _failurePenaltyApplied = false;
+        _passedForDay = false;
+        _outcomeResolved = false;
+        _bestScore = 0;
+        _bestPointsReceived = 0;
     }
 }
 

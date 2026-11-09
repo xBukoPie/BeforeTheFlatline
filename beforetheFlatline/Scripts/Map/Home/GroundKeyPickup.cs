@@ -8,7 +8,7 @@ public partial class GroundKeyPickup : Area2D
 
     private Sprite2D _sprite;
     private Sprite2D _glow;
-    private Label _prompt;
+    private CharacterBody2D _player;
     private bool _playerInside;
     private bool _collected;
     private float _feedbackRemaining;
@@ -25,9 +25,15 @@ public partial class GroundKeyPickup : Area2D
         Monitoring = false;
         EnsureInteractAction();
 
+        Node roomManager = GetTree().GetFirstNodeInGroup("room_manager");
+        _player = roomManager?.GetNodeOrNull<CharacterBody2D>("Player");
+
+        LightMask = Room.WorldLightMask;
         _sprite = GetNode<Sprite2D>("Sprite2D");
-        _prompt = GetNode<Label>("Prompt");
-        _prompt.Visible = false;
+        _sprite.ZIndex = 0;
+        _sprite.ZAsRelative = true;
+        _sprite.LightMask = Room.WorldLightMask;
+        ZAsRelative = false;
 
         string texturePath = GetKeyTexturePath(KeyRoomId);
         Texture2D keyTexture = GD.Load<Texture2D>(texturePath);
@@ -41,6 +47,7 @@ public partial class GroundKeyPickup : Area2D
         BodyEntered += OnBodyEntered;
         BodyExited += OnBodyExited;
         RefreshAvailability();
+        UpdateDepthSorting();
     }
 
     public override void _ExitTree()
@@ -60,6 +67,7 @@ public partial class GroundKeyPickup : Area2D
             return;
         }
 
+        UpdateDepthSorting();
         RefreshAvailability();
         if (_wasAvailable)
             WorldInteractableGlow.Animate(_glow, _elapsed, 0f);
@@ -67,9 +75,13 @@ public partial class GroundKeyPickup : Area2D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (_collected || !_playerInside || !IsKeyAvailable() ||
-            (InteractionPromptManager.Instance != null && !InteractionPromptManager.Instance.IsPrimary(this)) ||
-            !@event.IsActionPressed("interact"))
+        if (_collected || !_playerInside || !IsKeyAvailable())
+            return;
+
+        bool inputMatches = InteractionPromptManager.Instance != null
+            ? InteractionPromptManager.Instance.IsInputFor(this, @event)
+            : @event.IsActionPressed("interact");
+        if (!inputMatches)
             return;
 
         GetViewport().SetInputAsHandled();
@@ -92,8 +104,11 @@ public partial class GroundKeyPickup : Area2D
         if (_glow != null)
             _glow.Visible = false;
         InteractionPromptManager.Instance?.HidePrompt(this);
-        InteractionPromptManager.Instance?.ShowNotice(this, $"KEY ACQUIRED: {roomName} unlocked!", 2.5f);
-        _feedbackRemaining = 2.5f;
+        InteractionPromptManager.Instance?.ShowNotice(
+            this,
+            $"KEY ACQUIRED: {roomName} unlocked!\n{GetPickupThought(roomName)}",
+            4.0f);
+        _feedbackRemaining = 4.0f;
 
         SaveManager.Instance?.RequestAutoSave();
     }
@@ -122,6 +137,33 @@ public partial class GroundKeyPickup : Area2D
             InteractionPromptManager.Instance?.ShowPrompt(this, $"[E] Pick up {KeyRoomId} key", 90);
         }
     }
+
+    private void UpdateDepthSorting()
+    {
+        if (_player == null || !GodotObject.IsInstanceValid(_player))
+        {
+            Node roomManager = GetTree().GetFirstNodeInGroup("room_manager");
+            _player = roomManager?.GetNodeOrNull<CharacterBody2D>("Player");
+        }
+
+        if (_player == null || !GodotObject.IsInstanceValid(_player))
+            return;
+
+        // Compare world-space ground positions because the player and room are separate branches.
+        ZAsRelative = false;
+        ZIndex = GlobalPosition.Y >= _player.GlobalPosition.Y
+            ? Room.ObjectInFrontOfPlayerZIndex
+            : Room.ObjectBehindPlayerZIndex;
+    }
+
+    private static string GetPickupThought(string roomName) => roomName switch
+    {
+        "Kitchen" => "I should look for a locked door. This key might open one of the rooms.",
+        "Laundry" => "This must open another door. I should search the house for a locked room.",
+        "Bathroom" => "I should keep looking for a locked door. This key has to belong somewhere.",
+        "MasterBedroom" => "This should open the master bedroom. I need to find its door.",
+        _ => "I should look around for a door this key can unlock."
+    };
 
     private bool IsKeyAvailable()
     {

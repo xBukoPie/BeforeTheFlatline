@@ -13,7 +13,7 @@ public partial class TestResults : Control
     public override void _Ready()
     {
         if (DayClock.Instance != null)
-            DayClock.Instance.Running = true;
+            DayClock.Instance.Running = false;
 
         BuildUi();
 
@@ -26,8 +26,6 @@ public partial class TestResults : Control
             else
                 AudioManager.Instance?.PlayAssessmentFailed();
         }
-
-        DayClock.Instance?.MarkSchoolChallengeCompletedToday();
 
         // Keep the existing room-key progression, but record only newly appeared keys.
         string newKeyReward = string.Empty;
@@ -42,66 +40,29 @@ public partial class TestResults : Control
             }
         }
 
-        int score = DailyTestSession.Score;
-        int pointsReceived = DailyTestSession.PointsReceived;
-        int sanityChange = 0;
-        string appliedDebuff = string.Empty;
-        int appliedDebuffAmount = 0;
-
-        if (_passed)
-        {
-            if (!alreadyFinalized)
-            {
-                int beforeRecovery = SanityManager.Instance?.CurrentSanity ?? SanityManager.MaxSanity;
-                SanityManager.Instance?.Recover(5);
-                int afterRecovery = SanityManager.Instance?.CurrentSanity ?? beforeRecovery;
-                sanityChange = afterRecovery - beforeRecovery;
-                StatusEffectsOverlay.Instance?.TriggerTaskPass();
-            }
-            _continueButton.Text = "Continue";
-        }
-        else
-        {
-            if (!alreadyFinalized && !DailyTestSession.FailurePenaltyApplied)
-            {
-                appliedDebuffAmount = Mathf.Clamp(34 + (DailyTestSession.Day - 1) * 3, 34, 46);
-                SanityManager.DebuffType type = NextDebuffType();
-                appliedDebuff = type.ToString();
-                SanityManager.Instance?.RegisterFailedTest();
-                SanityManager.Instance?.ApplyDebuff("failed_assessment", type, appliedDebuffAmount);
-                DailyTestSession.MarkFailurePenaltyApplied();
-                StatusEffectsOverlay.Instance?.TriggerTaskFailure(appliedDebuffAmount, appliedDebuff);
-                sanityChange = -appliedDebuffAmount;
-            }
-
-            _continueButton.Text = "Continue";
-        }
-
+        int score = DailyTestSession.BestScore;
+        int pointsReceived = DailyTestSession.BestPointsReceived;
         int currentSanity = SanityManager.Instance?.CurrentSanity ?? SanityManager.MaxSanity;
+
         _title.Text = _passed ? "ASSESSMENT PASSED" : "ASSESSMENT FAILED";
         _title.AddThemeColorOverride("font_color", _passed
             ? new Color("86efac")
             : new Color("fca5a5"));
 
         _summary.Text =
-            $"SCORE: {score} / {DailyTestSession.MaximumScore}\n" +
+            $"BEST SCORE: {score} / {DailyTestSession.MaximumScore}\n" +
             $"POINTS RECEIVED: {pointsReceived}\n" +
             $"PASSING SCORE: {DailyTestSession.MinimumPassingScore}";
 
-        _details.Text = BuildSanitySummary(currentSanity);
-        _details.AddThemeColorOverride("font_color", new Color("e2e8f0"));
+        string returnNote = _passed
+            ? "A passing result is secured. Retrying cannot revoke it. Sanity recovery will be applied after you return home."
+            : "Any failure penalty will be applied once, after you return home. Retrying before then will not repeatedly reduce sanity.";
 
-        if (!alreadyFinalized)
-        {
-            string rewardText = BuildRewardText(
-                sanityChange, appliedDebuff, appliedDebuffAmount, newKeyReward);
-            DailyTestSession.RecordHistory(
-                currentSanity,
-                appliedDebuff,
-                appliedDebuffAmount,
-                rewardText);
-            SaveManager.Instance?.RequestAutoSave();
-        }
+        if (!string.IsNullOrWhiteSpace(newKeyReward))
+            returnNote += "\n" + newKeyReward;
+
+        _details.Text = BuildSanitySummary(currentSanity) + "\n\n" + returnNote;
+        _details.AddThemeColorOverride("font_color", new Color("e2e8f0"));
     }
 
     private string BuildSanitySummary(int currentSanity)
@@ -129,29 +90,6 @@ public partial class TestResults : Control
         return string.Join("\n", lines);
     }
 
-    private static string BuildRewardText(
-        int sanityChange, string debuffType, int debuffAmount, string keyReward)
-    {
-        var rewards = new List<string>();
-        if (sanityChange > 0)
-            rewards.Add($"Sanity +{sanityChange}");
-        else if (sanityChange < 0)
-            rewards.Add($"Sanity {sanityChange}");
-
-        if (debuffAmount > 0 && !string.IsNullOrWhiteSpace(debuffType))
-            rewards.Add($"{debuffType} assessment penalty ({debuffAmount})");
-
-        if (!string.IsNullOrWhiteSpace(keyReward))
-            rewards.Add(keyReward);
-
-        return rewards.Count > 0 ? string.Join("; ", rewards) : "No additional rewards or penalties";
-    }
-
-    private SanityManager.DebuffType NextDebuffType()
-    {
-        int failedCount = SanityManager.Instance?.FailedTestCount ?? 0;
-        return (SanityManager.DebuffType)(failedCount % 4);
-    }
 
     private void BuildUi()
     {
@@ -238,7 +176,9 @@ public partial class TestResults : Control
         };
         retry.Pressed += () =>
         {
-            DailyTestSession.Reset();
+            if (!DailyTestSession.RetryCurrentAssessment())
+                return;
+
             if (SceneTransition.Instance != null)
                 SceneTransition.Instance.ChangeSceneToFile("res://Scenes/Challenges/SequenceChallenge.tscn");
             else
