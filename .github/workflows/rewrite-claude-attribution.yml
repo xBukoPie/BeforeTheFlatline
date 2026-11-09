@@ -69,7 +69,7 @@ jobs:
             fi
           done
 
-          # Record every reachable commit's tree, author date, and identities.
+          # Record every reachable commit's tree, both dates, and identities.
           # This lets the workflow prove that game files and the remaining history stay intact.
           git log --all --format='%H%x09%T%x09%aI%x09%cI%x09%an%x09%ae%x09%cn%x09%ce' |
             sort -k1,1 > "$RUNNER_TEMP/metadata-before.tsv"
@@ -120,12 +120,12 @@ jobs:
             rewritten["$old_sha"]="$new_sha"
           done < "$map_file"
 
-          # Verify every reachable commit retained the same tree and author date.
+          # Verify every reachable commit retained the same tree and both Git dates.
           # For all commits other than the two targets, author and committer identities
           # must remain exactly as they were before the rewrite.
           checked=0
           while IFS=$'\t' read -r old_sha old_tree old_author_date old_committer_date old_author_name old_author_email old_committer_name old_committer_email; do
-            new_sha="\${rewritten[$old_sha]:-$old_sha}"
+            new_sha="${rewritten[$old_sha]:-$old_sha}"
             if [[ -z "$new_sha" || "$new_sha" =~ ^0+$ ]]; then
               echo "::error::A reachable commit was unexpectedly removed: $old_sha"
               exit 1
@@ -136,7 +136,7 @@ jobs:
             )
 
             if [[ "$new_tree" != "$old_tree" || "$new_author_date" != "$old_author_date" || "$new_committer_date" != "$old_committer_date" ]]; then
-              echo "::error::Tree or author date changed for $old_sha"
+              echo "::error::Tree or commit date changed for $old_sha"
               exit 1
             fi
 
