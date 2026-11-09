@@ -1,1 +1,1 @@
-One-time trigger for the approved Claude author-attribution cleanup workflow.
+Re-trigger the approved Claude attribution cleanup after the workflow was installed on the default branch.
