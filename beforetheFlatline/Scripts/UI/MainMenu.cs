@@ -14,6 +14,7 @@ public partial class MainMenu : Control
             DayClock.Instance.Running = false;
         _fade = GetNode<ColorRect>("UI/Fade");
         AudioManager.Instance?.PlayMenuMusic();
+        UpdateManager.Instance?.CheckForUpdatesOnMenuAsync();
     }
 
     private void BuildLoadGameButton()
