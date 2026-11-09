@@ -484,7 +484,7 @@ public partial class UpdateManager : Node
             using var probe = new FileStream(
                 probePath,
                 FileMode.CreateNew,
-                FileAccess.Write,
+                System.IO.FileAccess.Write,
                 FileShare.None);
             return true;
         }
@@ -579,7 +579,7 @@ catch {
         string targetExecutable,
         string downloadPath)
     {
-        string systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System);
+        string systemDirectory = System.Environment.GetFolderPath(System.Environment.SpecialFolder.System);
         string powershellPath = Path.Combine(
             systemDirectory,
             "WindowsPowerShell",
