@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using HttpClient = System.Net.Http.HttpClient;
 
 using DiagnosticsProcess = System.Diagnostics.Process;
 
