@@ -156,7 +156,7 @@ jobs:
             push_args+=("--force-with-lease=$ref:$old_sha" "$ref:$ref")
           done < "$RUNNER_TEMP/refs-before.txt"
 
-          git remote remove origin
+          git remote remove origin || true
           git remote add origin "$clone_url"
           echo "Validation passed for $checked commits; updating all branches and tags atomically."
           git push --atomic origin "${push_args[@]}"
