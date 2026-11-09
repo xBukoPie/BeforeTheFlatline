@@ -1,1 +1,1 @@
-Re-trigger the approved Claude attribution cleanup after the workflow was installed on the default branch.
+Approved one-time Claude attribution cleanup trigger; clean workflow is installed on main and updates.
