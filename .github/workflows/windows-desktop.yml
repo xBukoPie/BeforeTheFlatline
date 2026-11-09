@@ -57,74 +57,29 @@ jobs:
           $version = "windows-preview-$env:GITHUB_RUN_NUMBER"
           $projectPath = "project.godot"
           $content = Get-Content -LiteralPath $projectPath -Raw
-          $versionLine = "config/version=`"$version`""
+          $versionLine = 'config/version="' + $version + '"'
+          $existingVersionLine = 'config/version='
 
-          if ($content -match '(?m)^config/version=') {
-            $content = [regex]::Replace($content, '(?m)^config/version=.*        shell: pwsh
-        working-directory: beforetheFlatline
-        run: |
-          $godot = (Get-Command godot -ErrorAction Stop).Source
-          .\Build-Windows.ps1 -GodotPath $godot
-
-      - name: Verify executable and calculate checksum
-        id: executable
-        shell: pwsh
-        working-directory: beforetheFlatline
-        run: |
-          $exe = Get-Item -LiteralPath "builds/windows/BeforeTheFlatline.exe" -ErrorAction Stop
-          if ($exe.Length -lt 1MB) {
-            throw "The exported executable is unexpectedly small ($($exe.Length) bytes)."
-          }
-
-          $hash = Get-FileHash -LiteralPath $exe.FullName -Algorithm SHA256
-          "sha256=$($hash.Hash)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          "size=$($exe.Length)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-
-          Write-Host "Executable: $($exe.FullName)"
-          Write-Host "Size: $([Math]::Round($exe.Length / 1MB, 2)) MB"
-          Write-Host "SHA-256: $($hash.Hash)"
-
-      - name: Upload executable as workflow artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: BeforeTheFlatline-Windows-x64
-          path: beforetheFlatline/builds/windows/BeforeTheFlatline.exe
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Publish downloadable preview release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: windows-preview-${{ github.run_number }}
-          target_commitish: ${{ github.sha }}
-          name: Before The Flatline - Windows Preview #${{ github.run_number }}
-          body: |
-            Automated Windows x64 standalone build from the `updates` branch.
-
-            - Executable: `BeforeTheFlatline.exe`
-            - Platform: Windows 10/11 x64
-            - Engine: Godot 4.7.2 .NET
-            - Commit: `${{ github.sha }}`
-
-            This is a preview build for testing. Extract/download the executable and run it on Windows.
-          draft: false
-          prerelease: true
-          make_latest: false
-          overwrite_files: true
-          fail_on_unmatched_files: true
-          files: beforetheFlatline/builds/windows/BeforeTheFlatline.exe
-, $versionLine)
+          if ($content.Contains($existingVersionLine)) {
+            $lines = $content -split "`r?`n"
+            for ($index = 0; $index -lt $lines.Length; $index++) {
+              if ($lines[$index].StartsWith($existingVersionLine)) {
+                $lines[$index] = $versionLine
+              }
+            }
+            $content = $lines -join "`r`n"
           }
           else {
             $marker = 'config/name="BeforeTheFlatline : Original"'
             if (-not $content.Contains($marker)) {
               throw "Could not find the application name setting to stamp the build version."
             }
-            $content = $content.Replace($marker, "$marker`r`n$versionLine")
+            $content = $content.Replace($marker, $marker + "`r`n" + $versionLine)
           }
 
+          $absoluteProjectPath = (Resolve-Path -LiteralPath $projectPath).Path
           [System.IO.File]::WriteAllText(
-            (Resolve-Path -LiteralPath $projectPath).Path,
+            $absoluteProjectPath,
             $content,
             [System.Text.UTF8Encoding]::new($false)
           )
