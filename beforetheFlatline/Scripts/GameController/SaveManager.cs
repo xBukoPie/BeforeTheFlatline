@@ -9,14 +9,16 @@ public partial class SaveManager : Node
     public static SaveManager Instance { get; private set; }
 
     public const int ManualSlotCount = 3;
-    public const string WorldScenePath = "res://Scenes/Home/Rooms/World.tscn";
-    private const string DefaultRoomPath = "res://Scenes/Home/Rooms/Kwarto.tscn";
-    private const string SaveDirectory = "res://Saves";
+    public const string WorldScenePath = "res://Scenes/Home/Areas/World.tscn";
+    private const string DefaultRoomPath = "res://Scenes/Home/Areas/PlayerRoom.tscn";
+    private static string SaveDirectory => OS.HasFeature("editor") ? "res://Saves" : "user://Saves";
     private const string AutoSaveFileName = "autosave.json";
     private const double AutoSaveIntervalSeconds = 60.0;
 
     private double _autosaveElapsed;
     private bool _writingAutosave;
+    private bool _loadingSnapshot;
+    private bool _pendingWorldAutosave;
 
     public override void _Ready()
     {
@@ -39,8 +41,17 @@ public partial class SaveManager : Node
 
     public override void _Process(double delta)
     {
-        if (GetTree().Paused || !CanSaveCurrentGame ||
-            DayClock.Instance == null || !DayClock.Instance.Running)
+        if (_loadingSnapshot || GetTree().Paused)
+            return;
+
+        if (_pendingWorldAutosave && CanSaveCurrentGame)
+        {
+            if (SaveAutoSave())
+                _pendingWorldAutosave = false;
+            return;
+        }
+
+        if (!CanSaveCurrentGame || DayClock.Instance == null || !DayClock.Instance.Running)
             return;
 
         _autosaveElapsed += delta;
@@ -122,6 +133,35 @@ public partial class SaveManager : Node
         return true;
     }
 
+    public bool DeleteAutoSave()
+    {
+        // Resolve/migrate legacy data first, then remove every known copy.
+        _ = GetAutoSavePath();
+        string[] paths =
+        {
+            $"{SaveDirectory}/{AutoSaveFileName}",
+            "user://Saves/autosave.json",
+            "user://autosave.json"
+        };
+
+        foreach (string path in paths)
+        {
+            if (!FileAccess.FileExists(path))
+                continue;
+
+            Error error = DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(path));
+            if (error != Error.Ok)
+            {
+                GD.PushError($"SaveManager: could not delete autosave '{path}' ({error}).");
+                return false;
+            }
+        }
+
+        _autosaveElapsed = 0;
+        _pendingWorldAutosave = false;
+        return true;
+    }
+
     public bool SaveAutoSave()
     {
         if (_writingAutosave)
@@ -144,8 +184,17 @@ public partial class SaveManager : Node
     // Call after entering/loading a room to create an immediate safety autosave.
     public void RequestAutoSave()
     {
+        if (_loadingSnapshot)
+            return;
+
         _autosaveElapsed = 0;
-        SaveAutoSave();
+        if (!CanSaveCurrentGame)
+        {
+            _pendingWorldAutosave = true;
+            return;
+        }
+
+        _pendingWorldAutosave = !SaveAutoSave();
     }
 
     public async System.Threading.Tasks.Task<bool> LoadSlotAsync(int slot)
@@ -195,15 +244,29 @@ public partial class SaveManager : Node
             ["clock_running"] = true,
             ["school_started"] = DayClock.Instance.SchoolChallengeStartedToday,
             ["school_completed"] = DayClock.Instance.SchoolChallengeCompletedToday,
+            ["school_deadline_penalty_applied"] = DayClock.Instance.SchoolDeadlinePenaltyAppliedToday,
+            ["wrong_room_attempts_today"] = DayClock.Instance.WrongRoomAttemptsToday,
+            ["daily_house_activities"] = DayClock.Instance.CreateHouseActivitySaveData(),
             ["mystery_encounter_seen"] = DayClock.Instance.FirstDayMysteryEncounterSeen,
             ["first_day_special_greeting_pending"] = DayClock.Instance.FirstDayMysteryGreetingPending,
             ["sanity_state"] = SanityManager.Instance.CreateSaveData(),
             ["room_keys"] = new Godot.Collections.Dictionary
             {
                 ["hidden_points"] = RoomKeyProgression.Instance?.HiddenPoints ?? 0,
-                ["keys_earned"] = RoomKeyProgression.Instance?.TotalKeysEarned ?? 0
+                ["keys_earned"] = RoomKeyProgression.Instance?.TotalKeysEarned ?? 0,
+                ["pending_key_room"] = RoomKeyProgression.Instance?.PendingKeyRoomName ?? string.Empty,
+                ["pending_key_from_assessment"] = RoomKeyProgression.Instance?.PendingKeyFromAssessment ?? false,
+                ["unlocked_rooms"] = CreateUnlockedRoomIds(),
+                ["kitchen_unlocked_day"] = RoomKeyProgression.Instance?.GetRoomUnlockedDay("Kitchen") ?? -1,
+                ["laundry_unlocked_day"] = RoomKeyProgression.Instance?.GetRoomUnlockedDay("Laundry") ?? -1,
+                ["bathroom_unlocked_day"] = RoomKeyProgression.Instance?.GetRoomUnlockedDay("Bathroom") ?? -1,
+                ["master_bedroom_unlocked_day"] = RoomKeyProgression.Instance?.GetRoomUnlockedDay("MasterBedroom") ?? -1
             },
-            ["challenge_progress"] = ChallengeProgress.CreateSaveData()
+            ["challenge_progress"] = ChallengeProgress.CreateSaveData(),
+            ["school_friend_interactions"] = SchoolFriendInteractionHistory.CreateSaveData(),
+            ["school_friend_spawn_plan"] = SchoolFriendSpawnHistory.CreateSaveData(),
+            ["story_progress"] = StoryProgression.Instance?.CreateSaveData() ?? new Godot.Collections.Dictionary(),
+            ["assessment_history"] = DailyTestSession.CreateHistorySaveContainer()
         };
 
         using var file = FileAccess.Open(path, FileAccess.ModeFlags.Write);
@@ -220,6 +283,9 @@ public partial class SaveManager : Node
 
     private async System.Threading.Tasks.Task<bool> LoadSnapshotAsync(Godot.Collections.Dictionary data)
     {
+        if (_loadingSnapshot)
+            return false;
+
         int saveVersion = ReadSaveVersion(data);
         if (saveVersion != 1)
         {
@@ -243,70 +309,122 @@ public partial class SaveManager : Node
             roomPath = DefaultRoomPath;
         }
 
-        float x = ReadFloat(data, "player_x", 0f);
-        float y = ReadFloat(data, "player_y", 0f);
-        int day = Mathf.Max(1, ReadInt(data, "day", 1));
-        float hour = ReadFloat(data, "hour", 8f);
-        bool schoolStarted = ReadBool(data, "school_started", false);
-        bool schoolCompleted = ReadBool(data, "school_completed", false);
-
-        var sanityState = ReadDictionary(data, "sanity_state");
-        var keyState = ReadDictionary(data, "room_keys");
-        var challengeState = ReadDictionary(data, "challenge_progress");
-
-        DayClock.Instance?.RestoreState(day, hour, true, schoolStarted, schoolCompleted);
-        DayClock.Instance?.RestoreFirstDayMysteryState(
-            ReadBool(data, "mystery_encounter_seen", false),
-            ReadBool(data, "first_day_special_greeting_pending", false));
-        if (SanityManager.Instance != null && sanityState.Count > 0)
-            SanityManager.Instance.RestoreFromSaveData(sanityState);
-        int keysToRestore = Mathf.Max(0, ReadInt(keyState, "keys_earned", 0));
-        if (data.ContainsKey("challenge_progress"))
+        _loadingSnapshot = true;
+        _pendingWorldAutosave = false;
+        try
         {
-            int passedAssessments = CountPassedAssessmentDays(challengeState);
-            int validKeys = Math.Min(keysToRestore, passedAssessments);
-            if (validKeys < keysToRestore)
-                GD.PushWarning($"SaveManager: ignored {keysToRestore - validKeys} room key(s) without a matching passed assessment.");
-            keysToRestore = validKeys;
-        }
+            float x = ReadFloat(data, "player_x", 0f);
+            float y = ReadFloat(data, "player_y", 0f);
+            int day = Mathf.Max(1, ReadInt(data, "day", 1));
+            float hour = ReadFloat(data, "hour", 8f);
+            bool schoolStarted = ReadBool(data, "school_started", false);
+            bool schoolCompleted = ReadBool(data, "school_completed", false);
 
-        RoomKeyProgression.Instance?.RestoreProgress(
-            ReadInt(keyState, "hidden_points", 0),
-            keysToRestore);
-        ChallengeProgress.RestoreFromSaveData(challengeState);
+            var sanityState = ReadDictionary(data, "sanity_state");
+            var keyState = ReadDictionary(data, "room_keys");
+            var challengeState = ReadDictionary(data, "challenge_progress");
+            var friendInteractionState = ReadDictionary(data, "school_friend_interactions");
+            var friendSpawnState = ReadDictionary(data, "school_friend_spawn_plan");
+            var storyState = ReadDictionary(data, "story_progress");
 
-        RoomManager.RequestStartRoomOnNextLoad(roomPath, "startSpawn");
-        if (savedRoomExists)
-            RoomManager.RequestPlayerPositionOnNextLoad(new Vector2(x, y));
+            DayClock.Instance?.RestoreState(day, hour, true, schoolStarted, schoolCompleted);
+            DayClock.Instance?.RestoreWrongRoomAttempts(ReadInt(data, "wrong_room_attempts_today", 0));
+            DayClock.Instance?.RestoreHouseActivityState(ReadDictionary(data, "daily_house_activities"));
+            SchoolFriendInteractionHistory.RestoreFromSaveData(friendInteractionState);
+            SchoolFriendSpawnHistory.RestoreFromSaveData(friendSpawnState, day, schoolCompleted);
+            StoryProgression.Instance?.RestoreFromSaveData(storyState);
+            DayClock.Instance?.RestoreFirstDayMysteryState(
+                ReadBool(data, "mystery_encounter_seen", false),
+                ReadBool(data, "first_day_special_greeting_pending", false));
+            int keysToRestore = Mathf.Max(0, ReadInt(keyState, "keys_earned", 0));
+            string pendingKeyRoom = ReadString(keyState, "pending_key_room", string.Empty);
+            bool hasExplicitUnlockedRooms = keyState.ContainsKey("unlocked_rooms") &&
+                keyState["unlocked_rooms"].VariantType == Variant.Type.Array;
+            string[] unlockedRoomIds = ReadStringArray(keyState, "unlocked_rooms");
 
-        PauseMenuController.Instance?.PrepareForExternalLoad();
-        if (DayClock.Instance != null)
-            DayClock.Instance.Running = false;
-
-        if (SceneTransition.Instance != null)
-        {
-            bool loaded = await SceneTransition.Instance.LoadSceneWithLoadingScreen(WorldScenePath);
-            if (!loaded)
+            if (data.ContainsKey("challenge_progress"))
             {
-                if (DayClock.Instance != null)
-                    DayClock.Instance.Running = GetTree().CurrentScene?.SceneFilePath == WorldScenePath;
-                return false;
-            }
-        }
-        else
-        {
-            Error result = GetTree().ChangeSceneToFile(WorldScenePath);
-            if (result != Error.Ok)
-            {
-                GD.PushError($"SaveManager: failed to return to the saved world ({result}).");
-                return false;
+                int passedAssessments = CountPassedAssessmentDays(challengeState);
+                if (!hasExplicitUnlockedRooms)
+                {
+                    int validKeys = Math.Min(keysToRestore, passedAssessments);
+                    if (validKeys < keysToRestore)
+                        GD.PushWarning($"SaveManager: ignored {keysToRestore - validKeys} room key(s) without a matching passed assessment.");
+                    keysToRestore = validKeys;
+
+                    if (passedAssessments <= keysToRestore)
+                        pendingKeyRoom = string.Empty;
+                }
+                else if (passedAssessments == 0)
+                {
+                    pendingKeyRoom = string.Empty;
+                }
             }
 
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-        }
+            RoomKeyProgression.Instance?.RestoreProgress(
+                ReadInt(keyState, "hidden_points", 0),
+                keysToRestore,
+                pendingKeyRoom,
+                hasExplicitUnlockedRooms ? unlockedRoomIds : null,
+                ReadBool(keyState, "pending_key_from_assessment", false));
+            RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Kitchen", ReadInt(keyState, "kitchen_unlocked_day", -1));
+            RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Laundry", ReadInt(keyState, "laundry_unlocked_day", -1));
+            RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Bathroom", ReadInt(keyState, "bathroom_unlocked_day", -1));
+            RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("MasterBedroom", ReadInt(keyState, "master_bedroom_unlocked_day", -1));
+            ChallengeProgress.RestoreFromSaveData(challengeState);
+            DailyTestSession.RestoreHistoryFromSaveData(
+                ReadDictionary(data, "assessment_history"));
 
-        _autosaveElapsed = 0;
-        return true;
+            RoomManager.RequestStartRoomOnNextLoad(roomPath, "startSpawn");
+            if (savedRoomExists)
+                RoomManager.RequestPlayerPositionOnNextLoad(new Vector2(x, y));
+
+            PauseMenuController.Instance?.PrepareForExternalLoad();
+            if (DayClock.Instance != null)
+                DayClock.Instance.Running = false;
+
+            if (SceneTransition.Instance != null)
+            {
+                bool loaded = await SceneTransition.Instance.LoadSceneWithLoadingScreen(WorldScenePath);
+                if (!loaded)
+                {
+                    if (DayClock.Instance != null)
+                        DayClock.Instance.Running = GetTree().CurrentScene?.SceneFilePath == WorldScenePath;
+                    return false;
+                }
+            }
+            else
+            {
+                Error result = GetTree().ChangeSceneToFile(WorldScenePath);
+                if (result != Error.Ok)
+                {
+                    GD.PushError($"SaveManager: failed to return to the saved world ({result}).");
+                    return false;
+                }
+
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            }
+
+            // Re-sync HUD state after the world and room have finished loading.
+            // If the save captured zero sanity, trigger the ending only now to avoid racing
+            // the transition from the menu into the saved world.
+            if (SanityManager.Instance != null)
+            {
+                // Apply this after the world is active so room-entry autosaves cannot overwrite the snapshot.
+                // Empty state dictionaries are treated as legacy saves with default sanity.
+                SanityManager.Instance.RestoreFromSaveData(sanityState);
+                DayClock.Instance?.RestoreSchoolDeadlinePenaltyState(
+                    ReadBool(data, "school_deadline_penalty_applied", false));
+                SanityManager.Instance.CheckForBadEndingAfterLoad();
+            }
+
+            _autosaveElapsed = 0;
+            return true;
+        }
+        finally
+        {
+            _loadingSnapshot = false;
+        }
     }
 
     private bool TryReadSave(string path, out Godot.Collections.Dictionary data)
@@ -439,6 +557,29 @@ public partial class SaveManager : Node
         return value.VariantType == Variant.Type.Dictionary
             ? value.AsGodotDictionary()
             : new Godot.Collections.Dictionary();
+    }
+
+    private static Godot.Collections.Array CreateUnlockedRoomIds()
+    {
+        var values = new Godot.Collections.Array();
+        foreach (string id in RoomKeyProgression.Instance?.GetUnlockedRoomIds() ?? System.Array.Empty<string>())
+            values.Add(id);
+        return values;
+    }
+
+    private static string[] ReadStringArray(Godot.Collections.Dictionary data, string key)
+    {
+        var values = new List<string>();
+        if (!data.ContainsKey(key) || data[key].VariantType != Variant.Type.Array)
+            return values.ToArray();
+
+        foreach (Variant item in data[key].AsGodotArray())
+        {
+            if (item.VariantType == Variant.Type.String && !string.IsNullOrWhiteSpace(item.AsString()))
+                values.Add(item.AsString());
+        }
+
+        return values.ToArray();
     }
 
     private static int ReadSaveVersion(Godot.Collections.Dictionary data)

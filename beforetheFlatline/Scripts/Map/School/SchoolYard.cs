@@ -10,12 +10,30 @@ public partial class SchoolYard : Node2D
     public override void _Ready()
     {
         _prompt = GetNode<Label>("HUD/Prompt");
+        _prompt.Visible = false;
+        _prompt.AnchorLeft = 0.5f;
+        _prompt.AnchorRight = 0.5f;
+        _prompt.AnchorTop = 1f;
+        _prompt.AnchorBottom = 1f;
+        _prompt.OffsetLeft = -300;
+        _prompt.OffsetRight = 300;
+        _prompt.OffsetTop = -94;
+        _prompt.OffsetBottom = -50;
+        _prompt.CustomMinimumSize = new Vector2(600, 44);
+        _prompt.HorizontalAlignment = HorizontalAlignment.Center;
+        _prompt.VerticalAlignment = VerticalAlignment.Center;
+        _prompt.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        _prompt.MouseFilter = Control.MouseFilterEnum.Ignore;
+        _prompt.AddThemeFontSizeOverride("font_size", 18);
+        _prompt.AddThemeColorOverride("font_color", Colors.White);
+        _prompt.AddThemeColorOverride("font_outline_color", Colors.Black);
+        _prompt.AddThemeConstantOverride("outline_size", 4);
 
         foreach (var child in GetNode("SchoolYard/Interactions").GetChildren())
         {
             if (child is InteractionZone z)
             {
-                z.PromptChanged += OnPromptChanged;
+                z.PromptChanged += (text, show) => OnPromptChanged(z, text, show);
                 z.Interacted += OnInteracted;
             }
         }
@@ -41,11 +59,14 @@ public partial class SchoolYard : Node2D
         }
     }
 
-    private void OnPromptChanged(string text, bool show)
+    private void OnPromptChanged(InteractionZone zone, string text, bool show)
     {
-        _msgTween?.Kill();
-        _prompt.Text = text;
-        _prompt.Visible = show;
+        if (show)
+            InteractionPromptManager.Instance?.ShowPrompt(zone, $"[E] {text}", 20);
+        else
+            InteractionPromptManager.Instance?.HidePrompt(zone);
+
+        _prompt.Visible = false;
     }
 
     private void OnInteracted(string id)
@@ -63,11 +84,7 @@ public partial class SchoolYard : Node2D
 
     private void Say(string text)
     {
-        _prompt.Text = text;
-        _prompt.Visible = true;
         _msgTween?.Kill();
-        _msgTween = CreateTween();
-        _msgTween.TweenInterval(2.5);
-        _msgTween.TweenCallback(Callable.From(() => _prompt.Visible = false));
+        InteractionPromptManager.Instance?.ShowNotice(this, text, 2.5f);
     }
 }

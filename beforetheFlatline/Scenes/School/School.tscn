@@ -5,9 +5,12 @@
 [ext_resource type="Script" uid="uid://cwar2ouikcogv" path="res://Scripts/GameController/GameController.cs" id="3_xqy2q"]
 [ext_resource type="Script" uid="uid://b3n44xxs1mak7" path="res://Scripts/Map/School/StreetLamp.cs" id="4_lamp"]
 [ext_resource type="PackedScene" uid="uid://dumdttb34qhr7" path="res://Scenes/Home/Rooms/Door.tscn" id="5_xqy2q"]
+[ext_resource type="Script" uid="uid://d0k8tpr84nhic" path="res://Scripts/Map/School/SchoolFriendsSpawner.cs" id="6_friends"]
+[ext_resource type="Script" uid="uid://dt6ocw0q4qyao" path="res://Scripts/Map/School/SchoolWindEffects.cs" id="7_wind"]
+[ext_resource type="PackedScene" path="res://Scenes/School/Guardian.tscn" id="8_guardian"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_3"]
-size = Vector2(404, 184)
+size = Vector2(404, 179)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_4"]
 size = Vector2(126, 213)
@@ -100,14 +103,13 @@ region_rect = Rect2(0, 0, 1024, 572)
 [node name="DayNightCycle" type="CanvasModulate" parent="." unique_id=1135704423]
 position = Vector2(-485, -282)
 script = ExtResource("3_xqy2q")
-DayLengthSeconds = 180.0
 
 [node name="Collisions" type="StaticBody2D" parent="." unique_id=2071613401 groups=["solid"]]
 position = Vector2(-485, -282)
 collision_mask = 0
 
 [node name="SchoolMainBuilding" type="CollisionShape2D" parent="Collisions" unique_id=1418338109]
-position = Vector2(523, 127)
+position = Vector2(523, 124.5)
 shape = SubResource("RectangleShape2D_3")
 
 [node name="SchoolLeftWing" type="CollisionShape2D" parent="Collisions" unique_id=453604459]
@@ -400,18 +402,59 @@ Flicker = false
 
 [node name="ToHome" parent="Doors" unique_id=1210053727 instance=ExtResource("5_xqy2q")]
 position = Vector2(35, 165)
-TargetRoom = "uid://sc2d4amskj1m"
+TargetRoom = "uid://bbwc7nj6p8eco"
 TargetSpawn = "FromSchool"
 Prompt = "Home"
 Size = Vector2(30, 62)
 
 [node name="ToClassroom" parent="Doors" unique_id=1703222727 instance=ExtResource("5_xqy2q")]
-position = Vector2(-133, -62)
-TriggersFirstDayMystery = true
+position = Vector2(215, -60)
 TargetRoom = "uid://b2wmpq2d1fy4t"
 TargetSpawn = "FromSchool"
 Prompt = "Classroom"
 Size = Vector2(30, 62)
+RequiresSchoolHours = true
+ClosedPrompt = "The school attendance deadline is 12:00. Come back tomorrow morning."
+
+[node name="wrongRoom1" parent="Doors" unique_id=635751081 instance=ExtResource("5_xqy2q")]
+position = Vector2(-133, -69)
+TargetRoom = "uid://b2wmpq2d1fy4t"
+TargetSpawn = "FromSchool"
+Prompt = "Classroom"
+Size = Vector2(30, 62)
+RequiresSchoolHours = true
+WrongRoom = true
+ClosedPrompt = "The school attendance deadline is 12:00. Come back tomorrow morning."
+
+[node name="wrongRoom2" parent="Doors" unique_id=1793364891 instance=ExtResource("5_xqy2q")]
+position = Vector2(-10, -69)
+TargetRoom = "uid://b2wmpq2d1fy4t"
+TargetSpawn = "FromSchool"
+Prompt = "Classroom"
+Size = Vector2(30, 62)
+RequiresSchoolHours = true
+WrongRoom = true
+ClosedPrompt = "The school attendance deadline is 12:00. Come back tomorrow morning."
+
+[node name="wrongRoom3" parent="Doors" unique_id=540559071 instance=ExtResource("5_xqy2q")]
+position = Vector2(38, -69)
+TargetRoom = "uid://b2wmpq2d1fy4t"
+TargetSpawn = "FromSchool"
+Prompt = "Classroom"
+Size = Vector2(30, 62)
+RequiresSchoolHours = true
+WrongRoom = true
+ClosedPrompt = "The school attendance deadline is 12:00. Come back tomorrow morning."
+
+[node name="wrongRoom4" parent="Doors" unique_id=721371697 instance=ExtResource("5_xqy2q")]
+position = Vector2(160, -69)
+TargetRoom = "uid://b2wmpq2d1fy4t"
+TargetSpawn = "FromSchool"
+Prompt = "Classroom"
+Size = Vector2(30, 62)
+RequiresSchoolHours = true
+WrongRoom = true
+ClosedPrompt = "The school attendance deadline is 12:00. Come back tomorrow morning."
 
 [node name="Spawns" type="Node2D" parent="." unique_id=1813384167]
 position = Vector2(0, 1)
@@ -421,3 +464,15 @@ position = Vector2(70, 254)
 
 [node name="FromHome" type="Marker2D" parent="Spawns" unique_id=233850800]
 position = Vector2(35, 127)
+
+[node name="Guardian" parent="." unique_id=1512997183 instance=ExtResource("8_guardian")]
+position = Vector2(75, 95)
+
+[node name="SchoolFriends" type="Node2D" parent="." unique_id=1018224249]
+y_sort_enabled = true
+script = ExtResource("6_friends")
+
+[node name="WindEffects" type="Node2D" parent="." unique_id=915270144]
+z_index = 8
+z_as_relative = false
+script = ExtResource("7_wind")

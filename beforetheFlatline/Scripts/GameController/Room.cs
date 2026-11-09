@@ -2,9 +2,29 @@ using Godot;
 
 public partial class Room : Node2D
 {
+	public const int BackgroundZIndex = -100;
+	public const int PlayerZIndex = 0;
+	public const int ObjectBehindPlayerZIndex = -1;
+	public const int ObjectInFrontOfPlayerZIndex = 1;
+	public const int WorldLightMask = 1;
+
 	[Export] public string RoomName { get; set; } = "";
 	[Export] public bool Outdoor { get; set; } = false;      // outdoor rooms get sunlight and night-only lamps
 	[Export] public float CameraZoom { get; set; } = 2.5f;
+
+	public override void _Ready()
+	{
+		// Direct room sprites are painted backdrops; keep them below movable world objects.
+		foreach (Node child in GetChildren())
+		{
+			if (child is not Sprite2D sprite)
+				continue;
+
+			sprite.ZAsRelative = true;
+			sprite.ZIndex = BackgroundZIndex;
+			sprite.LightMask = WorldLightMask;
+		}
+	}
 
 	public Rect2 GetBounds()
 	{
@@ -24,9 +44,34 @@ public partial class Room : Node2D
 		return first?.GlobalPosition ?? GlobalPosition;
 	}
 
-	public void ApplyTime(bool night)
+	public void ApplyTime(bool night) => ApplyNightBlend(night ? 1f : 0f);
+
+	// Outdoor lamps fade with the night level instead of switching on abruptly.
+	// Indoor light fixtures remain present while the room's ambient tint transitions.
+	public void ApplyNightBlend(float nightBlend)
 	{
-		if (GetNodeOrNull<Node2D>("Lights") is Node2D lights)
-			lights.Visible = night || !Outdoor;
+		float blend = Mathf.Clamp(nightBlend, 0f, 1f);
+		if (GetNodeOrNull<Node2D>("Lights") is not Node2D lights)
+			return;
+
+		lights.Visible = !Outdoor || blend > 0.005f;
+		ApplyLightEnergy(lights, blend);
+	}
+
+	private void ApplyLightEnergy(Node node, float nightBlend)
+	{
+		foreach (Node child in node.GetChildren())
+		{
+			if (child is Light2D light)
+			{
+				if (!light.HasMeta("day_night_base_energy"))
+					light.SetMeta("day_night_base_energy", light.Energy);
+
+				float baseEnergy = (float)light.GetMeta("day_night_base_energy").AsDouble();
+				if (Outdoor)
+					light.Energy = baseEnergy * nightBlend;
+			}
+			ApplyLightEnergy(child, nightBlend);
+		}
 	}
 }

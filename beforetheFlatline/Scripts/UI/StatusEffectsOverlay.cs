@@ -11,8 +11,13 @@ public partial class StatusEffectsOverlay : CanvasLayer
     private ColorRect _brightnessWash;
     private ColorRect _screenFx;
     private ColorRect _effectWash;
+    private CanvasLayer _vignetteLayer;
+    private TextureRect _vignetteOverlay;
+    private readonly HashSet<ulong> _vignetteOwners = new();
+    private float _vignetteAlpha;
     private ColorRect _pressureTop;
     private ColorRect _pressureBottom;
+    private ColorRect _pressureVignette;
     private Label _noticeLabel;
     private Label _statusLabel;
     private Label _heart;
@@ -23,6 +28,9 @@ public partial class StatusEffectsOverlay : CanvasLayer
     private float _elapsed;
     private float _sanity = SanityManager.MaxSanity;
     private float _endingFade = 1f;
+    private float _mainMenuFade = 1f;
+    private float _pauseFade = 1f;
+    private bool _pauseMenuVisible;
     private bool _endingTransitionStarted;
     private SanityManager.DebuffType _dominantDebuff = SanityManager.DebuffType.Dizziness;
     private Color _flashColor = new("e34d5b");
@@ -42,8 +50,9 @@ public partial class StatusEffectsOverlay : CanvasLayer
         _rng.Randomize();
         _nextConfusionShuffle = _rng.RandfRange(2.5f, 5.5f);
         Layer = 100;
-        ProcessMode = ProcessModeEnum.Pausable;
+        ProcessMode = ProcessModeEnum.Always;
         BuildOverlay();
+        BuildVignetteOverlay();
 
         if (SanityManager.Instance != null)
         {
@@ -61,6 +70,7 @@ public partial class StatusEffectsOverlay : CanvasLayer
 
     public override void _ExitTree()
     {
+        _vignetteOwners.Clear();
         if (SanityManager.Instance != null)
         {
             SanityManager.Instance.OnSanityChanged -= OnSanityChanged;
@@ -88,7 +98,82 @@ public partial class StatusEffectsOverlay : CanvasLayer
         if (_noticeLabel != null)
             _noticeLabel.Visible = _noticeTime > 0f;
 
+        string scenePath = GetTree()?.CurrentScene?.SceneFilePath ?? string.Empty;
+        bool onMainMenu = string.Equals(
+            scenePath,
+            "res://Scenes/Menu/Main.tscn",
+            StringComparison.OrdinalIgnoreCase);
+        bool onEndingPresentation = IsEndingPresentationScene(scenePath);
+        if (onEndingPresentation)
+            _vignetteOwners.Clear();
+        _mainMenuFade = Mathf.MoveToward(_mainMenuFade, onMainMenu ? 0f : 1f, dt / 1.25f);
+        _pauseFade = Mathf.MoveToward(_pauseFade, _pauseMenuVisible ? 0f : 1f, dt / 0.18f);
+
+        float vignetteTarget = !onEndingPresentation && _vignetteOwners.Count > 0 ? 0.68f : 0f;
+        _vignetteAlpha = Mathf.MoveToward(_vignetteAlpha, vignetteTarget, dt * 2.4f);
+        if (_vignetteLayer != null && GodotObject.IsInstanceValid(_vignetteLayer))
+            _vignetteLayer.Visible = !onEndingPresentation;
+        if (_vignetteOverlay != null && GodotObject.IsInstanceValid(_vignetteOverlay))
+        {
+            _vignetteOverlay.Visible = !onEndingPresentation && _vignetteAlpha > 0.005f;
+            _vignetteOverlay.Modulate = new Color(1f, 1f, 1f, _vignetteAlpha);
+        }
+
         RefreshEffects();
+    }
+
+    // Keep the status effects underneath pause UI, including the dialogue's local pause panel.
+    public void SetPauseMenuVisible(bool visible)
+    {
+        _pauseMenuVisible = visible;
+        if (visible)
+            _pauseFade = 0f;
+
+        RefreshEffects();
+    }
+
+    public void SetCinematicVignette(Node owner, bool visible)
+    {
+        if (owner == null || !GodotObject.IsInstanceValid(owner))
+            return;
+
+        ulong id = owner.GetInstanceId();
+        if (visible)
+            _vignetteOwners.Add(id);
+        else
+            _vignetteOwners.Remove(id);
+    }
+
+    private void BuildVignetteOverlay()
+    {
+        Texture2D texture = GD.Load<Texture2D>("res://Assets/Effects/vignette.png");
+        if (texture == null)
+        {
+            GD.PushWarning("StatusEffectsOverlay: Assets/Effects/vignette.png could not be loaded.");
+            return;
+        }
+
+        // Keep the cinematic edge treatment above world art but below dialogue and interaction UI.
+        _vignetteLayer = new CanvasLayer
+        {
+            Name = "CinematicVignetteLayer",
+            Layer = 50
+        };
+        AddChild(_vignetteLayer);
+
+        _vignetteOverlay = new TextureRect
+        {
+            Name = "CinematicVignette",
+            Texture = texture,
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.Scale,
+            TextureFilter = CanvasItem.TextureFilterEnum.Linear,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            Modulate = new Color(1f, 1f, 1f, 0f),
+            Visible = false
+        };
+        _vignetteOverlay.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        _vignetteLayer.AddChild(_vignetteOverlay);
     }
 
     public void Notify(string message)
@@ -125,21 +210,51 @@ public partial class StatusEffectsOverlay : CanvasLayer
         RefreshEffects();
     }
 
-    // Fade the active effects away before loading the bad ending.
-    public async void FadeForBadEnding(string scenePath)
+    // Re-arm the ending transition when an existing save is loaded.
+    public void ResetForLoadedGame(int currentSanity)
     {
-        if (_endingTransitionStarted)
-            return;
+        _endingTransitionStarted = false;
+        _endingFade = 1f;
+        _pauseMenuVisible = false;
+        _pauseFade = 1f;
+        _sanity = Mathf.Clamp(currentSanity, 0, SanityManager.MaxSanity);
+        _flashTime = 0f;
+        _noticeTime = 0f;
+
+        if (_root != null && GodotObject.IsInstanceValid(_root))
+            _root.Modulate = Colors.White;
+        if (_noticeLabel != null && GodotObject.IsInstanceValid(_noticeLabel))
+            _noticeLabel.Visible = false;
+
+        RefreshEffects();
+    }
+
+    // Returns false when a fade cannot start, allowing SanityManager to use a direct scene transition.
+    public bool FadeForBadEnding(string scenePath)
+    {
+        if (_endingTransitionStarted || _root == null ||
+            !GodotObject.IsInstanceValid(_root) || string.IsNullOrWhiteSpace(scenePath))
+            return false;
 
         _endingTransitionStarted = true;
-        var tween = CreateTween();
+        RunBadEndingFade(scenePath);
+        return true;
+    }
+
+    private async void RunBadEndingFade(string scenePath)
+    {
+        // The bad-ending transition must complete even if another system paused the tree.
+        var tween = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
         tween.TweenProperty(_root, "modulate:a", 0f, 1.6f)
             .SetTrans(Tween.TransitionType.Sine)
             .SetEase(Tween.EaseType.InOut);
         await ToSignal(tween, Tween.SignalName.Finished);
 
+        if (!IsInsideTree())
+            return;
+
         if (SceneTransition.Instance != null)
-            SceneTransition.Instance.ChangeSceneToFile(scenePath);
+            SceneTransition.Instance.RequestCriticalSceneChange(scenePath);
         else
             GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, scenePath);
     }
@@ -192,6 +307,27 @@ void fragment() {
         };
         _screenFx.Material = _fxMaterial;
         _effectWash = MakeRect("SanityTint");
+
+        _pressureVignette = MakeRect("PressureRedVignette");
+        _pressureVignette.Material = new ShaderMaterial
+        {
+            Shader = new Shader
+            {
+                Code = @"
+shader_type canvas_item;
+uniform float pressure_strength = 0.0;
+uniform float time_seconds = 0.0;
+
+void fragment() {
+    vec2 edge = min(UV, vec2(1.0) - UV);
+    float nearest_edge = min(edge.x, edge.y);
+    float border = 1.0 - smoothstep(0.015, 0.24, nearest_edge);
+    float pulse = (sin(time_seconds * 6.2) + 1.0) * 0.5;
+    float alpha = border * pressure_strength * (0.24 + pulse * 0.20);
+    COLOR = vec4(0.82, 0.012, 0.075, alpha);
+}"
+            }
+        };
 
         _pressureTop = MakeRect("PressureTop");
         _pressureTop.AnchorLeft = 0f;
@@ -267,10 +403,10 @@ void fragment() {
             Visible = false,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        _heart.AddThemeFontSizeOverride("font_size", 36);
-        _heart.AddThemeColorOverride("font_color", new Color("df3a52"));
-        _heart.AddThemeColorOverride("font_outline_color", new Color("130910"));
-        _heart.AddThemeConstantOverride("outline_size", 5);
+        _heart.AddThemeFontSizeOverride("font_size", 50);
+        _heart.AddThemeColorOverride("font_color", new Color("ff315c"));
+        _heart.AddThemeColorOverride("font_outline_color", new Color("26040d"));
+        _heart.AddThemeConstantOverride("outline_size", 7);
         _root.AddChild(_heart);
 
         _confusionWords.Add(CreateConfusionWord("why...", 0.04f, 0.36f, -1f));
@@ -346,14 +482,26 @@ void fragment() {
         int pressure = manager?.GetDebuffLevel(SanityManager.DebuffType.Pressure) ?? 0;
         int total = dizziness + confusion + anxiety + pressure;
 
-        float fade = _endingFade;
+        bool onEndingPresentation = IsEndingPresentationScene(
+            GetTree()?.CurrentScene?.SceneFilePath ?? string.Empty);
+        float fade = Mathf.Clamp(_endingFade * _mainMenuFade * _pauseFade *
+            (onEndingPresentation ? 0f : 1f), 0f, 1f);
+        _root.Visible = fade > 0.005f;
         float wobble = Mathf.Clamp(dizziness / 55f, 0f, 1f) * 0.62f * fade;
         float staticStrength = Mathf.Clamp(anxiety / 38f, 0f, 1f) * fade;
-        float pressureStrength = Mathf.Clamp(pressure / 50f, 0f, 1f) * fade;
+        float pressureStrength = pressure > 0
+            ? Mathf.Clamp(0.42f + pressure / 38f, 0.42f, 1f) * fade
+            : 0f;
         _fxMaterial.SetShaderParameter("dizziness_strength", wobble);
         _fxMaterial.SetShaderParameter("anxiety_strength", staticStrength);
         _fxMaterial.SetShaderParameter("pressure_strength", pressureStrength);
         _fxMaterial.SetShaderParameter("time_seconds", _elapsed);
+
+        if (_pressureVignette?.Material is ShaderMaterial pressureMaterial)
+        {
+            pressureMaterial.SetShaderParameter("pressure_strength", pressureStrength);
+            pressureMaterial.SetShaderParameter("time_seconds", _elapsed);
+        }
 
         for (int i = 0; i < _confusionWords.Count; i++)
         {
@@ -365,13 +513,13 @@ void fragment() {
         }
 
         float pulse = (Mathf.Sin(_elapsed * (5.5f + pressure / 30f)) + 1f) * 0.5f;
-        _heart.Visible = pressure > 0 && _endingFade > 0.02f;
-        _heart.Scale = Vector2.One * (0.93f + pulse * (0.09f + pressureStrength * 0.08f));
+        _heart.Visible = !onEndingPresentation && pressure > 0 && fade > 0.02f;
+        _heart.Scale = Vector2.One * (0.92f + pulse * (0.16f + pressureStrength * 0.12f));
         _heart.Modulate = new Color(1f, 1f, 1f,
-            _heart.Visible ? (0.22f + pulse * 0.28f) * fade : 0f);
+            _heart.Visible ? (0.56f + pulse * 0.34f) * fade : 0f);
 
-        float squeeze = pressure > 0 ? 4f + pressureStrength * 20f + pulse * 5f : 0f;
-        float pressureAlpha = Mathf.Clamp(pressureStrength * (0.08f + pulse * 0.06f) * fade, 0f, 0.16f);
+        float squeeze = pressure > 0 ? 6f + pressureStrength * 28f + pulse * 7f : 0f;
+        float pressureAlpha = Mathf.Clamp(pressureStrength * (0.18f + pulse * 0.10f), 0f, 0.34f);
         _pressureTop.OffsetBottom = squeeze;
         _pressureBottom.OffsetTop = -squeeze;
         _pressureTop.Color = new Color(0.72f, 0.08f, 0.18f, pressureAlpha);
@@ -388,14 +536,21 @@ void fragment() {
         _statusLabel.Visible = total > 0 || _sanity < SanityManager.StableSanityThreshold;
         _statusLabel.Text = total > 0 ? "DISTRESS" : (_sanity < 25 ? "CRITICAL" : "UNSTEADY");
         _statusLabel.Modulate = new Color(1f, 1f, 1f, 0.38f * fade);
+        _noticeLabel.Modulate = new Color(1f, 1f, 1f, fade);
 
         _effectWash.Color = new Color(tint.R, tint.G, tint.B, washAlpha);
         _screenFx.Modulate = new Color(1f, 1f, 1f, fade);
 
         _pressureTop.Visible = pressure > 0;
         _pressureBottom.Visible = pressure > 0;
+        _pressureVignette.Visible = pressure > 0 && fade > 0.005f;
         _dominantDebuff = FindDominant(dizziness, confusion, anxiety, pressure);
     }
+
+    private static bool IsEndingPresentationScene(string scenePath) =>
+        string.Equals(scenePath, "res://Scenes/Ending/GoodEndingBriefing.tscn", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenePath, "res://Scenes/Ending/EndingCredits.tscn", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenePath, "res://Scenes/Ending/BadEnding.tscn", StringComparison.OrdinalIgnoreCase);
 
     private static SanityManager.DebuffType FindDominant(int d, int c, int a, int p)
     {

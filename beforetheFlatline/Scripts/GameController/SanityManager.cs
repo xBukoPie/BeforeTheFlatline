@@ -20,6 +20,7 @@ public partial class SanityManager : Node
     public enum DebuffType { Dizziness, Confusion, Anxiety, Pressure }
 
     private readonly Dictionary<DebuffType, int> _debuffs = new();
+    private readonly Dictionary<DebuffType, int> _assessmentPenaltyDebuffs = new();
     private readonly Dictionary<DebuffType, int> _recoveryTargets = new();
     private readonly RandomNumberGenerator _rng = new();
     private bool _badEndingQueued;
@@ -43,6 +44,7 @@ public partial class SanityManager : Node
         foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
         {
             _debuffs[type] = 0;
+            _assessmentPenaltyDebuffs[type] = 0;
             _recoveryTargets[type] = MaxSanity;
         }
 
@@ -68,23 +70,25 @@ public partial class SanityManager : Node
             return;
 
         int clamped = Mathf.Clamp(amount, 1, MaxSanity);
-        int previous = CurrentSanity;
         CurrentSanity = Mathf.Min(CurrentSanity + clamped, MaxSanity);
-
-        if (CurrentSanity > previous)
-            ClearRecoveredDebuffs();
+        ClearRecoveredDebuffs();
 
         OnSanityChanged?.Invoke(CurrentSanity);
     }
 
-    public void ApplyDebuff(string source, DebuffType type, int intensity)
+    public void ApplyDebuff(string source, DebuffType type, int intensity, bool deductSanity = true)
     {
         if (_badEndingQueued || intensity <= 0)
             return;
 
         int appliedIntensity = Mathf.Clamp(intensity, 1, MaxSanity);
         _debuffs[type] = Mathf.Clamp(GetDebuffLevel(type) + appliedIntensity, 0, MaxSanity);
-        CurrentSanity = Mathf.Max(CurrentSanity - appliedIntensity, 0);
+        if (string.Equals(source, "failed_assessment", StringComparison.OrdinalIgnoreCase))
+            _assessmentPenaltyDebuffs[type] = Mathf.Clamp(
+                GetAssessmentPenaltyLevel(type) + appliedIntensity, 0, MaxSanity);
+
+        if (deductSanity)
+            CurrentSanity = Mathf.Max(CurrentSanity - appliedIntensity, 0);
 
         int missingSanity = MaxSanity - CurrentSanity;
         int recoveryPercent = _rng.RandiRange(30, 60);
@@ -94,8 +98,65 @@ public partial class SanityManager : Node
         OnDebuffChanged?.Invoke(type, _debuffs[type]);
         OnSanityChanged?.Invoke(CurrentSanity);
 
+        if (deductSanity && CurrentSanity == 0)
+            QueueBadEnding();
+    }
+
+    public void LoseSanity(int amount)
+    {
+        if (_badEndingQueued || amount <= 0)
+            return;
+
+        CurrentSanity = Mathf.Max(0, CurrentSanity - Mathf.Clamp(amount, 1, MaxSanity));
+        OnSanityChanged?.Invoke(CurrentSanity);
         if (CurrentSanity == 0)
             QueueBadEnding();
+    }
+
+    public void RemoveSanityForAdmin(int amount) => LoseSanity(amount);
+
+    public void SetDebuffLevelForAdmin(DebuffType type, int intensity)
+    {
+        if (_badEndingQueued)
+            return;
+
+        int level = Mathf.Clamp(intensity, 0, MaxSanity);
+        _debuffs[type] = level;
+        if (level == 0)
+        {
+            _recoveryTargets[type] = MaxSanity;
+        }
+        else
+        {
+            int missingSanity = MaxSanity - CurrentSanity;
+            int recoveryNeeded = Mathf.CeilToInt(missingSanity * 0.45f);
+            _recoveryTargets[type] = Mathf.Min(MaxSanity, CurrentSanity + recoveryNeeded);
+        }
+
+        OnDebuffChanged?.Invoke(type, level);
+    }
+
+    public void ClearDebuffForAdmin(DebuffType type) => SetDebuffLevelForAdmin(type, 0);
+
+    public bool ClearRandomActiveDebuff(out DebuffType clearedType)
+    {
+        var active = new List<DebuffType>();
+        foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
+            if (GetDebuffLevel(type) > 0)
+                active.Add(type);
+
+        if (active.Count == 0)
+        {
+            clearedType = DebuffType.Dizziness;
+            return false;
+        }
+
+        clearedType = active[_rng.RandiRange(0, active.Count - 1)];
+        _debuffs[clearedType] = 0;
+        _assessmentPenaltyDebuffs[clearedType] = 0;
+        _recoveryTargets[clearedType] = MaxSanity;
+        OnDebuffChanged?.Invoke(clearedType, 0);
+        return true;
     }
 
     // Capture sanity, failure penalties, active debuffs, and their recovery gates.
@@ -110,12 +171,17 @@ public partial class SanityManager : Node
             targets[type.ToString()] = GetRecoveryTarget(type);
         }
 
+        var assessmentPenalties = new Godot.Collections.Dictionary();
+        foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
+            assessmentPenalties[type.ToString()] = GetAssessmentPenaltyLevel(type);
+
         return new Godot.Collections.Dictionary
         {
             ["current_sanity"] = CurrentSanity,
             ["failed_test_count"] = FailedTestCount,
             ["difficulty_penalty"] = DifficultyPenalty,
             ["debuffs"] = debuffs,
+            ["assessment_penalties"] = assessmentPenalties,
             ["recovery_targets"] = targets
         };
     }
@@ -123,23 +189,35 @@ public partial class SanityManager : Node
     // Restore saved sanity data and refresh UI subscribers.
     public void RestoreFromSaveData(Godot.Collections.Dictionary data)
     {
-        CurrentSanity = Mathf.Clamp(ReadInt(data, "current_sanity", MaxSanity), 1, MaxSanity);
+        // Zero is a valid saved state: the load flow will replay the bad ending after the world is restored.
+        CurrentSanity = Mathf.Clamp(ReadInt(data, "current_sanity", MaxSanity), 0, MaxSanity);
         FailedTestCount = Mathf.Max(0, ReadInt(data, "failed_test_count", 0));
         DifficultyPenalty = Mathf.Clamp(ReadInt(data, "difficulty_penalty", 0), 0, 2);
         _badEndingQueued = false;
 
         var debuffs = ReadDictionary(data, "debuffs");
+        var assessmentPenalties = ReadDictionary(data, "assessment_penalties");
         var targets = ReadDictionary(data, "recovery_targets");
 
         foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
         {
             string key = type.ToString();
             _debuffs[type] = Mathf.Clamp(ReadInt(debuffs, key, 0), 0, MaxSanity);
+            _assessmentPenaltyDebuffs[type] = Mathf.Clamp(
+                ReadInt(assessmentPenalties, key, 0), 0, _debuffs[type]);
             _recoveryTargets[type] = Mathf.Clamp(ReadInt(targets, key, MaxSanity), 0, MaxSanity);
             OnDebuffChanged?.Invoke(type, _debuffs[type]);
         }
 
         OnSanityChanged?.Invoke(CurrentSanity);
+        StatusEffectsOverlay.Instance?.ResetForLoadedGame(CurrentSanity);
+    }
+
+    // Called after the saved world scene is active, so a saved zero-sanity state cannot be missed.
+    public void CheckForBadEndingAfterLoad()
+    {
+        if (CurrentSanity <= 0)
+            QueueBadEnding();
     }
 
     private static Godot.Collections.Dictionary ReadDictionary(
@@ -185,6 +263,17 @@ public partial class SanityManager : Node
     public int GetDebuffLevel(DebuffType type) =>
         _debuffs.TryGetValue(type, out int value) ? value : 0;
 
+    public int GetAssessmentPenaltyLevel(DebuffType type) =>
+        _assessmentPenaltyDebuffs.TryGetValue(type, out int value) ? value : 0;
+
+    public int GetTotalAssessmentPenalty()
+    {
+        int total = 0;
+        foreach (int level in _assessmentPenaltyDebuffs.Values)
+            total += level;
+        return total;
+    }
+
     public int GetRecoveryTarget(DebuffType type) =>
         _recoveryTargets.TryGetValue(type, out int value) ? value : MaxSanity;
 
@@ -208,6 +297,7 @@ public partial class SanityManager : Node
         foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
         {
             _debuffs[type] = 0;
+            _assessmentPenaltyDebuffs[type] = 0;
             _recoveryTargets[type] = MaxSanity;
             OnDebuffChanged?.Invoke(type, 0);
         }
@@ -224,6 +314,7 @@ public partial class SanityManager : Node
                 continue;
 
             _debuffs[type] = 0;
+            _assessmentPenaltyDebuffs[type] = 0;
             _recoveryTargets[type] = MaxSanity;
             OnDebuffChanged?.Invoke(type, 0);
         }
@@ -238,14 +329,13 @@ public partial class SanityManager : Node
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
-        if (StatusEffectsOverlay.Instance != null)
-        {
-            StatusEffectsOverlay.Instance.FadeForBadEnding(BadEndingScenePath);
+        if (StatusEffectsOverlay.Instance != null &&
+            StatusEffectsOverlay.Instance.FadeForBadEnding(BadEndingScenePath))
             return;
-        }
 
+        // Do not let a stale or unavailable HUD fade block the actual ending scene.
         if (SceneTransition.Instance != null)
-            SceneTransition.Instance.ChangeSceneToFile(BadEndingScenePath);
+            SceneTransition.Instance.RequestCriticalSceneChange(BadEndingScenePath);
         else
             GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, BadEndingScenePath);
     }

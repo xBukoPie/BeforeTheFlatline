@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Godot;
 
@@ -30,7 +31,7 @@ public partial class RoomManager : Node2D
 
     public Vector2 CurrentPlayerPosition => _player?.GlobalPosition ?? Vector2.Zero;
 
-    [Export(PropertyHint.File, "*.tscn")] public string StartRoom { get; set; } = "res://Scenes/Home/Rooms/Kwarto.tscn";
+    [Export(PropertyHint.File, "*.tscn")] public string StartRoom { get; set; } = "res://Scenes/Home/Areas/PlayerRoom.tscn";
     [Export] public string StartSpawn { get; set; } = "startSpawn";
     [Export] public bool IsNight { get; set; } = true;
     [Export] public bool AllowNightToggleKey { get; set; } = true;
@@ -47,6 +48,9 @@ public partial class RoomManager : Node2D
     private ColorRect _fade;
     private Room _room;
     private bool _busy;
+    public bool IsRoomTransitionBusy => _busy;
+    private float _currentDaylight = 1f;
+    private bool _hasLightingSample;
 
     public override void _Ready()
     {
@@ -67,6 +71,9 @@ public partial class RoomManager : Node2D
             SetNight(SchoolYardGame.DayClock.Instance.IsNight);
         }
 
+        SchoolYardGame.AudioManager.Instance?.PlayWorldMusic(
+            SchoolYardGame.DayClock.Instance?.IsNight ?? IsNight);
+
         string roomPath = string.IsNullOrWhiteSpace(_requestedStartRoom) ? StartRoom : _requestedStartRoom;
         string spawn = string.IsNullOrWhiteSpace(_requestedStartSpawn) ? StartSpawn : _requestedStartSpawn;
         _requestedStartRoom = null;
@@ -74,6 +81,56 @@ public partial class RoomManager : Node2D
         if (SchoolYardGame.DayClock.Instance != null)
             SchoolYardGame.DayClock.Instance.Running = true;
         LoadRoom(roomPath, spawn);
+    }
+
+    public override void _Process(double delta)
+    {
+        ApplyTimeOfDayLighting((float)delta);
+    }
+
+    private void ApplyTimeOfDayLighting(float delta = 0f)
+    {
+        if (_ambient == null || _sun == null)
+            return;
+
+        float hour = SchoolYardGame.DayClock.Instance?.Hour ?? 8f;
+        float targetDaylight = CalculateDaylightBlend(hour);
+        if (!_hasLightingSample)
+        {
+            _currentDaylight = targetDaylight;
+            _hasLightingSample = true;
+        }
+        else if (delta > 0f)
+        {
+            float blend = 1f - Mathf.Exp(-delta / 4f);
+            _currentDaylight = Mathf.Lerp(_currentDaylight, targetDaylight, blend);
+        }
+
+        float daylight = _currentDaylight;
+        bool schoolHandlesItsOwnDayTint = _room != null &&
+            string.Equals(_room.RoomName, "School", System.StringComparison.OrdinalIgnoreCase);
+
+        _ambient.Color = schoolHandlesItsOwnDayTint
+            ? Colors.White
+            : NightColor.Lerp(DayColor, daylight);
+
+        _sun.Energy = !schoolHandlesItsOwnDayTint && _room != null && _room.Outdoor
+            ? DaySunEnergy * daylight
+            : 0f;
+
+        _room?.ApplyNightBlend(1f - daylight);
+    }
+
+    private static float CalculateDaylightBlend(float hour)
+    {
+        // Dawn (05:00-08:00) and dusk (16:30-20:30) are eased over several in-game hours.
+        float dawn = Mathf.Clamp((hour - 5f) / 3f, 0f, 1f);
+        dawn = dawn * dawn * (3f - 2f * dawn);
+
+        float dusk = Mathf.Clamp((hour - 16.5f) / 4f, 0f, 1f);
+        dusk = dusk * dusk * (3f - 2f * dusk);
+
+        return Mathf.Clamp(Mathf.Min(dawn, 1f - dusk), 0f, 1f);
     }
 
     public override void _UnhandledInput(InputEvent @event)
@@ -99,7 +156,12 @@ public partial class RoomManager : Node2D
             SetNight(SchoolYardGame.DayClock.Instance.IsNight);
     }
 
-    public async void GoTo(string roomPath, string spawn)
+    public async void GoTo(
+        string roomPath,
+        string spawn,
+        bool showLoadingScreen = false,
+        string loadingMessage = "Heading to school...",
+        bool useSchoolTravelLoadingScreen = false)
     {
         if (_busy || string.IsNullOrEmpty(roomPath))
             return;
@@ -109,11 +171,28 @@ public partial class RoomManager : Node2D
 
         try
         {
-            await FadeTo(1f);
-            LoadRoom(roomPath, spawn);
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-            _camera.ResetSmoothing();
-            await FadeTo(0f);
+            bool loadedWithScreen = false;
+            if (showLoadingScreen && SceneTransition.Instance != null)
+            {
+                loadedWithScreen = await SceneTransition.Instance.RunWithLoadingScreen(
+                    () =>
+                    {
+                        LoadRoom(roomPath, spawn);
+                        _camera.ResetSmoothing();
+                    },
+                    loadingMessage,
+                    2.0,
+                    useSchoolTravelLoadingScreen);
+            }
+
+            if (!loadedWithScreen)
+            {
+                await FadeTo(1f);
+                LoadRoom(roomPath, spawn);
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                _camera.ResetSmoothing();
+                await FadeTo(0f);
+            }
         }
         catch (System.Exception ex)
         {
@@ -129,12 +208,10 @@ public partial class RoomManager : Node2D
 
     public void SetNight(bool night)
     {
+        // The boolean is retained for room and music logic. Visual lighting is updated
+        // continuously in _Process so it does not snap at the night threshold.
         IsNight = night;
-        bool schoolHandlesItsOwnDayTint = _room != null &&
-            string.Equals(_room.RoomName, "School", System.StringComparison.OrdinalIgnoreCase);
-        _ambient.Color = schoolHandlesItsOwnDayTint ? Colors.White : (night ? NightColor : DayColor);
-        _sun.Energy = (!night && _room != null && _room.Outdoor) ? DaySunEnergy : 0f;
-        _room?.ApplyTime(night);
+        ApplyTimeOfDayLighting();
     }
 
     private void LoadRoom(string path, string spawn)
@@ -173,6 +250,16 @@ public partial class RoomManager : Node2D
 
         ConfigureCamera();
         SetNight(IsNight);
+        ApplyTimeOfDayLighting();
+
+        // Resolve the assessment only after the destination home room is actually loaded.
+        if (path.StartsWith("res://Scenes/Home/Areas/", StringComparison.OrdinalIgnoreCase) &&
+            global::DailyTestSession.HasPendingHomeResolution)
+        {
+            SchoolYardGame.DayClock.Instance?.MarkSchoolChallengeCompletedToday();
+            global::DailyTestSession.ResolveAtHome();
+        }
+
         SaveManager.Instance?.RequestAutoSave();
     }
 

@@ -199,12 +199,46 @@ public partial class SaveLoadMenu : Control
         row.AddChild(textStack);
 
         var autoLoad = MakeButton("Load Auto", false);
-        autoLoad.CustomMinimumSize = new Vector2(130, 44);
+        autoLoad.CustomMinimumSize = new Vector2(110, 44);
         autoLoad.Disabled = saves?.HasAutoSave != true || _busy;
         autoLoad.Pressed += async () => await OnLoadAutoSavePressed();
         row.AddChild(autoLoad);
 
+        var deleteAuto = MakeButton("Delete", false);
+        deleteAuto.CustomMinimumSize = new Vector2(90, 44);
+        deleteAuto.Disabled = saves?.HasAutoSave != true || _busy;
+        deleteAuto.Pressed += ConfirmDeleteAutoSave;
+        row.AddChild(deleteAuto);
+
         _slotList.AddChild(rowPanel);
+    }
+
+    private void ConfirmDeleteAutoSave()
+    {
+        if (_busy || SaveManager.Instance == null || !SaveManager.Instance.HasAutoSave)
+            return;
+
+        var confirmation = new ConfirmationDialog
+        {
+            Title = "Delete Autosave",
+            DialogText = "Permanently delete the autosave? This cannot be undone.",
+            OkButtonText = "Delete",
+            CancelButtonText = "Cancel",
+            ProcessMode = ProcessModeEnum.Always
+        };
+        AddChild(confirmation);
+        confirmation.Confirmed += () =>
+        {
+            bool deleted = SaveManager.Instance?.DeleteAutoSave() == true;
+            _status.Text = deleted
+                ? "Autosave deleted."
+                : "Could not delete the autosave.";
+            RefreshSlots();
+            confirmation.QueueFree();
+        };
+        confirmation.Canceled += () => confirmation.QueueFree();
+        confirmation.CloseRequested += () => confirmation.QueueFree();
+        confirmation.PopupCentered(new Vector2I(460, 180));
     }
 
     private void ConfirmDeleteSlot(int slot)
