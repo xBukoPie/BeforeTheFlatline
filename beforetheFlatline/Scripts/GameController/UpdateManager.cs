@@ -290,7 +290,7 @@ public partial class UpdateManager : Node
             await using (var destination = new FileStream(
                 downloadPath,
                 FileMode.Create,
-                FileAccess.Write,
+                System.IO.FileAccess.Write,
                 FileShare.None,
                 1024 * 1024,
                 FileOptions.Asynchronous | FileOptions.SequentialScan))
@@ -323,7 +323,7 @@ public partial class UpdateManager : Node
             await using (var verificationStream = new FileStream(
                 downloadPath,
                 FileMode.Open,
-                FileAccess.Read,
+                System.IO.FileAccess.Read,
                 FileShare.Read,
                 1024 * 1024,
                 FileOptions.SequentialScan))
