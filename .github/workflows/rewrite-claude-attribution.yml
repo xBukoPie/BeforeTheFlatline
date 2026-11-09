@@ -1,0 +1,210 @@
+name: One-time Claude Contributor Attribution Cleanup
+
+on:
+  push:
+    branches:
+      - updates
+    paths:
+      - ".github/claude-attribution-cleanup.trigger"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: claude-attribution-history-rewrite
+  cancel-in-progress: false
+
+jobs:
+  rewrite-history:
+    name: Rewrite Claude-authored commits safely
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Install git-filter-repo
+        shell: bash
+        run: |
+          python3 -m pip install --user git-filter-repo
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Rewrite commit metadata and update all refs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+
+          repo_dir="$RUNNER_TEMP/beforetheflatline-mirror.git"
+          clone_url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          echo "Cloning all Git branches and tags..."
+          git clone --mirror "$clone_url" "$repo_dir"
+          cd "$repo_dir"
+
+          expected_branches="$(printf '%s\n' main update-test updates | sort)"
+          actual_branches="$(git for-each-ref --format='%(refname:short)' refs/heads | sort)"
+          if [[ "$actual_branches" != "$expected_branches" ]]; then
+            echo "::error::Branch list changed. Expected main, update-test, updates; found:"
+            printf '%s\n' "$actual_branches"
+            exit 1
+          fi
+
+          claude_author_count="$(git log --all --format='%ae' | awk 'tolower($0) == "noreply@anthropic.com" { count++ } END { print count+0 }')"
+          if [[ "$claude_author_count" -ne 2 ]]; then
+            echo "::error::Expected exactly two Claude-authored commits; found $claude_author_count. No refs were changed."
+            exit 1
+          fi
+
+          target_one="226d123f13894f7c517a0b571e11f20b1732405d"
+          target_two="26ec8cb5bd656da3d702424929b0893173d4db5c"
+          for sha in "$target_one" "$target_two"; do
+            git cat-file -e "$sha^{commit}"
+            author_email="$(git show -s --format='%ae' "$sha" | tr '[:upper:]' '[:lower:]')"
+            committer_email="$(git show -s --format='%ce' "$sha" | tr '[:upper:]' '[:lower:]')"
+            if [[ "$author_email" != "noreply@anthropic.com" || "$committer_email" != "noreply@anthropic.com" ]]; then
+              echo "::error::Unexpected author/committer metadata on $sha. No refs were changed."
+              exit 1
+            fi
+          done
+
+          # Record every reachable commit's tree, author date, and identities.
+          # This lets the workflow prove that game files and the remaining history stay intact.
+          git log --all --format='%H%x09%T%x09%aI%x09%an%x09%ae%x09%cn%x09%ce' |
+            sort -k1,1 > "$RUNNER_TEMP/metadata-before.tsv"
+
+          # Keep the exact old value for every branch/tag so the final atomic push
+          # cannot overwrite any commit pushed while this job was running.
+          git for-each-ref --format='%(refname) %(objectname)' refs/heads refs/tags |
+            sort > "$RUNNER_TEMP/refs-before.txt"
+
+          echo "Rewriting only the two Claude-authored commits..."
+          git filter-repo --force --commit-callback '
+          target_email = b"noreply@anthropic.com"
+          owner_name = b"xBukoPie"
+          owner_email = b"163955385+xBukoPie@users.noreply.github.com"
+
+          is_claude_author = commit.author_email.lower() == target_email
+          is_claude_committer = commit.committer_email.lower() == target_email
+
+          if is_claude_author:
+              commit.author_name = owner_name
+              commit.author_email = owner_email
+
+          if is_claude_committer:
+              commit.committer_name = owner_name
+              commit.committer_email = owner_email
+
+          if is_claude_author or is_claude_committer:
+              cleaned_lines = []
+              for line in commit.message.splitlines():
+                  normalized = line.strip().lower()
+                  if normalized.startswith(b"co-authored-by: claude"):
+                      continue
+                  if normalized.startswith(b"claude-session:"):
+                      continue
+                  cleaned_lines.append(line)
+              commit.message = b"\\n".join(cleaned_lines).rstrip() + b"\\n"
+          '
+
+          map_file="$repo_dir/filter-repo/commit-map"
+          if [[ ! -s "$map_file" ]]; then
+            echo "::error::git-filter-repo did not produce a commit map."
+            exit 1
+          fi
+
+          declare -A rewritten
+          while read -r old_sha new_sha; do
+            [[ "$old_sha" == "old" ]] && continue
+            rewritten["$old_sha"]="$new_sha"
+          done < "$map_file"
+
+          # Verify every reachable commit retained the same tree and author date.
+          # For all commits other than the two targets, author and committer identities
+          # must remain exactly as they were before the rewrite.
+          checked=0
+          while IFS=$'\t' read -r old_sha old_tree old_author_date old_author_name old_author_email old_committer_name old_committer_email; do
+            new_sha="${rewritten[$old_sha]:-$old_sha}"
+            if [[ -z "$new_sha" || "$new_sha" =~ ^0+$ ]]; then
+              echo "::error::A reachable commit was unexpectedly removed: $old_sha"
+              exit 1
+            fi
+
+            read -r new_tree new_author_date new_author_name new_author_email new_committer_name new_committer_email < <(
+              git show -s --format='%T%x09%aI%x09%an%x09%ae%x09%cn%x09%ce' "$new_sha"
+            )
+
+            if [[ "$new_tree" != "$old_tree" || "$new_author_date" != "$old_author_date" ]]; then
+              echo "::error::Tree or author date changed for $old_sha"
+              exit 1
+            fi
+
+            if [[ "$old_sha" == "$target_one" || "$old_sha" == "$target_two" ]]; then
+              if [[ "$new_author_name" != "xBukoPie" ||
+                    "$new_author_email" != "163955385+xBukoPie@users.noreply.github.com" ||
+                    "$new_committer_name" != "xBukoPie" ||
+                    "$new_committer_email" != "163955385+xBukoPie@users.noreply.github.com" ]]; then
+                echo "::error::Target commit attribution was not corrected: $old_sha"
+                exit 1
+              fi
+            else
+              if [[ "$new_author_name" != "$old_author_name" ||
+                    "$new_author_email" != "$old_author_email" ||
+                    "$new_committer_name" != "$old_committer_name" ||
+                    "$new_committer_email" != "$old_committer_email" ]]; then
+                echo "::error::A non-Claude commit identity changed: $old_sha"
+                exit 1
+              fi
+            fi
+
+            checked=$((checked + 1))
+          done < "$RUNNER_TEMP/metadata-before.tsv"
+
+          if git log --all --format='%ae%n%ce' | grep -qi 'noreply@anthropic.com'; then
+            echo "::error::An Anthropic author/committer address remains reachable."
+            exit 1
+          fi
+          if git log --all --format='%B' | grep -Eiq 'Co-Authored-By:[[:space:]]*Claude|Claude-Session:'; then
+            echo "::error::A Claude co-author/session trailer remains reachable."
+            exit 1
+          fi
+
+          refs_after="$(git for-each-ref --format='%(refname)' refs/heads refs/tags | sort)"
+          refs_before="$(awk '{print $1}' "$RUNNER_TEMP/refs-before.txt" | sort)"
+          if [[ "$refs_after" != "$refs_before" ]]; then
+            echo "::error::Branch or tag names changed during rewrite. No refs were pushed."
+            exit 1
+          fi
+
+          # Push every branch and tag in one atomic transaction. If any ref was
+          # changed by someone else during this job, the lease check rejects the
+          # entire push instead of overwriting their work.
+          push_args=()
+          while read -r ref old_sha; do
+            if ! git show-ref --verify --quiet "$ref"; then
+              echo "::error::Expected ref is missing after rewrite: $ref"
+              exit 1
+            fi
+            push_args+=( "--force-with-lease=$ref:$old_sha" "$ref:$ref" )
+          done < "$RUNNER_TEMP/refs-before.txt"
+
+          git remote remove origin
+          git remote add origin "$clone_url"
+
+          echo "All validation checks passed for $checked commits."
+          echo "Atomically updating all branches and tags..."
+          git push --atomic origin "${push_args[@]}"
+
+          {
+            echo "## Claude contributor attribution cleanup"
+            echo ""
+            echo "- Rewritten Claude-authored commits: 2"
+            echo "- Reachable commits verified: $checked"
+            echo "- Branches and tags: preserved and updated atomically"
+            echo "- All commit trees: unchanged"
+            echo "- All author dates: unchanged"
+            echo "- Other authors and committers: unchanged"
+            echo ""
+            echo "The repository history rewrite completed successfully."
+          } >> "$GITHUB_STEP_SUMMARY"
