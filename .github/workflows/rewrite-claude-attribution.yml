@@ -124,14 +124,14 @@ jobs:
           # For all commits other than the two targets, author and committer identities
           # must remain exactly as they were before the rewrite.
           checked=0
-          while IFS=
-            new_sha="${rewritten[$old_sha]:-$old_sha}"
+          while IFS=$'\t' read -r old_sha old_tree old_author_date old_committer_date old_author_name old_author_email old_committer_name old_committer_email; do
+            new_sha="\${rewritten[$old_sha]:-$old_sha}"
             if [[ -z "$new_sha" || "$new_sha" =~ ^0+$ ]]; then
               echo "::error::A reachable commit was unexpectedly removed: $old_sha"
               exit 1
             fi
 
-            IFS=
+            IFS=$'\t' read -r new_tree new_author_date new_committer_date new_author_name new_author_email new_committer_name new_committer_email < <(
               git show -s --format='%T%x09%aI%x09%cI%x09%an%x09%ae%x09%cn%x09%ce' "$new_sha"
             )
 
