@@ -105,7 +105,7 @@ jobs:
                   if normalized.startswith(b"claude-session:"):
                       continue
                   cleaned_lines.append(line)
-              commit.message = b"\\n".join(cleaned_lines).rstrip() + b"\\n"
+              commit.message = b"\n".join(cleaned_lines).rstrip() + b"\n"
           '
 
           map_file="$repo_dir/filter-repo/commit-map"
