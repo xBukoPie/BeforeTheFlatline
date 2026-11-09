@@ -11,6 +11,7 @@ config_version=5
 [application]
 
 config/name="BeforeTheFlatline : Original"
+config/version="windows-preview-8"
 run/main_scene="res://Scenes/Menu/OpeningSequence.tscn"
 config/features=PackedStringArray("4.7", "C#", "GL Compatibility")
 config/icon="res://icon.png"
@@ -22,6 +23,7 @@ DayClock="*res://Scripts/GameController/DayClock.cs"
 StoryProgression="*res://Scripts/GameController/StoryProgression.cs"
 RoomKeyProgression="*res://Scripts/GameController/RoomKeyProgression.cs"
 SaveManager="*res://Scripts/GameController/SaveManager.cs"
+UpdateManager="*res://Scripts/GameController/UpdateManager.cs"
 SanityManager="*res://Scripts/GameController/SanityManager.cs"
 SettingsManager="*res://Scripts/GameController/SettingsManager.cs"
 AudioManager="*res://Scripts/GameController/AudioManager.cs"

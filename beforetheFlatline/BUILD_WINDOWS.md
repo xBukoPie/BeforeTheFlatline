@@ -50,3 +50,14 @@ After installing the matching export templates, you can also open the project an
 ## Release notes
 
 This is a portable executable build, not an installer. There is no code-signing certificate configured. Test the exported executable on a clean Windows account or another Windows machine before distributing it.
+
+
+## In-game updates
+
+Exported Windows builds check the published GitHub preview releases when the main menu opens. If a newer `windows-preview-N` build is available, the player is asked before the download begins.
+
+The updater downloads `BeforeTheFlatline.exe` to the Godot user-data directory, verifies the GitHub release asset's SHA-256 digest and file size, then starts a small PowerShell handoff. The current game closes, the helper replaces only the executable, and launches the updated game.
+
+The updater does not delete or rewrite saves. Save files remain under the same `user://Saves` directory because the application name and save path are unchanged. The game must be launched from a folder the current Windows user can write to; a game installed under a protected folder such as `Program Files` must be moved or manually updated.
+
+Every successful push to the `updates` branch that changes game files produces a new preview release through GitHub Actions. The workflow stamps that run's `windows-preview-N` version into the executable so clients can compare versions and avoid repeated downloads.
