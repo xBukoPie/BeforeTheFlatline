@@ -13,7 +13,7 @@ public partial class FlowchartSymbolControl : Control
 
     public bool IsPointOnShape(Vector2 globalPoint)
     {
-        Vector2 point = ToLocal(globalPoint);
+        Vector2 point = GetGlobalTransform().AffineInverse() * globalPoint;
         float width = Mathf.Max(Size.X, CustomMinimumSize.X);
         const float height = 72f;
 

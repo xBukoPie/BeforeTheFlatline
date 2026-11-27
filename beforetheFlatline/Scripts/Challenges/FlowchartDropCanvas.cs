@@ -283,6 +283,7 @@ public partial class FlowchartDropCanvas : PanelContainer
             PendingInsertionIndex = insertIndex;
             BuildWorkspace();
             ContentChanged?.Invoke();
+            BlockDropped?.Invoke(parts[1], parts[2]);
             return;
         }
 
@@ -306,6 +307,7 @@ public partial class FlowchartDropCanvas : PanelContainer
         PendingInsertionIndex = insertIndex;
         BuildWorkspace();
         ContentChanged?.Invoke();
+        BlockDropped?.Invoke(moving.Type, moving.Text);
     }
 
     private static bool TryFindDefinition(
