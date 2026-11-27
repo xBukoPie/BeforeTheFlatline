@@ -167,6 +167,10 @@ public partial class GroundKeyPickup : Area2D
 
     private bool IsKeyAvailable()
     {
+        if ((DayClock.Instance != null && DayClock.Instance.DayNumber <= 1) ||
+            DayClock.Instance?.IsFirstDayTutorialActive == true)
+            return false;
+
         string pending = RoomKeyProgression.Instance?.PendingKeyRoomName ?? string.Empty;
         if (!string.Equals(pending, KeyRoomId, StringComparison.OrdinalIgnoreCase))
             return false;
