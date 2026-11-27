@@ -42,9 +42,6 @@ public partial class FirstDayTutorialManager : Node
         Instance = this;
         ProcessMode = ProcessModeEnum.Always;
 
-        // The new route replaces the old one-off classroom mystery interaction.
-        if (DayClock.Instance?.IsFirstDayTutorialActive == true)
-            DayClock.Instance.MarkFirstDayMysteryEncounterCompleted();
     }
 
     public override void _Process(double delta) => UpdateFocus();

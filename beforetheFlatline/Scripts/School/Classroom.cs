@@ -54,8 +54,7 @@ public partial class Classroom : Control
         _dialogue.DialogueFinished += OnGreetingFinished;
 
         bool showFirstDayIntro = clock != null &&
-            clock.DayNumber == 1 &&
-            !clock.FirstDayMysteryEncounterSeen;
+            clock.ShouldShowFirstDayMysteryEncounter;
         _firstDayGreetingVariant = showFirstDayIntro;
         _dialogue.Visible = !showFirstDayIntro;
 

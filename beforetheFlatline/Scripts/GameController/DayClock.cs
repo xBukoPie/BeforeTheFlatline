@@ -41,15 +41,17 @@ public partial class DayClock : Node
     private bool _skipSchoolGreetingOnNextLoad;
     private bool _initialized;
     public bool FirstDayMysteryEncounterSeen { get; private set; }
+    public int FirstDayMysteryEncounterDay { get; private set; }
     private bool _firstDaySpecialGreetingPending;
     public bool FirstDayMysteryGreetingPending => _firstDaySpecialGreetingPending;
 
-    public bool ShouldShowFirstDayMysteryEncounter => !FirstDayMysteryEncounterSeen;
+    public bool ShouldShowFirstDayMysteryEncounter => DayNumber >= 2 && !FirstDayMysteryEncounterSeen;
 
     // Set after the mysterious person exits; the next classroom greeting gets unique choices.
     public void MarkFirstDayMysteryEncounterCompleted()
     {
         FirstDayMysteryEncounterSeen = true;
+        FirstDayMysteryEncounterDay = DayNumber;
         _firstDaySpecialGreetingPending = false;
     }
 
@@ -60,9 +62,15 @@ public partial class DayClock : Node
         return pending;
     }
 
-    public void RestoreFirstDayMysteryState(bool encounterSeen, bool specialGreetingPending)
+    public void RestoreFirstDayMysteryState(
+        bool encounterSeen,
+        bool specialGreetingPending,
+        int encounterDay = 0)
     {
         FirstDayMysteryEncounterSeen = encounterSeen;
+        FirstDayMysteryEncounterDay = encounterSeen
+            ? (encounterDay > 0 ? encounterDay : DayNumber)
+            : 0;
         // Old saves may contain both flags. A completed mystery encounter always wins.
         _firstDaySpecialGreetingPending = specialGreetingPending && !encounterSeen;
     }
@@ -320,6 +328,7 @@ public partial class DayClock : Node
         RollDailyHouseActivities();
         _skipSchoolGreetingOnNextLoad = false;
         FirstDayMysteryEncounterSeen = false;
+        FirstDayMysteryEncounterDay = 0;
         _firstDaySpecialGreetingPending = false;
         FirstDayTutorialStep = 0;
         FirstDayTutorialCompleted = false;
@@ -356,7 +365,8 @@ public partial class DayClock : Node
         RoomKeyProgression.Instance?.DiscardTutorialPendingKey();
         FirstDayTutorialCompleted = true;
         FirstDayTutorialStep = 7;
-        FirstDayMysteryEncounterSeen = true;
+        // The mysterious person's first interaction is deliberately deferred until the player
+        // enters the classroom on Day 2. Do not consume the encounter during this tutorial reset.
         _firstDaySpecialGreetingPending = false;
 
         DayNumber = 2;

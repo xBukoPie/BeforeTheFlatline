@@ -248,6 +248,7 @@ public partial class SaveManager : Node
             ["wrong_room_attempts_today"] = DayClock.Instance.WrongRoomAttemptsToday,
             ["daily_house_activities"] = DayClock.Instance.CreateHouseActivitySaveData(),
             ["mystery_encounter_seen"] = DayClock.Instance.FirstDayMysteryEncounterSeen,
+            ["mystery_encounter_completed_day"] = DayClock.Instance.FirstDayMysteryEncounterDay,
             ["first_day_special_greeting_pending"] = DayClock.Instance.FirstDayMysteryGreetingPending,
             ["first_day_tutorial_step"] = DayClock.Instance.FirstDayTutorialStep,
             ["first_day_tutorial_completed"] = DayClock.Instance.FirstDayTutorialCompleted,
@@ -335,17 +336,29 @@ public partial class SaveManager : Node
             SchoolFriendInteractionHistory.RestoreFromSaveData(friendInteractionState);
             SchoolFriendSpawnHistory.RestoreFromSaveData(friendSpawnState, day, schoolCompleted);
             StoryProgression.Instance?.RestoreFromSaveData(storyState);
-            bool mysterySeen = ReadBool(data, "mystery_encounter_seen", false);
-            DayClock.Instance?.RestoreFirstDayMysteryState(
-                mysterySeen,
-                ReadBool(data, "first_day_special_greeting_pending", false));
-
-            // Backward compatibility: saves made before the guided tutorial are
-            // considered complete if Day 1 had already passed the mystery encounter.
             bool hasTutorialFlag = data.ContainsKey("first_day_tutorial_completed");
             bool tutorialCompleted = hasTutorialFlag
                 ? ReadBool(data, "first_day_tutorial_completed", false)
-                : day > 1 || mysterySeen;
+                : day > 1;
+
+            bool mysterySeen = ReadBool(data, "mystery_encounter_seen", false);
+            int mysteryEncounterDay = ReadInt(data, "mystery_encounter_completed_day", 0);
+            bool specialGreetingPending = ReadBool(data, "first_day_special_greeting_pending", false);
+
+            // Builds that introduced the Day 1 tutorial also marked this encounter complete
+            // without ever showing it. Re-open it once on Day 2 for those existing saves.
+            if (hasTutorialFlag && tutorialCompleted &&
+                !data.ContainsKey("mystery_encounter_completed_day"))
+            {
+                mysterySeen = false;
+                mysteryEncounterDay = 0;
+                specialGreetingPending = false;
+            }
+
+            DayClock.Instance?.RestoreFirstDayMysteryState(
+                mysterySeen,
+                specialGreetingPending,
+                mysteryEncounterDay);
             int tutorialStep = data.ContainsKey("first_day_tutorial_step")
                 ? ReadInt(data, "first_day_tutorial_step", tutorialCompleted ? 7 : 0)
                 : tutorialCompleted ? 7 : 0;
