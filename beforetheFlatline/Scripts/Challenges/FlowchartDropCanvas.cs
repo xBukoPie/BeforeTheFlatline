@@ -60,23 +60,7 @@ public partial class FlowchartDropCanvas : PanelContainer
             return;
 
         string[] parts = data.AsString().Split('|', 3);
-        PendingInsertionIndex = GetInsertionIndex(ToGlobal(atPosition));
-
-        if (parts.Length == 2 && parts[0] == "MOVE" &&
-            int.TryParse(parts[1], out int fromIndex))
-        {
-            MoveBlock(fromIndex, PendingInsertionIndex);
-            return;
-        }
-
-        if (parts.Length == 3 && parts[0] == "ADD" && IsBlockType(parts[1]))
-        {
-            BlockDropped?.Invoke(parts[1], parts[2]);
-            return;
-        }
-
-        if (parts.Length == 2 && IsBlockType(parts[0]))
-            BlockDropped?.Invoke(parts[0], parts[1]);
+        HandleDropData(data, GetInsertionIndex(ToGlobal(atPosition)));
     }
 
     public void AddBlock(string type, string text, int insertIndex = -1)
@@ -166,11 +150,12 @@ public partial class FlowchartDropCanvas : PanelContainer
             if (IsDecisionWithOutputBranches(definitions, i))
             {
                 AddPlacedBlock(data, i, compact: false);
-                _blocks.AddChild(new FlowchartConnectorControl { Kind = "Split" });
+                AddConnector("Split", i + 1, 52);
 
                 var branches = new HBoxContainer
                 {
-                    SizeFlagsHorizontal = SizeFlags.ExpandFill
+                    SizeFlagsHorizontal = SizeFlags.ExpandFill,
+                    MouseFilter = MouseFilterEnum.Ignore
                 };
                 branches.AddThemeConstantOverride("separation", 22);
                 AddPlacedBlockToBranch(branches, definitions[i + 1], i + 1, "TRUE");
@@ -178,7 +163,7 @@ public partial class FlowchartDropCanvas : PanelContainer
                 _blocks.AddChild(branches);
 
                 // The merge connector also points down to the next shared step.
-                _blocks.AddChild(new FlowchartConnectorControl { Kind = "Merge" });
+                AddConnector("Merge", i + 3, 52);
                 i += 3;
                 continue;
             }
@@ -187,13 +172,49 @@ public partial class FlowchartDropCanvas : PanelContainer
             i++;
 
             if (i < definitions.Count)
-                _blocks.AddChild(new FlowchartConnectorControl { Kind = "Down" });
+                AddConnector("Down", i, 38);
         }
 
         if (_placedBlocks.Count == 0)
             ShowEmptyMessage();
 
         ContentChanged?.Invoke();
+    }
+
+    private void AddConnector(string kind, int insertIndex, float height)
+    {
+        var connector = new FlowchartConnectorControl
+        {
+            Kind = kind,
+            CustomMinimumSize = new Vector2(0, height)
+        };
+        connector.Dropped += data => HandleDropData(data, insertIndex);
+        _blocks.AddChild(connector);
+    }
+
+    private void HandleDropData(Variant data, int insertIndex)
+    {
+        if (data.VariantType != Variant.Type.String)
+            return;
+
+        string[] parts = data.AsString().Split('|', 3);
+        PendingInsertionIndex = Mathf.Clamp(insertIndex, 0, _placedBlocks.Count);
+
+        if (parts.Length == 2 && parts[0] == "MOVE" &&
+            int.TryParse(parts[1], out int fromIndex))
+        {
+            MoveBlock(fromIndex, PendingInsertionIndex);
+            return;
+        }
+
+        if (parts.Length == 3 && parts[0] == "ADD" && IsBlockType(parts[1]))
+        {
+            BlockDropped?.Invoke(parts[1], parts[2]);
+            return;
+        }
+
+        if (parts.Length == 2 && IsBlockType(parts[0]))
+            BlockDropped?.Invoke(parts[0], parts[1]);
     }
 
     private void AddPlacedBlock(FlowchartBlockDefinition data, int index, bool compact)

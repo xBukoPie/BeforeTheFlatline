@@ -6,12 +6,36 @@ public partial class FlowchartConnectorControl : Control
     private static readonly Color ConnectorColor = new("7dd3fc");
     private static readonly Color BranchColor = new("c4b5fd");
 
+    public event System.Action<Variant> Dropped;
+
     public FlowchartConnectorControl()
     {
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         CustomMinimumSize = new Vector2(0, 34);
-        MouseFilter = MouseFilterEnum.Ignore;
+        MouseFilter = MouseFilterEnum.Stop;
     }
+
+    public override bool _CanDropData(Vector2 atPosition, Variant data)
+    {
+        if (data.VariantType != Variant.Type.String)
+            return false;
+
+        string[] parts = data.AsString().Split('|', 3);
+        if (parts.Length == 3 && parts[0] == "ADD")
+            return IsBlockType(parts[1]);
+        if (parts.Length == 2 && parts[0] == "MOVE")
+            return int.TryParse(parts[1], out _);
+        return parts.Length == 2 && IsBlockType(parts[0]);
+    }
+
+    public override void _DropData(Vector2 atPosition, Variant data)
+    {
+        Dropped?.Invoke(data);
+    }
+
+    private static bool IsBlockType(string type) =>
+        type == "Start" || type == "Input" || type == "Process" ||
+        type == "Output" || type == "Decision" || type == "End";
 
     public override void _Draw()
     {
