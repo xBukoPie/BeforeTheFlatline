@@ -9,6 +9,7 @@ public partial class TestResults : Control
     private Label _summary;
     private Label _details;
     private Button _continueButton;
+    private Button _retryButton;
 
     public override void _Ready()
     {
@@ -63,6 +64,20 @@ public partial class TestResults : Control
 
         _details.Text = BuildSanitySummary(currentSanity) + "\n\n" + returnNote;
         _details.AddThemeColorOverride("font_color", new Color("e2e8f0"));
+
+        if (FirstDayTutorialManager.Instance?.ShouldExplainResults == true)
+        {
+            if (_retryButton != null) _retryButton.Disabled = true;
+            if (_continueButton != null) _continueButton.Disabled = true;
+
+            FirstDayTutorialManager.Instance.ShowResultsTutorial(_summary, _details, () =>
+            {
+                if (_retryButton != null && GodotObject.IsInstanceValid(_retryButton))
+                    _retryButton.Disabled = false;
+                if (_continueButton != null && GodotObject.IsInstanceValid(_continueButton))
+                    _continueButton.Disabled = false;
+            });
+        }
     }
 
     private string BuildSanitySummary(int currentSanity)
@@ -168,13 +183,13 @@ public partial class TestResults : Control
         buttons.AddThemeConstantOverride("separation", 10);
         stack.AddChild(buttons);
 
-        var retry = new Button
+        _retryButton = new Button
         {
             Text = "Retry Assessment",
             CustomMinimumSize = new Vector2(0, 48),
             SizeFlagsHorizontal = SizeFlags.ExpandFill
         };
-        retry.Pressed += () =>
+        _retryButton.Pressed += () =>
         {
             if (!DailyTestSession.RetryCurrentAssessment())
                 return;
@@ -184,7 +199,7 @@ public partial class TestResults : Control
             else
                 GetTree().ChangeSceneToFile("res://Scenes/Challenges/SequenceChallenge.tscn");
         };
-        buttons.AddChild(retry);
+        buttons.AddChild(_retryButton);
 
         _continueButton = new Button
         {
@@ -194,6 +209,9 @@ public partial class TestResults : Control
         };
         _continueButton.Pressed += () =>
         {
+            if (FirstDayTutorialManager.Instance?.CompleteResultsAndReturnHome() == true)
+                return;
+
             if (SceneTransition.Instance != null)
                 SceneTransition.Instance.ChangeSceneToFile("res://Scenes/School/PostChallengeConversation.tscn");
             else

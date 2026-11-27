@@ -26,6 +26,9 @@ public partial class DayClock : Node
     public bool SchoolChallengeCompletedToday { get; private set; }
     public bool SchoolDeadlinePenaltyAppliedToday { get; private set; }
     public int WrongRoomAttemptsToday { get; private set; }
+    public int FirstDayTutorialStep { get; private set; }
+    public bool FirstDayTutorialCompleted { get; private set; }
+    public bool IsFirstDayTutorialActive => DayNumber == 1 && !FirstDayTutorialCompleted;
 
     private readonly RandomNumberGenerator _activityRng = new();
     private bool _tvAvailableToday = true;
@@ -322,6 +325,8 @@ public partial class DayClock : Node
         _skipSchoolGreetingOnNextLoad = false;
         FirstDayMysteryEncounterSeen = false;
         _firstDaySpecialGreetingPending = false;
+        FirstDayTutorialStep = 0;
+        FirstDayTutorialCompleted = false;
         SchoolFriendInteractionHistory.Reset();
         SchoolFriendSpawnHistory.Reset();
         EmitSignal(SignalName.DayChanged, DayNumber);
@@ -336,6 +341,38 @@ public partial class DayClock : Node
     public void MarkSchoolChallengeCompletedToday()
     {
         SchoolChallengeCompletedToday = true;
+    }
+
+    public void SetFirstDayTutorialStep(int step)
+    {
+        FirstDayTutorialStep = Mathf.Clamp(step, 0, 7);
+        SaveManager.Instance?.RequestAutoSave();
+    }
+
+    public void RestoreFirstDayTutorialState(int step, bool completed)
+    {
+        FirstDayTutorialStep = Mathf.Clamp(step, 0, 7);
+        FirstDayTutorialCompleted = completed || DayNumber > 1;
+    }
+
+    public void FinishFirstDayTutorialAndStartDayTwo()
+    {
+        FirstDayTutorialCompleted = true;
+        FirstDayTutorialStep = 7;
+        FirstDayMysteryEncounterSeen = true;
+        _firstDaySpecialGreetingPending = false;
+
+        DayNumber = 2;
+        Hour = Mathf.PosMod(StartHour, 24f);
+        SchoolChallengeStartedToday = false;
+        SchoolChallengeCompletedToday = false;
+        SchoolDeadlinePenaltyAppliedToday = false;
+        WrongRoomAttemptsToday = 0;
+        RollDailyHouseActivities();
+        Running = true;
+
+        EmitSignal(SignalName.DayChanged, DayNumber);
+        EmitSignal(SignalName.TimeChanged, Hour);
     }
 
     public void SkipSchoolGreetingOnNextLoad()

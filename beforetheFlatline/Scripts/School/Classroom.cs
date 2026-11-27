@@ -43,6 +43,14 @@ public partial class Classroom : Control
         var clock = DayClock.Instance;
         _firstDayGreetingVariant = false;
         _greetingActive = true;
+
+        if (FirstDayTutorialManager.Instance?.IsGuidedClassroom == true)
+        {
+            _dialogue.Visible = false;
+            CallDeferred(nameof(BeginGuidedClassroom));
+            return;
+        }
+
         _dialogue.DialogueFinished += OnGreetingFinished;
 
         bool showFirstDayIntro = clock != null &&
@@ -104,6 +112,43 @@ public partial class Classroom : Control
 
         _dialogue.Visible = true;
         StartGreeting();
+    }
+
+    private void BeginGuidedClassroom()
+    {
+        if (!IsInsideTree())
+            return;
+
+        FirstDayTutorialManager.Instance?.BeginClassroomTutorial(StartGuidedAssessment);
+    }
+
+    private void StartGuidedAssessment()
+    {
+        _greetingActive = false;
+
+        if (_dialogue != null && GodotObject.IsInstanceValid(_dialogue))
+        {
+            _dialogue.DialogueFinished -= OnGreetingFinished;
+            _dialogue.QueueFree();
+            _dialogue = null;
+        }
+
+        if (string.IsNullOrWhiteSpace(ChallengeScenePath) ||
+            !ResourceLoader.Exists(ChallengeScenePath))
+        {
+            GD.PushWarning($"Classroom: assessment scene was not found: {ChallengeScenePath}");
+            _leaveHint.Visible = AllowEscapeToLeave;
+            return;
+        }
+
+        _leaveHint.Visible = false;
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = false;
+
+        if (SceneTransition.Instance != null)
+            SceneTransition.Instance.ChangeSceneToFile(ChallengeScenePath);
+        else
+            GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, ChallengeScenePath);
     }
 
     private void StartGreeting()

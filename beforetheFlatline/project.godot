@@ -33,6 +33,7 @@ JournalController="*res://Scripts/UI/JournalController.cs"
 SuperUserAccess="*res://Scripts/UI/SuperUserAccess.cs"
 UIFeedback="*res://Scripts/UI/UIFeedback.cs"
 InteractionPromptManager="*res://Scripts/UI/InteractionPromptManager.cs"
+FirstDayTutorialManager="*res://Scripts/GameController/FirstDayTutorialManager.cs"
 
 [display]
 

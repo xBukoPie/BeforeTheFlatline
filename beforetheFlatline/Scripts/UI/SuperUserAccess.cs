@@ -161,6 +161,10 @@ public partial class SuperUserAccess : CanvasLayer
         solveButton.Pressed += SolveCurrentQuestion;
         _adminSection.AddChild(solveButton);
 
+        var completeAssessment = MakeButton("Complete assessment now");
+        completeAssessment.Pressed += CompleteAssessmentNow;
+        _adminSection.AddChild(completeAssessment);
+
         AddSectionHeader(_adminSection, "SANITY & DEBUFFS");
         var amountRow = new HBoxContainer();
         amountRow.AddChild(new Label { Text = "Sanity amount", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, VerticalAlignment = VerticalAlignment.Center });
@@ -373,13 +377,13 @@ public partial class SuperUserAccess : CanvasLayer
         for (int i = 0; i < _adminSection.GetChildCount(); i++)
         {
             if (_adminSection.GetChild(i) is Control child)
-                child.Visible = !_challengeContext || i <= 2;
+                child.Visible = !_challengeContext || i <= 3;
         }
 
         if (_challengeContext)
         {
             // Only the solve action is shown during assessments, keeping the editor clear.
-            _panel.CustomMinimumSize = new Vector2(280, 116);
+            _panel.CustomMinimumSize = new Vector2(300, 160);
             _panel.AnchorLeft = 1f;
             _panel.AnchorRight = 1f;
             _panel.AnchorTop = 0f;
@@ -387,7 +391,7 @@ public partial class SuperUserAccess : CanvasLayer
             _panel.OffsetLeft = -292;
             _panel.OffsetRight = -12;
             _panel.OffsetTop = 52;
-            _panel.OffsetBottom = 168;
+            _panel.OffsetBottom = 212;
         }
         else
         {
@@ -418,6 +422,25 @@ public partial class SuperUserAccess : CanvasLayer
                 return;
             }
         }
+        SetStatus("Open an assessment question first.");
+    }
+
+    private void CompleteAssessmentNow()
+    {
+        foreach (Node node in GetTree().GetNodesInGroup("challenge_scene"))
+        {
+            if (node is ChallengeScene challenge)
+            {
+                bool completed = challenge.SuperUserCompleteAssessment();
+                SetStatus(completed
+                    ? "Assessment completed. Opening the normal Test Results screen."
+                    : "Could not complete the active assessment.");
+                if (completed)
+                    _panel.Visible = false;
+                return;
+            }
+        }
+
         SetStatus("Open an assessment question first.");
     }
 

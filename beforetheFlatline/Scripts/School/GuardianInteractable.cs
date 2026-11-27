@@ -62,6 +62,25 @@ public partial class GuardianInteractable : Node2D
         if (_conversationOpen)
             return;
 
+        if (FirstDayTutorialManager.Instance?.ShouldShowSchoolCompanion == true)
+        {
+            // On the guided first day, this character accompanies the player rather
+            // than waiting as an optional interaction.
+            _isAvailable = false;
+            Visible = true;
+            if (_talkArea != null && GodotObject.IsInstanceValid(_talkArea))
+                _talkArea.Monitoring = false;
+
+            InteractionPromptManager.Instance?.HidePrompt(this);
+            if (_player != null && GodotObject.IsInstanceValid(_player))
+            {
+                Vector2 followPoint = _player.GlobalPosition + new Vector2(-26f, 18f);
+                if (GlobalPosition.DistanceTo(followPoint) > 18f)
+                    GlobalPosition = GlobalPosition.MoveToward(followPoint, 72f * (float)delta);
+            }
+            return;
+        }
+
         int stage = GetAvailableStage();
         bool available = stage != 0;
 

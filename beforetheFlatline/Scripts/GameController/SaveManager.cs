@@ -249,6 +249,8 @@ public partial class SaveManager : Node
             ["daily_house_activities"] = DayClock.Instance.CreateHouseActivitySaveData(),
             ["mystery_encounter_seen"] = DayClock.Instance.FirstDayMysteryEncounterSeen,
             ["first_day_special_greeting_pending"] = DayClock.Instance.FirstDayMysteryGreetingPending,
+            ["first_day_tutorial_step"] = DayClock.Instance.FirstDayTutorialStep,
+            ["first_day_tutorial_completed"] = DayClock.Instance.FirstDayTutorialCompleted,
             ["sanity_state"] = SanityManager.Instance.CreateSaveData(),
             ["room_keys"] = new Godot.Collections.Dictionary
             {
@@ -333,9 +335,22 @@ public partial class SaveManager : Node
             SchoolFriendInteractionHistory.RestoreFromSaveData(friendInteractionState);
             SchoolFriendSpawnHistory.RestoreFromSaveData(friendSpawnState, day, schoolCompleted);
             StoryProgression.Instance?.RestoreFromSaveData(storyState);
+            bool mysterySeen = ReadBool(data, "mystery_encounter_seen", false);
             DayClock.Instance?.RestoreFirstDayMysteryState(
-                ReadBool(data, "mystery_encounter_seen", false),
+                mysterySeen,
                 ReadBool(data, "first_day_special_greeting_pending", false));
+
+            // Backward compatibility: saves made before the guided tutorial are
+            // considered complete if Day 1 had already passed the mystery encounter.
+            bool hasTutorialFlag = data.ContainsKey("first_day_tutorial_completed");
+            bool tutorialCompleted = hasTutorialFlag
+                ? ReadBool(data, "first_day_tutorial_completed", false)
+                : day > 1 || mysterySeen;
+            int tutorialStep = data.ContainsKey("first_day_tutorial_step")
+                ? ReadInt(data, "first_day_tutorial_step", tutorialCompleted ? 7 : 0)
+                : tutorialCompleted ? 7 : 0;
+            DayClock.Instance?.RestoreFirstDayTutorialState(tutorialStep, tutorialCompleted);
+
             int keysToRestore = Mathf.Max(0, ReadInt(keyState, "keys_earned", 0));
             string pendingKeyRoom = ReadString(keyState, "pending_key_room", string.Empty);
             bool hasExplicitUnlockedRooms = keyState.ContainsKey("unlocked_rooms") &&

@@ -16,6 +16,7 @@ public partial class ChallengeScene : Control
     private FlowchartDropCanvas _flowCanvas;
     private Button _submitButton;
     private Button _clearButton;
+    private readonly Dictionary<string, Button> _paletteButtons = new(StringComparer.OrdinalIgnoreCase);
 
     private GeneratedChallenge _challenge;
     private string _activeChallengeId = "";
@@ -190,8 +191,22 @@ public partial class ChallengeScene : Control
         int questionNumber = DailyTestSession.AttemptCount + 1;
         _progress.Text = $"QUESTION {questionNumber}/4   •   DAY {_day}   •   DIFFICULTY {_difficulty}/5";
         UpdateSubmitButton();
+        CallDeferred(nameof(BeginFirstDayQuestionGuide));
     }
 
+    private void BeginFirstDayQuestionGuide()
+    {
+        if (_challenge == null)
+            return;
+
+        FirstDayTutorialManager.Instance?.ShowQuestionTutorial(
+            _activeChallengeId,
+            _challenge.IsFlowchart,
+            _codeEditor,
+            _flowCanvas,
+            _paletteButtons,
+            _submitButton);
+    }
 
     private static string GetChallengeScenePath(string challengeId) =>
         challengeId.ToLowerInvariant() switch
@@ -206,6 +221,7 @@ public partial class ChallengeScene : Control
     private void RenderPseudocodeEditor()
     {
         ClearContent();
+        _paletteButtons.Clear();
         var guide = new Label
         {
             Text = "Write pseudocode that solves the problem. Use any variable names you like.",
@@ -235,6 +251,7 @@ public partial class ChallengeScene : Control
     private void RenderFlowchartEditor()
     {
         ClearContent();
+        _paletteButtons.Clear();
 
         var guide = new Label
         {
@@ -261,6 +278,7 @@ public partial class ChallengeScene : Control
                 TooltipText = $"Drag to add {item.Type.ToLowerInvariant()} block"
             };
             palette.AddChild(button);
+            _paletteButtons[item.Type] = button;
         }
 
         var canvasTitle = new Label { Text = "FLOWCHART WORKSPACE" };
@@ -332,19 +350,7 @@ public partial class ChallengeScene : Control
         DailyTestSession.Record(_activeChallengeId, correct, gaveUp, _difficulty);
 
         if (correct)
-        {
-            // A retry must not farm story progress for the same challenge on the same day.
-            bool firstCompletionToday = ChallengeProgress.MarkCompleted(_activeChallengeId);
-            if (firstCompletionToday)
-            {
-                var reward = RoomKeyProgression.Instance?.AwardTaskCompletion(_difficulty);
-                if (reward != null)
-                {
-                    DailyTestSession.AddPointsReceived(reward.PointsAdded);
-                    GD.Print($"[ChallengeScene] First correct completion earned {reward.PointsAdded} hidden story points. Total: {reward.TotalPoints}.");
-                }
-            }
-        }
+            AwardCorrectChallengeProgress();
 
         _completed = true;
         _submitButton.Disabled = true;
@@ -368,6 +374,64 @@ public partial class ChallengeScene : Control
             SceneTransition.Instance.ChangeSceneToFile(_nextScene);
         else
             GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, _nextScene);
+    }
+
+    private void AwardCorrectChallengeProgress()
+    {
+        // Only the first correct completion of this challenge family for the day
+        // contributes hidden story points.
+        if (!ChallengeProgress.MarkCompleted(_activeChallengeId))
+            return;
+
+        var reward = RoomKeyProgression.Instance?.AwardTaskCompletion(_difficulty);
+        if (reward == null)
+            return;
+
+        DailyTestSession.AddPointsReceived(reward.PointsAdded);
+        GD.Print($"[ChallengeScene] First correct completion earned {reward.PointsAdded} hidden story points. Total: {reward.TotalPoints}.");
+    }
+
+    public bool SuperUserCompleteAssessment()
+    {
+        if (_completed || _challenge == null || !DailyTestSession.IsActive)
+            return false;
+
+        bool hasInput = HasAnyInput();
+        bool complete = hasInput && HasCompleteAnswer();
+        bool correct = complete &&
+            (_challenge.IsFlowchart ? CheckFlowchartAnswer() : CheckPseudocodeAnswer());
+
+        DailyTestSession.Record(_activeChallengeId, correct, !hasInput, _difficulty);
+        if (correct)
+            AwardCorrectChallengeProgress();
+
+        // Record all outstanding questions as skipped. The shortcut therefore
+        // produces a valid 4-question results summary without inventing scores.
+        while (DailyTestSession.AttemptCount < DailyTestSession.QuestionCount)
+        {
+            string nextId = DailyTestSession.CurrentQuestionId;
+            if (string.IsNullOrWhiteSpace(nextId))
+                break;
+
+            DailyTestSession.Record(nextId, false, true, _difficulty);
+        }
+
+        _completed = true;
+        if (_submitButton != null) _submitButton.Disabled = true;
+        if (_clearButton != null) _clearButton.Disabled = true;
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = false;
+
+        const string resultsPath = "res://Scenes/School/TestResults.tscn";
+        if (!ResourceLoader.Exists(resultsPath))
+            return false;
+
+        if (SceneTransition.Instance != null)
+            SceneTransition.Instance.ChangeSceneToFile(resultsPath);
+        else
+            GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, resultsPath);
+
+        return true;
     }
 
     public bool SuperUserSolveCurrentQuestion()
@@ -524,5 +588,6 @@ public partial class ChallengeScene : Control
         }
         _codeEditor = null;
         _flowCanvas = null;
+        _paletteButtons.Clear();
     }
 }

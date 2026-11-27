@@ -33,6 +33,7 @@ public partial class Door : Area2D
         Monitorable = false;
 
         EnsureInteractAction();
+        AddToGroup("world_doors");
 
         if (GetNodeOrNull<CollisionShape2D>("Shape") == null)
         {
@@ -45,11 +46,27 @@ public partial class Door : Area2D
 
         BodyEntered += OnBodyEntered;
         BodyExited += OnBodyExited;
+        FirstDayTutorialManager.Instance?.RegisterDoor(this);
     }
 
     public override void _ExitTree()
     {
         InteractionPromptManager.Instance?.HidePrompt(this);
+        SetTutorialHighlight(false);
+    }
+
+    public void SetTutorialHighlight(bool highlighted)
+    {
+        TutorialDoorHighlight marker = GetNodeOrNull<TutorialDoorHighlight>("TutorialDoorHighlight");
+        if (highlighted)
+        {
+            if (marker == null)
+                AddChild(new TutorialDoorHighlight { Name = "TutorialDoorHighlight" });
+        }
+        else if (marker != null)
+        {
+            marker.QueueFree();
+        }
     }
 
     public override void _Process(double delta)
@@ -123,11 +140,21 @@ public partial class Door : Area2D
             return;
         }
 
+        FirstDayTutorialManager tutorial = FirstDayTutorialManager.Instance;
+        if (tutorial != null && !tutorial.CanUseDoor(this))
+        {
+            ShowTemporaryPrompt(tutorial.GetBlockedDoorMessage());
+            return;
+        }
+
         if (RequiresSchoolHours && (DayClock.Instance == null || !DayClock.Instance.IsSchoolOpen))
         {
             ShowTemporaryPrompt(ClosedPrompt);
             return;
         }
+
+        if (tutorial != null)
+            tutorial.OnExpectedDoorActivated(this);
 
         if (WrongRoom || Name.ToString().StartsWith("wrongRoom", StringComparison.OrdinalIgnoreCase))
         {

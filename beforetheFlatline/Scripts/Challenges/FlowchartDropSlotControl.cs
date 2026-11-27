@@ -6,16 +6,15 @@ public partial class FlowchartDropSlotControl : Control
 {
     public List<FlowchartBlockDefinition> TargetList { get; private set; }
     public int TargetIndex { get; private set; }
+    private bool _hasNextBlock;
 
     public event Action<Variant, List<FlowchartBlockDefinition>, int> DropReceived;
 
-    public void Configure(
-        List<FlowchartBlockDefinition> targetList,
-        int targetIndex,
-        bool branchSlot = false)
+    public void Configure(List<FlowchartBlockDefinition> targetList, int targetIndex, bool branchSlot = false)
     {
         TargetList = targetList;
         TargetIndex = targetIndex;
+        _hasNextBlock = targetList != null && targetIndex >= 0 && targetIndex < targetList.Count;
         CustomMinimumSize = new Vector2(0, branchSlot ? 24 : 26);
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         MouseFilter = MouseFilterEnum.Stop;
@@ -43,14 +42,27 @@ public partial class FlowchartDropSlotControl : Control
 
     public override void _Draw()
     {
+        // The connector centerline matches the center of the symbol's input field.
         float x = Size.X * 0.5f;
-        float top = 0f;
         float bottom = Size.Y;
         Color color = new("7dd3fc");
 
-        DrawLine(new Vector2(x, top), new Vector2(x, bottom - 7f), color, 2f, true);
-        DrawLine(new Vector2(x, bottom - 1f), new Vector2(x - 5f, bottom - 8f), color, 2f, true);
-        DrawLine(new Vector2(x, bottom - 1f), new Vector2(x + 5f, bottom - 8f), color, 2f, true);
+        if (_hasNextBlock)
+        {
+            DrawLine(new Vector2(x, 0f), new Vector2(x, bottom - 7f), color, 2f, true);
+            DrawArrowDown(x, bottom - 1f);
+        }
+        else
+        {
+            // Keep a plain continuation line when there is no block to connect to.
+            DrawLine(new Vector2(x, 0f), new Vector2(x, bottom), color, 2f, true);
+        }
+    }
+
+    private void DrawArrowDown(float x, float y)
+    {
+        DrawLine(new Vector2(x, y), new Vector2(x - 5f, y - 7f), new Color("7dd3fc"), 2f, true);
+        DrawLine(new Vector2(x, y), new Vector2(x + 5f, y - 7f), new Color("7dd3fc"), 2f, true);
     }
 
     private static bool IsUserBlockType(string type) =>

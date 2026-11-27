@@ -5,30 +5,36 @@ using System.Collections.Generic;
 public partial class FlowchartBlockControl : VBoxContainer
 {
     public FlowchartBlockDefinition Definition { get; private set; }
-
     public event Action ContentChanged;
 
     public void Configure(
         FlowchartBlockDefinition definition,
         Action<Variant, List<FlowchartBlockDefinition>, int> dropHandler,
-        bool compact = false)
+        bool compact = false,
+        bool hasFollowingBlock = false)
     {
         Definition = definition ?? throw new ArgumentNullException(nameof(definition));
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         SizeFlagsVertical = SizeFlags.ShrinkBegin;
         MouseFilter = MouseFilterEnum.Pass;
-        AddThemeConstantOverride("separation", 5);
+        AddThemeConstantOverride("separation", 0);
 
-        var blockRow = new HBoxContainer
+        // Center the editable symbol on the connector axis. The drag grip is
+        // overlaid on the left and must not change the symbol's horizontal center.
+        var blockRow = new Control
         {
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
-            CustomMinimumSize = new Vector2(0, 72)
+            CustomMinimumSize = new Vector2(0, 72),
+            MouseFilter = MouseFilterEnum.Pass
         };
-        blockRow.AddThemeConstantOverride("separation", 8);
+        AddChild(blockRow);
 
-        var dragHandle = new FlowchartDragHandle();
-        dragHandle.Configure(Definition.Id);
-        blockRow.AddChild(dragHandle);
+        var symbolCenter = new CenterContainer
+        {
+            MouseFilter = MouseFilterEnum.Pass
+        };
+        symbolCenter.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        blockRow.AddChild(symbolCenter);
 
         var symbol = new FlowchartSymbolControl();
         symbol.Configure(Definition.Type, Definition.Text, compact);
@@ -37,26 +43,39 @@ public partial class FlowchartBlockControl : VBoxContainer
             Definition.Text = value;
             ContentChanged?.Invoke();
         };
-        blockRow.AddChild(symbol);
-        AddChild(blockRow);
+        symbolCenter.AddChild(symbol);
+
+        var dragHandle = new FlowchartDragHandle();
+        dragHandle.Configure(Definition.Id);
+        dragHandle.Position = Vector2.Zero;
+        dragHandle.Size = new Vector2(34, 72);
+        blockRow.AddChild(dragHandle);
 
         if (!string.Equals(Definition.Type, "Decision", StringComparison.OrdinalIgnoreCase))
             return;
 
-        AddChild(new FlowchartDecisionConnectorControl { Kind = "Split" });
+        AddChild(new FlowchartDecisionConnectorControl
+        {
+            Kind = "Split",
+            HasTrueBranch = Definition.TrueBranch.Count > 0,
+            HasFalseBranch = Definition.FalseBranch.Count > 0
+        });
 
         var branches = new HBoxContainer
         {
-            SizeFlagsHorizontal = SizeFlags.ExpandFill
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            MouseFilter = MouseFilterEnum.Ignore
         };
         branches.AddThemeConstantOverride("separation", 12);
-        branches.MouseFilter = MouseFilterEnum.Ignore;
-
         AddBranchColumn(branches, "TRUE", Definition.TrueBranch, dropHandler);
         AddBranchColumn(branches, "FALSE", Definition.FalseBranch, dropHandler);
         AddChild(branches);
 
-        AddChild(new FlowchartDecisionConnectorControl { Kind = "Merge" });
+        AddChild(new FlowchartDecisionConnectorControl
+        {
+            Kind = "Merge",
+            HasFollowingBlock = hasFollowingBlock
+        });
     }
 
     private void AddBranchColumn(
@@ -68,7 +87,6 @@ public partial class FlowchartBlockControl : VBoxContainer
         var column = new VBoxContainer
         {
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
-            CustomMinimumSize = new Vector2(0, 0),
             MouseFilter = MouseFilterEnum.Pass
         };
         column.AddThemeConstantOverride("separation", 0);
@@ -76,7 +94,8 @@ public partial class FlowchartBlockControl : VBoxContainer
         var heading = new Label
         {
             Text = branchName,
-            HorizontalAlignment = HorizontalAlignment.Center
+            HorizontalAlignment = HorizontalAlignment.Center,
+            MouseFilter = MouseFilterEnum.Ignore
         };
         heading.AddThemeFontSizeOverride("font_size", 11);
         heading.AddThemeColorOverride("font_color",
@@ -87,7 +106,8 @@ public partial class FlowchartBlockControl : VBoxContainer
         for (int i = 0; i < definitions.Count; i++)
         {
             var child = new FlowchartBlockControl();
-            child.Configure(definitions[i], dropHandler, compact: true);
+            child.Configure(definitions[i], dropHandler, compact: true,
+                hasFollowingBlock: i < definitions.Count - 1);
             child.ContentChanged += () => ContentChanged?.Invoke();
             column.AddChild(child);
             AddSlot(column, definitions, i + 1, dropHandler);
