@@ -151,7 +151,7 @@ public partial class FlowchartSymbolControl : Control
             HorizontalAlignment.Left, -1f, 16).X;
 
         float minimum = _compact ? 170f : 190f;
-        float maximum = _compact ? 380f : 700f;
+        float maximum = _compact ? 360f : 700f;
         float required = string.Equals(BlockType, "Decision", StringComparison.OrdinalIgnoreCase)
             ? (textWidth + 26f) / 0.46f
             : (textWidth + 34f) / 0.72f;
