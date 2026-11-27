@@ -57,9 +57,9 @@ public partial class FlowchartSymbolControl : Control
         _editor = new LineEdit
         {
             Text = InitialText,
-            PlaceholderText = BlockType == "Decision" ? "Enter a condition..." : "Define this block...",
+            PlaceholderText = BlockType == "Decision" ? "condition" : "variable",
             MaxLength = 180,
-            Alignment = HorizontalAlignment.Center,
+            Alignment = HorizontalAlignment.Left,
             ClearButtonEnabled = false,
             SizeFlagsHorizontal = SizeFlags.ExpandFill
         };
@@ -135,8 +135,15 @@ public partial class FlowchartSymbolControl : Control
         }
 
         // Keep the built-in block type label inside every symbol shape.
-        DrawString(ThemeDB.FallbackFont, new Vector2(width * 0.5f, 22f), BlockType.ToUpperInvariant(),
-            HorizontalAlignment.Center, width - 12f, 10, new Color("dbeafe"));
+        float labelWidth = GetBlockLabelWidth(ThemeDB.FallbackFont);
+        float textWidth = GetEditorTextWidth(ThemeDB.FallbackFont);
+        float gap = 9f;
+        float rowWidth = labelWidth + gap + textWidth;
+        float rowStart = (width - rowWidth) * 0.5f;
+
+        // The symbol type is a fixed prefix. The editable field sits directly beside it.
+        DrawString(ThemeDB.FallbackFont, new Vector2(rowStart, 42f), BlockType.ToUpperInvariant(),
+            HorizontalAlignment.Left, labelWidth + 2f, 10, new Color("dbeafe"));
     }
 
     public override void _Notification(int what)
@@ -145,17 +152,32 @@ public partial class FlowchartSymbolControl : Control
             LayoutEditor();
     }
 
+    private float GetBlockLabelWidth(Font font)
+    {
+        return font.GetStringSize(BlockType.ToUpperInvariant(),
+            HorizontalAlignment.Left, -1f, 10).X;
+    }
+
+    private float GetEditorTextWidth(Font font)
+    {
+        string value = string.IsNullOrWhiteSpace(InitialText)
+            ? (_editor?.PlaceholderText ?? (BlockType == "Decision" ? "condition" : "variable"))
+            : InitialText;
+
+        return Mathf.Max(64f, font.GetStringSize(value,
+            HorizontalAlignment.Left, -1f, 16).X + 14f);
+    }
+
     private void UpdateShapeSize()
     {
         Font font = _editor?.GetThemeFont("font") ?? ThemeDB.FallbackFont;
-        float textWidth = font.GetStringSize(InitialText ?? string.Empty,
-            HorizontalAlignment.Left, -1f, 16).X;
+        float labelWidth = GetBlockLabelWidth(font);
+        float editorWidth = GetEditorTextWidth(font);
+        float rowWidth = labelWidth + 9f + editorWidth;
 
-        float minimum = _compact ? 170f : 190f;
+        float minimum = _compact ? 190f : 210f;
         float maximum = _compact ? 360f : 700f;
-        float required = string.Equals(BlockType, "Decision", StringComparison.OrdinalIgnoreCase)
-            ? (textWidth + 26f) / 0.46f
-            : (textWidth + 34f) / 0.72f;
+        float required = rowWidth + 38f;
 
         float width = Mathf.Clamp(Mathf.Ceil(required), minimum, maximum);
         if (!Mathf.IsEqualApprox(CustomMinimumSize.X, width) ||
@@ -173,9 +195,16 @@ public partial class FlowchartSymbolControl : Control
             return;
 
         float width = Mathf.Max(Size.X, CustomMinimumSize.X);
-        float ratio = BlockType == "Decision" ? 0.46f : 0.72f;
-        float editorWidth = Mathf.Min(width * ratio, BlockType == "Decision" ? 290f : 520f);
-        _editor.Position = new Vector2((width - editorWidth) * 0.5f, 29f);
+        Font font = _editor.GetThemeFont("font");
+        float labelWidth = GetBlockLabelWidth(font);
+        float gap = 9f;
+        float desiredEditorWidth = GetEditorTextWidth(font);
+        float availableEditorWidth = Mathf.Max(56f, width - labelWidth - gap - 30f);
+        float editorWidth = Mathf.Min(desiredEditorWidth, availableEditorWidth);
+        float rowWidth = labelWidth + gap + editorWidth;
+        float rowStart = (width - rowWidth) * 0.5f;
+
+        _editor.Position = new Vector2(rowStart + labelWidth + gap, 23f);
         _editor.Size = new Vector2(editorWidth, 26f);
     }
 }
