@@ -29,8 +29,8 @@ public partial class FlowchartTerminalControl : Control
         };
         DrawStyleBox(style, shape);
         DrawString(ThemeDB.FallbackFont,
-            new Vector2(Size.X * 0.5f - 22f, Size.Y * 0.5f + 5f),
+            new Vector2(Size.X * 0.5f, Size.Y * 0.5f + 5f),
             TerminalText,
-            HorizontalAlignment.Left, -1, 14, Colors.White);
+            HorizontalAlignment.Center, 100f, 14, Colors.White);
     }
 }

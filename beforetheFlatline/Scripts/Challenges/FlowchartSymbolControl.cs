@@ -11,6 +11,35 @@ public partial class FlowchartSymbolControl : Control
     public event Action<string> TextChanged;
     public string BlockText => _editor?.Text ?? InitialText;
 
+    public bool IsPointOnShape(Vector2 globalPoint)
+    {
+        Vector2 point = ToLocal(globalPoint);
+        float width = Mathf.Max(Size.X, CustomMinimumSize.X);
+        const float height = 72f;
+
+        if (point.Y < 1f || point.Y > height - 1f || point.X < 2f || point.X > width - 2f)
+            return false;
+
+        if (BlockType == "Decision")
+        {
+            float halfWidth = Mathf.Min(width * 0.43f, 190f);
+            float centerX = width * 0.5f;
+            return Mathf.Abs(point.X - centerX) / halfWidth +
+                Mathf.Abs(point.Y - height * 0.5f) / (height * 0.5f) <= 1f;
+        }
+
+        if (BlockType == "Input" || BlockType == "Output")
+        {
+            float skew = Mathf.Min(28f, width * 0.07f);
+            float progress = Mathf.Clamp((point.Y - 1f) / (height - 2f), 0f, 1f);
+            float left = 2f + skew * (1f - progress);
+            float right = width - 2f - skew * progress;
+            return point.X >= left && point.X <= right;
+        }
+
+        return true;
+    }
+
     public void Configure(string type, string text, bool compact = false)
     {
         BlockType = type ?? "Process";

@@ -380,10 +380,18 @@ public partial class FlowchartDropCanvas : PanelContainer
         Vector2 pointer = GetGlobalMousePosition();
         foreach (Control control in _panBlockControls)
         {
-            if (GodotObject.IsInstanceValid(control) &&
-                control.IsInsideTree() &&
-                control.GetGlobalRect().HasPoint(pointer))
+            if (!GodotObject.IsInstanceValid(control) || !control.IsInsideTree())
+                continue;
+
+            if (control is FlowchartSymbolControl symbol)
+            {
+                if (symbol.IsPointOnShape(pointer))
+                    return true;
+            }
+            else if (control.GetGlobalRect().HasPoint(pointer))
+            {
                 return true;
+            }
         }
 
         return false;
