@@ -134,8 +134,9 @@ public partial class FlowchartSymbolControl : Control
             DrawRect(rect, new Color("93c5fd"), false, 2f);
         }
 
-        DrawString(ThemeDB.FallbackFont, new Vector2(12f, 16f), BlockType.ToUpperInvariant(),
-            HorizontalAlignment.Left, -1f, 10, new Color("dbeafe"));
+        // Keep the built-in block type label inside every symbol shape.
+        DrawString(ThemeDB.FallbackFont, new Vector2(width * 0.5f, 22f), BlockType.ToUpperInvariant(),
+            HorizontalAlignment.Center, width - 12f, 10, new Color("dbeafe"));
     }
 
     public override void _Notification(int what)
