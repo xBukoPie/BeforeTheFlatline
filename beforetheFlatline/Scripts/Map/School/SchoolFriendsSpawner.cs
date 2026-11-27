@@ -292,7 +292,9 @@ public partial class SchoolFriendsSpawner : Node2D
 
     private List<SchoolFriendSpawn> CreateRandomSpawnPlan()
     {
-        var definitions = (FriendDefinition[])FriendDefinitions.Clone();
+        var definitions = DayClock.Instance?.IsFirstDayTutorialActive == true
+            ? new[] { FriendDefinitions[1], FriendDefinitions[2] }
+            : (FriendDefinition[])FriendDefinitions.Clone();
         var positions = (Vector2[])SafeSpawnPositions.Clone();
         Shuffle(definitions);
         Shuffle(positions);

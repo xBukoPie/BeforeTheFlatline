@@ -29,18 +29,8 @@ public partial class TestResults : Control
                 AudioManager.Instance?.PlayAssessmentFailed();
         }
 
-        // Keep the existing room-key progression, but record only newly appeared keys.
-        string newKeyReward = string.Empty;
         if (!alreadyFinalized)
-        {
-            bool keyWasAlreadyWaiting = RoomKeyProgression.Instance?.HasPendingKey == true;
-            string roomName = RoomKeyProgression.Instance?.QueueAssessmentKey() ?? string.Empty;
-            if (!keyWasAlreadyWaiting && !string.IsNullOrWhiteSpace(roomName))
-            {
-                string location = RoomKeyProgression.Instance?.GetPendingKeyLocationName() ?? "the house";
-                newKeyReward = $"Key available: {roomName} (pickup in {location})";
-            }
-        }
+            RoomKeyProgression.Instance?.QueueAssessmentKey();
 
         int score = DailyTestSession.BestScore;
         int pointsReceived = DailyTestSession.BestPointsReceived;
@@ -52,35 +42,17 @@ public partial class TestResults : Control
             : (_passed ? new Color("86efac") : new Color("fca5a5")));
 
         _summary.Text = tutorialBonus
-            ? $"BEST SCORE: {score} / {DailyTestSession.MaximumScore}\nPOINTS RECEIVED: {pointsReceived}\nBONUS TUTORIAL: 2 QUESTIONS\nNO PASS/FAIL PENALTY"
-            : $"BEST SCORE: {score} / {DailyTestSession.MaximumScore}\nPOINTS RECEIVED: {pointsReceived}\nPASSING SCORE: {DailyTestSession.MinimumPassingScore}";
+            ? $"BEST SCORE: {score} / {DailyTestSession.MaximumScore}\\nPOINTS RECEIVED: {pointsReceived}"
+            : $"BEST SCORE: {score} / {DailyTestSession.MaximumScore}\\nPOINTS RECEIVED: {pointsReceived}\\nPASSING SCORE: {DailyTestSession.MinimumPassingScore}";
 
         string returnNote = tutorialBonus
-            ? "This was a bonus tutorial. It does not change sanity or apply an assessment failure penalty. Regular gameplay and four-question assessments begin on Day 2."
+            ? "Continue to return home and begin Day 2."
             : (_passed
                 ? "A passing result is secured. Retrying cannot revoke it. Sanity recovery will be applied after you return home."
                 : "Any failure penalty will be applied once, after you return home. Retrying before then will not repeatedly reduce sanity.");
 
-        if (!string.IsNullOrWhiteSpace(newKeyReward))
-            returnNote += "\n" + newKeyReward;
-
-        _details.Text = BuildSanitySummary(currentSanity) + "\n\n" + returnNote;
+        _details.Text = BuildSanitySummary(currentSanity) + "\\n\\n" + returnNote;
         _details.AddThemeColorOverride("font_color", new Color("e2e8f0"));
-
-        if (FirstDayTutorialManager.Instance?.ShouldExplainResults == true)
-        {
-            if (_retryButton != null) _retryButton.Disabled = true;
-            if (_continueButton != null) _continueButton.Disabled = true;
-
-            FirstDayTutorialManager.Instance.ShowResultsTutorial(_summary, _details, () =>
-            {
-                if (_retryButton != null && GodotObject.IsInstanceValid(_retryButton))
-                    _retryButton.Disabled = false;
-                if (_continueButton != null && GodotObject.IsInstanceValid(_continueButton))
-                    _continueButton.Disabled = false;
-            });
-        }
-    }
 
     private string BuildSanitySummary(int currentSanity)
     {

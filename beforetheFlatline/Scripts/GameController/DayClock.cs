@@ -357,6 +357,7 @@ public partial class DayClock : Node
 
     public void FinishFirstDayTutorialAndStartDayTwo()
     {
+        RoomKeyProgression.Instance?.DiscardTutorialPendingKey();
         FirstDayTutorialCompleted = true;
         FirstDayTutorialStep = 7;
         FirstDayMysteryEncounterSeen = true;

@@ -10,7 +10,7 @@ public partial class FirstDayTutorialManager : Node
     private const string WorldPath = "res://Scenes/Home/Areas/World.tscn";
     private const string BedroomPath = "res://Scenes/Home/Areas/PlayerRoom.tscn";
     private const string BedroomSpawn = "startSpawn";
-    private const string PortraitPath = "res://Assets/Characters/Mich.png";
+    private const string PortraitPath = "res://Assets/Characters/pixel/michIdle.png";
 
     private sealed record GuideStep(string Text, Control Target = null);
 
@@ -31,8 +31,6 @@ public partial class FirstDayTutorialManager : Node
 
     public bool IsActive => DayClock.Instance?.IsFirstDayTutorialActive == true;
     public bool IsGuidedClassroom => IsActive && DayClock.Instance.FirstDayTutorialStep == 5;
-    public bool ShouldExplainResults => IsActive && DayClock.Instance.FirstDayTutorialStep == 5;
-
     public override void _Ready()
     {
         if (Instance != null && Instance != this)
@@ -272,27 +270,6 @@ public partial class FirstDayTutorialManager : Node
         ShowGuidance("MICH • ASSESSMENT GUIDE", steps, null);
     }
 
-    public void ShowResultsTutorial(Control scoreTarget, Control detailsTarget, Action completed)
-    {
-        if (!ShouldExplainResults)
-        {
-            completed?.Invoke();
-            return;
-        }
-
-        DayClock.Instance?.SetFirstDayTutorialStep(6);
-        ShowGuidance("MICH • RESULTS", new[]
-        {
-            new GuideStep("BEST SCORE is your tutorial score, out of 20. Each correct answer is worth 10 points. This is a bonus tutorial; regular four-question assessments begin on Day 2.", scoreTarget),
-            new GuideStep("POINTS RECEIVED are separate from the assessment score. These hidden story points come from eligible first-time correct challenge completions and help unlock future room keys.", scoreTarget),
-            new GuideStep("SANITY shows how much you have left. The Day 1 tutorial does not change sanity and cannot apply an assessment failure penalty. Starting on Day 2, passing assessments restore 5 sanity and failed assessments apply a penalty after you return home.", detailsTarget),
-            new GuideStep("The assessment debuffs are Dizziness, Confusion, Anxiety, and Pressure. They can stack and remain until their individual recovery targets are met. Dizziness distorts your view, Confusion adds stray letters, Anxiety creates static, and Pressure brings heartbeat cues.", detailsTarget),
-            new GuideStep("Talking to a friend for the first time that day restores 2 sanity. A bath restores 4 during the day or 7 at night, and a late-night bath may clear one debuff. Passing an assessment is another recovery opportunity."),
-            new GuideStep("A listed key reward means a key is available to collect in the world. It is not added automatically. The first key requires 50 story points because Day 1 is a bonus tutorial; later keys use the regular 100-point increments. The order is Kitchen, Laundry, Bathroom, then Master Bedroom; examine each room's photograph before the next key can appear."),
-            new GuideStep("When you continue, the tutorial result is recorded at home. You will return to your bedroom and Day 2 will begin. From then on, the regular gameplay and four-question assessments are active. You can use the Journal to review your progress whenever you need to.")
-        }, completed);
-    }
-
     public bool CompleteResultsAndReturnHome()
     {
         if (!IsActive || DayClock.Instance.FirstDayTutorialStep < 6)
@@ -373,7 +350,7 @@ public partial class FirstDayTutorialManager : Node
 
         var dim = new ColorRect
         {
-            Color = new Color(0f, 0f, 0f, 0.26f),
+            Color = new Color(0f, 0f, 0f, 0.10f),
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
         dim.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
@@ -403,12 +380,14 @@ public partial class FirstDayTutorialManager : Node
         {
             Name = "TutorialCard",
             MouseFilter = Control.MouseFilterEnum.Stop,
-            AnchorLeft = 0.04f,
-            AnchorRight = 0.96f,
+            AnchorLeft = 1f,
+            AnchorRight = 1f,
             AnchorTop = 1f,
             AnchorBottom = 1f,
-            OffsetTop = -205,
-            OffsetBottom = -18
+            OffsetLeft = -420,
+            OffsetRight = -16,
+            OffsetTop = -164,
+            OffsetBottom = -16
         };
         card.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
@@ -422,33 +401,38 @@ public partial class FirstDayTutorialManager : Node
             CornerRadiusTopRight = 11,
             CornerRadiusBottomLeft = 11,
             CornerRadiusBottomRight = 11,
-            ContentMarginLeft = 18,
-            ContentMarginRight = 18,
-            ContentMarginTop = 14,
-            ContentMarginBottom = 14
+            ContentMarginLeft = 12,
+            ContentMarginRight = 12,
+            ContentMarginTop = 10,
+            ContentMarginBottom = 10
         });
         _root.AddChild(card);
 
         var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 16);
+        row.AddThemeConstantOverride("separation", 10);
         card.AddChild(row);
 
         var portrait = new TextureRect
         {
-            Texture = GD.Load<Texture2D>(PortraitPath),
-            CustomMinimumSize = new Vector2(112, 150),
+            Texture = new AtlasTexture
+            {
+                Atlas = GD.Load<Texture2D>(PortraitPath),
+                Region = new Rect2(0, 0, 128, 128)
+            },
+            CustomMinimumSize = new Vector2(72, 72),
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+            TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
         row.AddChild(portrait);
 
         var content = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        content.AddThemeConstantOverride("separation", 7);
+        content.AddThemeConstantOverride("separation", 4);
         row.AddChild(content);
 
         _heading = new Label { Text = title };
-        _heading.AddThemeFontSizeOverride("font_size", 14);
+        _heading.AddThemeFontSizeOverride("font_size", 12);
         _heading.AddThemeColorOverride("font_color", new Color("d7b98b"));
         content.AddChild(_heading);
 
@@ -457,7 +441,7 @@ public partial class FirstDayTutorialManager : Node
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             SizeFlagsVertical = Control.SizeFlags.ExpandFill
         };
-        _body.AddThemeFontSizeOverride("font_size", 17);
+        _body.AddThemeFontSizeOverride("font_size", 14);
         _body.AddThemeColorOverride("font_color", new Color("edf2f7"));
         content.AddChild(_body);
 
@@ -469,11 +453,11 @@ public partial class FirstDayTutorialManager : Node
         buttons.AddThemeConstantOverride("separation", 10);
         content.AddChild(buttons);
 
-        var skip = new Button { Text = "Skip First Day", CustomMinimumSize = new Vector2(145, 38) };
+        var skip = new Button { Text = "Skip Day", CustomMinimumSize = new Vector2(100, 32) };
         skip.Pressed += SkipWholeDay;
         buttons.AddChild(skip);
 
-        _next = new Button { Text = "Next", CustomMinimumSize = new Vector2(120, 38) };
+        _next = new Button { Text = "Next", CustomMinimumSize = new Vector2(88, 32) };
         _next.Pressed += AdvanceGuide;
         buttons.AddChild(_next);
 

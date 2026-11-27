@@ -167,6 +167,9 @@ public partial class RoomKeyProgression : Node
 
     public string QueueAssessmentKey()
     {
+        if (DayClock.Instance?.DayNumber <= 1 || DayClock.Instance?.IsFirstDayTutorialActive == true)
+            return string.Empty;
+
         if (HasPendingKey)
         {
             int pendingIndex = FindRoomIndex(PendingKeyRoomName);
@@ -226,6 +229,15 @@ public partial class RoomKeyProgression : Node
         "MasterBedroom" => "FromLaundry",
         _ => "startSpawn"
     };
+
+    public void DiscardTutorialPendingKey()
+    {
+        if (DayClock.Instance?.DayNumber != 1 || !PendingKeyFromAssessment)
+            return;
+
+        PendingKeyRoomName = string.Empty;
+        PendingKeyFromAssessment = false;
+    }
 
     public string CollectPendingKey()
     {
