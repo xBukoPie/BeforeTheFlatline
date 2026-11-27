@@ -12,6 +12,6 @@ public partial class ChallengeDragBlockButton : Button
         preview.AddThemeColorOverride("font_outline_color", Colors.Black);
         preview.AddThemeConstantOverride("outline_size", 4);
         SetDragPreview(preview);
-        return $"{BlockType}|{BlockName}";
+        return $"ADD|{BlockType}|{BlockName}";
     }
 }

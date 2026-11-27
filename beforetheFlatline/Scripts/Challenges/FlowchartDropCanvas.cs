@@ -7,6 +7,9 @@ public partial class FlowchartDropCanvas : PanelContainer
 {
     public event Action<string, string> BlockDropped;
     public event Action ContentChanged;
+
+    public int PendingInsertionIndex { get; private set; }
+
     private readonly VBoxContainer _blocks = new();
     private readonly List<FlowchartBlockControl> _placedBlocks = new();
 
@@ -17,10 +20,18 @@ public partial class FlowchartDropCanvas : PanelContainer
         {
             BgColor = new Color("0f172a"),
             BorderColor = new Color("475569"),
-            BorderWidthLeft = 2, BorderWidthRight = 2, BorderWidthTop = 2, BorderWidthBottom = 2,
-            ContentMarginLeft = 10, ContentMarginRight = 10, ContentMarginTop = 10, ContentMarginBottom = 10
+            BorderWidthLeft = 2,
+            BorderWidthRight = 2,
+            BorderWidthTop = 2,
+            BorderWidthBottom = 2,
+            ContentMarginLeft = 10,
+            ContentMarginRight = 10,
+            ContentMarginTop = 10,
+            ContentMarginBottom = 10
         });
+
         _blocks.MouseFilter = MouseFilterEnum.Ignore;
+        _blocks.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         AddChild(_blocks);
         ShowEmptyMessage();
     }
@@ -30,7 +41,16 @@ public partial class FlowchartDropCanvas : PanelContainer
         if (data.VariantType != Variant.Type.String)
             return false;
 
-        string[] parts = data.AsString().Split('|', 2);
+        string[] parts = data.AsString().Split('|', 3);
+        if (parts.Length == 3 && parts[0] == "ADD" && IsBlockType(parts[1]))
+            return true;
+
+        if (parts.Length == 2 && parts[0] == "MOVE" &&
+            int.TryParse(parts[1], out int index) &&
+            index >= 0 && index < _placedBlocks.Count)
+            return true;
+
+        // Compatibility with an older palette payload.
         return parts.Length == 2 && IsBlockType(parts[0]);
     }
 
@@ -39,45 +59,94 @@ public partial class FlowchartDropCanvas : PanelContainer
         if (data.VariantType != Variant.Type.String)
             return;
 
-        string[] parts = data.AsString().Split('|', 2);
+        string[] parts = data.AsString().Split('|', 3);
+        PendingInsertionIndex = GetInsertionIndex(ToGlobal(atPosition));
+
+        if (parts.Length == 2 && parts[0] == "MOVE" &&
+            int.TryParse(parts[1], out int fromIndex))
+        {
+            MoveBlock(fromIndex, PendingInsertionIndex);
+            return;
+        }
+
+        if (parts.Length == 3 && parts[0] == "ADD" && IsBlockType(parts[1]))
+        {
+            BlockDropped?.Invoke(parts[1], parts[2]);
+            return;
+        }
+
         if (parts.Length == 2 && IsBlockType(parts[0]))
             BlockDropped?.Invoke(parts[0], parts[1]);
     }
 
-    public void AddBlock(string type, string text)
+    public void AddBlock(string type, string text, int insertIndex = -1)
     {
         var definitions = GetDefinitions();
-        definitions.Add(new FlowchartBlockDefinition(type, text));
+        int index = insertIndex < 0 ? definitions.Count : Mathf.Clamp(insertIndex, 0, definitions.Count);
+        definitions.Insert(index, new FlowchartBlockDefinition(type, text));
+
+        // A Decision immediately receives two editable outgoing branches.
+        if (string.Equals(type, "Decision", StringComparison.OrdinalIgnoreCase))
+        {
+            definitions.Insert(index + 1, new FlowchartBlockDefinition("Output", "TRUE: OUTPUT value"));
+            definitions.Insert(index + 2, new FlowchartBlockDefinition("Output", "FALSE: OUTPUT value"));
+        }
+
         BuildFromDefinitions(definitions);
     }
 
     public List<FlowchartBlockDefinition> GetDefinitions() =>
-        _placedBlocks.Select(b => new FlowchartBlockDefinition(b.BlockType, b.BlockText.Trim())).ToList();
+        _placedBlocks.Select(block =>
+            new FlowchartBlockDefinition(block.BlockType, block.BlockText.Trim())).ToList();
 
     public void ClearBlocks() => BuildFromDefinitions(new List<FlowchartBlockDefinition>());
 
     public void SetDefinitions(IReadOnlyList<FlowchartBlockDefinition> definitions) =>
         BuildFromDefinitions(definitions ?? Array.Empty<FlowchartBlockDefinition>());
 
-    private void MoveBlock(int index, int delta)
+    private void MoveBlock(int fromIndex, int targetIndex)
     {
         var definitions = GetDefinitions();
-        int target = index + delta;
-        if (target < 0 || target >= definitions.Count)
+        if (fromIndex < 0 || fromIndex >= definitions.Count || definitions.Count < 2)
             return;
 
-        (definitions[index], definitions[target]) = (definitions[target], definitions[index]);
+        int insertion = Mathf.Clamp(targetIndex, 0, definitions.Count);
+        FlowchartBlockDefinition moving = definitions[fromIndex];
+        definitions.RemoveAt(fromIndex);
+
+        if (fromIndex < insertion)
+            insertion--;
+
+        insertion = Mathf.Clamp(insertion, 0, definitions.Count);
+        if (insertion == fromIndex)
+            return;
+
+        definitions.Insert(insertion, moving);
         BuildFromDefinitions(definitions);
     }
 
-    private void RemoveBlock(int index)
+    private int GetInsertionIndex(Vector2 globalDropPosition)
     {
-        var definitions = GetDefinitions();
-        if (index < 0 || index >= definitions.Count)
-            return;
+        if (_placedBlocks.Count == 0)
+            return 0;
 
-        definitions.RemoveAt(index);
-        BuildFromDefinitions(definitions);
+        var ordered = _placedBlocks
+            .OrderBy(block => block.GlobalPosition.Y + block.Size.Y * 0.5f)
+            .ThenBy(block => block.GlobalPosition.X + block.Size.X * 0.5f)
+            .ToList();
+
+        int target = 0;
+        foreach (FlowchartBlockControl block in ordered)
+        {
+            Vector2 center = block.GlobalPosition + block.Size * 0.5f;
+            bool before = center.Y < globalDropPosition.Y - 3f ||
+                          (Mathf.Abs(center.Y - globalDropPosition.Y) <= 3f &&
+                           center.X < globalDropPosition.X);
+            if (before)
+                target++;
+        }
+
+        return Mathf.Clamp(target, 0, _placedBlocks.Count);
     }
 
     private void BuildFromDefinitions(IReadOnlyList<FlowchartBlockDefinition> definitions)
@@ -89,56 +158,110 @@ public partial class FlowchartDropCanvas : PanelContainer
         }
         _placedBlocks.Clear();
 
-        for (int i = 0; i < definitions.Count; i++)
+        int i = 0;
+        while (i < definitions.Count)
         {
-            int index = i;
-            var data = definitions[i];
-            var block = new FlowchartBlockControl();
-            block.Configure(
-                data.Type,
-                data.Text,
-                index,
-                i > 0 ? idx => MoveBlock(idx, -1) : null,
-                i < definitions.Count - 1 ? idx => MoveBlock(idx, 1) : null,
-                idx => RemoveBlock(idx));
-            block.TextChanged += () => ContentChanged?.Invoke();
-            _placedBlocks.Add(block);
-            _blocks.AddChild(block);
+            FlowchartBlockDefinition data = definitions[i];
 
-            if (i < definitions.Count - 1)
+            if (IsDecisionWithOutputBranches(definitions, i))
             {
-                var connector = new Label
+                AddPlacedBlock(data, i, compact: false);
+                _blocks.AddChild(new FlowchartConnectorControl { Kind = "Split" });
+
+                var branches = new HBoxContainer
                 {
-                    Name = "Connector",
-                    Text = data.Type == "Decision" ? "      TRUE ↓     /     FALSE ↓" : "                         ↓",
-                    CustomMinimumSize = new Vector2(0, 22),
-                    HorizontalAlignment = HorizontalAlignment.Center
+                    SizeFlagsHorizontal = SizeFlags.ExpandFill
                 };
-                connector.AddThemeColorOverride("font_color", new Color("7dd3fc"));
-                _blocks.AddChild(connector);
+                branches.AddThemeConstantOverride("separation", 22);
+                AddPlacedBlockToBranch(branches, definitions[i + 1], i + 1, "TRUE");
+                AddPlacedBlockToBranch(branches, definitions[i + 2], i + 2, "FALSE");
+                _blocks.AddChild(branches);
+
+                // The merge connector also points down to the next shared step.
+                _blocks.AddChild(new FlowchartConnectorControl { Kind = "Merge" });
+                i += 3;
+                continue;
             }
+
+            AddPlacedBlock(data, i, compact: false);
+            i++;
+
+            if (i < definitions.Count)
+                _blocks.AddChild(new FlowchartConnectorControl { Kind = "Down" });
         }
 
-        if (definitions.Count == 0)
+        if (_placedBlocks.Count == 0)
             ShowEmptyMessage();
 
         ContentChanged?.Invoke();
     }
 
+    private void AddPlacedBlock(FlowchartBlockDefinition data, int index, bool compact)
+    {
+        string branch = ExtractBranchLabel(data.Text);
+        var block = new FlowchartBlockControl();
+        block.Configure(data.Type, data.Text, index, branch, compact);
+        block.TextChanged += () => ContentChanged?.Invoke();
+        _placedBlocks.Add(block);
+        _blocks.AddChild(block);
+    }
+
+    private void AddPlacedBlockToBranch(HBoxContainer row, FlowchartBlockDefinition data, int index, string defaultBranch)
+    {
+        string branch = ExtractBranchLabel(data.Text);
+        if (string.IsNullOrEmpty(branch))
+            branch = defaultBranch;
+
+        var block = new FlowchartBlockControl
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
+        block.Configure(data.Type, data.Text, index, branch, compact: true);
+        block.TextChanged += () => ContentChanged?.Invoke();
+        _placedBlocks.Add(block);
+        row.AddChild(block);
+    }
+
+    private static bool IsDecisionWithOutputBranches(IReadOnlyList<FlowchartBlockDefinition> definitions, int index)
+    {
+        if (index + 2 >= definitions.Count ||
+            !string.Equals(definitions[index].Type, "Decision", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return string.Equals(definitions[index + 1].Type, "Output", StringComparison.OrdinalIgnoreCase) &&
+               string.Equals(definitions[index + 2].Type, "Output", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string ExtractBranchLabel(string text)
+    {
+        string value = (text ?? "").Trim();
+        if (value.StartsWith("TRUE:", StringComparison.OrdinalIgnoreCase))
+            return "TRUE";
+        if (value.StartsWith("FALSE:", StringComparison.OrdinalIgnoreCase))
+            return "FALSE";
+        return "";
+    }
+
     private void ShowEmptyMessage()
     {
         if (_blocks.GetChildCount() == 0)
+        {
             _blocks.AddChild(new Label
             {
                 Name = "EmptyMessage",
-                Text = "Drag shaped blocks here, then define each block's value.",
+                Text = "Drag shaped blocks here. Use the grip beside a placed block to move it.",
                 HorizontalAlignment = HorizontalAlignment.Center,
                 AutowrapMode = TextServer.AutowrapMode.WordSmart,
                 MouseFilter = MouseFilterEnum.Ignore
             });
+        }
     }
 
     private static bool IsBlockType(string type) =>
-        type == "Start" || type == "Input" || type == "Process" ||
-        type == "Output" || type == "Decision" || type == "End";
+        string.Equals(type, "Start", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(type, "Input", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(type, "Process", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(type, "Output", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(type, "Decision", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(type, "End", StringComparison.OrdinalIgnoreCase);
 }

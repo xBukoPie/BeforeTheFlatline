@@ -8,15 +8,14 @@ public partial class FlowchartSymbolControl : Control
     private LineEdit _editor;
 
     public event Action TextChanged;
-
     public string BlockText => _editor?.Text ?? InitialText;
 
-    public void Configure(string type, string text)
+    public void Configure(string type, string text, bool compact = false)
     {
-        BlockType = type;
-        InitialText = text;
-        CustomMinimumSize = new Vector2(420, 78);
-        SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
+        BlockType = type ?? "Process";
+        InitialText = text ?? "";
+        CustomMinimumSize = new Vector2(compact ? 210 : 420, compact ? 88 : 90);
+        SizeFlagsHorizontal = SizeFlags.ExpandFill;
         MouseFilter = MouseFilterEnum.Pass;
         QueueRedraw();
     }
@@ -29,7 +28,8 @@ public partial class FlowchartSymbolControl : Control
             PlaceholderText = "Define this block...",
             MaxLength = 140,
             Alignment = HorizontalAlignment.Center,
-            ClearButtonEnabled = false
+            ClearButtonEnabled = false,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
         };
         _editor.AddThemeColorOverride("font_color", Colors.White);
         _editor.AddThemeColorOverride("font_placeholder_color", new Color("cbd5e1"));
@@ -40,12 +40,11 @@ public partial class FlowchartSymbolControl : Control
 
     public override void _Draw()
     {
-        float width = Mathf.Max(Size.X, 420f);
-        const float top = 19f;
-        const float height = 52f;
-        Rect2 rect = new Rect2(3, top, width - 6, height);
-        var fill = new Color("1d4ed8");
-        var edge = new Color("93c5fd");
+        float width = Mathf.Max(Size.X, CustomMinimumSize.X);
+        float top = 22f;
+        float height = BlockType == "Decision" ? 62f : 54f;
+        float inset = BlockType == "Decision" ? width * 0.19f : 3f;
+        Rect2 rect = new Rect2(inset, top, width - inset * 2f, height);
 
         if (BlockType == "Decision")
         {
@@ -62,7 +61,7 @@ public partial class FlowchartSymbolControl : Control
         }
         else if (BlockType == "Input" || BlockType == "Output")
         {
-            const float skew = 24f;
+            float skew = Mathf.Min(26f, width * 0.08f);
             Vector2[] points =
             {
                 new(rect.Position.X + skew, rect.Position.Y),
@@ -92,12 +91,12 @@ public partial class FlowchartSymbolControl : Control
         }
         else
         {
-            DrawRect(rect, fill);
-            DrawRect(rect, edge, false, 2f);
+            DrawRect(rect, new Color("1d4ed8"));
+            DrawRect(rect, new Color("93c5fd"), false, 2f);
         }
 
-        var title = BlockType.ToUpperInvariant();
-        DrawString(ThemeDB.FallbackFont, new Vector2(12, 15), title, HorizontalAlignment.Left, -1, 10, new Color("dbeafe"));
+        DrawString(ThemeDB.FallbackFont, new Vector2(12, 16), BlockType.ToUpperInvariant(),
+            HorizontalAlignment.Left, -1, 10, new Color("dbeafe"));
     }
 
     public override void _Notification(int what)
@@ -111,8 +110,16 @@ public partial class FlowchartSymbolControl : Control
         if (_editor == null)
             return;
 
-        float width = Mathf.Max(Size.X, 420f);
-        _editor.Position = BlockType == "Decision" ? new Vector2(width * 0.23f, 32) : new Vector2(width * 0.13f, 32);
-        _editor.Size = BlockType == "Decision" ? new Vector2(width * 0.54f, 27) : new Vector2(width * 0.74f, 27);
+        float width = Mathf.Max(Size.X, CustomMinimumSize.X);
+        if (BlockType == "Decision")
+        {
+            _editor.Position = new Vector2(width * 0.28f, 42f);
+            _editor.Size = new Vector2(width * 0.44f, 28f);
+        }
+        else
+        {
+            _editor.Position = new Vector2(width * 0.13f, 37f);
+            _editor.Size = new Vector2(width * 0.74f, 28f);
+        }
     }
 }

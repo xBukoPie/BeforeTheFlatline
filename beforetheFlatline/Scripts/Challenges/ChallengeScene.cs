@@ -239,7 +239,7 @@ public partial class ChallengeScene : Control
         ClearContent();
         var guide = new Label
         {
-            Text = "Build a flowchart that solves the problem. Drag in blocks and arrange them in order.",
+            Text = "Build a flowchart that solves the problem. Drag blocks from the palette; use the grip beside a placed block to reorder it. Decisions create TRUE and FALSE branches that rejoin below.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
         guide.AddThemeFontSizeOverride("font_size", 18);
@@ -290,7 +290,7 @@ public partial class ChallengeScene : Control
 
     private void AddFlowchartBlock(string type, string defaultText)
     {
-        _flowCanvas?.AddBlock(type, defaultText);
+        _flowCanvas?.AddBlock(type, defaultText, _flowCanvas.PendingInsertionIndex);
     }
 
     private void OnSubmitPressed()
