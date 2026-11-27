@@ -31,7 +31,7 @@ public static class WorldInteractableGlow
             ZAsRelative = true,
             LightMask = Room.WorldLightMask,
             Scale = Vector2.One * baseScale,
-            Modulate = new Color(tint.R, tint.G, tint.B, 0.62f),
+            Modulate = new Color(tint.R, tint.G, tint.B, 0.76f),
             TextureFilter = CanvasItem.TextureFilterEnum.Linear,
             Material = new CanvasItemMaterial
             {
@@ -52,10 +52,10 @@ public static class WorldInteractableGlow
 
         float baseScale = (float)glow.GetMeta("base_scale", 0.25f).AsDouble();
         float pulse = (Mathf.Sin((float)elapsed * 2.8f + phase) + 1f) * 0.5f;
-        float scale = Mathf.Max(0.01f, baseScale) * (1.0f + pulse * 0.18f);
+        float scale = Mathf.Max(0.01f, baseScale) * (1.0f + pulse * 0.24f);
         glow.Scale = Vector2.One * scale;
         Color tint = glow.Modulate;
-        tint.A = 0.42f + pulse * 0.30f;
+        tint.A = 0.56f + pulse * 0.34f;
         glow.Modulate = tint;
     }
 

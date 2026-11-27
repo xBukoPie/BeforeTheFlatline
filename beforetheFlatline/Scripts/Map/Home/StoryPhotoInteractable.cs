@@ -36,7 +36,7 @@ public partial class StoryPhotoInteractable : Area2D
 
         Node roomManager = GetTree().GetFirstNodeInGroup("room_manager");
         _player = roomManager?.GetNodeOrNull<CharacterBody2D>("Player");
-        _glow = WorldInteractableGlow.AddGlow(this, new Color("f8d98a"), 3.3f);
+        _glow = WorldInteractableGlow.AddGlow(this, new Color("f8d98a"), 4.2f);
 
         BodyEntered += OnBodyEntered;
         BodyExited += OnBodyExited;
