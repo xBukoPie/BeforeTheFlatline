@@ -40,7 +40,6 @@ public partial class FlowchartBlockControl : HBoxContainer
 
         _symbol = new FlowchartSymbolControl();
         _symbol.Configure(BlockType, InitialText, compact);
-        _symbol.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         _symbol.TextChanged += () => TextChanged?.Invoke();
         AddChild(_symbol);
     }

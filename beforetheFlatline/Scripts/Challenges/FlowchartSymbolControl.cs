@@ -15,7 +15,7 @@ public partial class FlowchartSymbolControl : Control
         BlockType = type ?? "Process";
         InitialText = text ?? "";
         CustomMinimumSize = new Vector2(compact ? 210 : 420, compact ? 88 : 90);
-        SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        SizeFlagsHorizontal = compact ? SizeFlags.ExpandFill : SizeFlags.ShrinkCenter;
         MouseFilter = MouseFilterEnum.Pass;
         QueueRedraw();
     }
