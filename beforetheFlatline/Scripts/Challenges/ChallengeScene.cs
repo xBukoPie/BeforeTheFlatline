@@ -239,7 +239,7 @@ public partial class ChallengeScene : Control
         ClearContent();
         var guide = new Label
         {
-            Text = "Build a flowchart that solves the problem. Drag blocks from the palette; use the grip beside a placed block to reorder it. Decisions create TRUE and FALSE branches that rejoin below.",
+            Text = "Drag blocks from the palette. To reorder a placed block, drag its grip and drop it on a connector arrow. Decision diamonds create TRUE and FALSE branches that rejoin below.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
         guide.AddThemeFontSizeOverride("font_size", 18);

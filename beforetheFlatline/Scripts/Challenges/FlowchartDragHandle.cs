@@ -8,7 +8,7 @@ public partial class FlowchartDragHandle : Label
     {
         BlockIndex = index;
         Text = "⠿";
-        TooltipText = "Drag to reorder this block";
+        TooltipText = "Drag this block and drop it on a connector arrow to reorder it";
         HorizontalAlignment = HorizontalAlignment.Center;
         VerticalAlignment = VerticalAlignment.Center;
         CustomMinimumSize = new Vector2(28, 0);
