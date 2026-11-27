@@ -18,6 +18,8 @@ public partial class SuperUserAccess : CanvasLayer
     private SpinBox _debuffIntensity;
     private SpinBox _timeAdvanceMinutes;
     private OptionButton _keyRoom;
+    private ConfirmationDialog _endingConfirmation;
+    private string _pendingEndingScene = "";
     private bool _accessAvailable;
     private bool _challengeContext;
 
@@ -75,6 +77,16 @@ public partial class SuperUserAccess : CanvasLayer
         _root = new Control { Name = "SuperUserOverlay", MouseFilter = Control.MouseFilterEnum.Ignore };
         _root.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         AddChild(_root);
+
+        _endingConfirmation = new ConfirmationDialog
+        {
+            Title = "Confirm ending test",
+            DialogText = "This will leave the current scene and load an ending test scene.",
+            OkButtonText = "Load ending",
+            CancelButtonText = "Cancel"
+        };
+        _endingConfirmation.Confirmed += LoadConfirmedEnding;
+        _root.AddChild(_endingConfirmation);
 
         _toggleButton = new Button
         {
@@ -206,6 +218,21 @@ public partial class SuperUserAccess : CanvasLayer
             SetStatus("School assessment completion condition triggered.");
         };
         _adminSection.AddChild(schoolComplete);
+
+        AddSectionHeader(_adminSection, "ENDING TESTS");
+        var goodEnding = MakeButton("Trigger Good Ending");
+        goodEnding.Pressed += () => ConfirmEndingTest(
+            "res://Scenes/Ending/GoodEndingBriefing.tscn",
+            "Good Ending",
+            "Load the good-ending briefing directly? This is a developer test and does not award story progress.");
+        _adminSection.AddChild(goodEnding);
+
+        var badEnding = MakeButton("Trigger Bad Ending");
+        badEnding.Pressed += () => ConfirmEndingTest(
+            "res://Scenes/Ending/BadEnding.tscn",
+            "Bad Ending",
+            "Load the bad-ending scene directly? This is a developer test and does not change the normal sanity rules.");
+        _adminSection.AddChild(badEnding);
 
         var timeAdvanceRow = new HBoxContainer();
         timeAdvanceRow.AddChild(new Label
@@ -459,6 +486,47 @@ public partial class SuperUserAccess : CanvasLayer
         if (SaveManager.Instance?.CanSaveCurrentGame == true)
             SaveManager.Instance.RequestAutoSave();
         SetStatus($"Admin key granted: {roomName} unlocked.");
+    }
+
+    private void ConfirmEndingTest(string scenePath, string endingName, string message)
+    {
+        if (!_accessAvailable || _challengeContext)
+            return;
+
+        if (!ResourceLoader.Exists(scenePath))
+        {
+            SetStatus($"Cannot test {endingName}: scene was not found.");
+            return;
+        }
+
+        _pendingEndingScene = scenePath;
+        _endingConfirmation.Title = $"Confirm {endingName} test";
+        _endingConfirmation.DialogText = message;
+        _endingConfirmation.PopupCentered(new Vector2I(460, 170));
+    }
+
+    private void LoadConfirmedEnding()
+    {
+        if (!_accessAvailable || string.IsNullOrWhiteSpace(_pendingEndingScene))
+            return;
+
+        string target = _pendingEndingScene;
+        _pendingEndingScene = "";
+
+        if (!ResourceLoader.Exists(target))
+        {
+            SetStatus("Ending test scene is no longer available.");
+            return;
+        }
+
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = false;
+
+        _panel.Visible = false;
+        if (SceneTransition.Instance != null)
+            SceneTransition.Instance.ChangeSceneToFile(target, 1.0f);
+        else
+            GetTree().ChangeSceneToFile(target);
     }
 
     private void SetStatus(string message)

@@ -170,14 +170,34 @@ public partial class EndingCredits : Control
         footer.AddThemeColorOverride("font_color", new Color("8994a8"));
         stack.AddChild(footer);
 
+        var actions = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        actions.AddThemeConstantOverride("separation", 12);
+        stack.AddChild(actions);
+
+        var assetsButton = new Button
+        {
+            Text = "View Asset Credits",
+            CustomMinimumSize = new Vector2(230, 48)
+        };
+        assetsButton.Pressed += OpenAssetCredits;
+        actions.AddChild(assetsButton);
+
         var returnButton = new Button
         {
             Text = "Return to Main Menu",
-            CustomMinimumSize = new Vector2(250, 48),
-            SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter
+            CustomMinimumSize = new Vector2(250, 48)
         };
         returnButton.Pressed += ReturnToMainMenu;
-        stack.AddChild(returnButton);
+        actions.AddChild(returnButton);
+    }
+
+    private void OpenAssetCredits()
+    {
+        const string path = "res://Scenes/Ending/AssetCredits.tscn";
+        if (SceneTransition.Instance != null)
+            SceneTransition.Instance.ChangeSceneToFile(path, 0.8f);
+        else
+            GetTree().ChangeSceneToFile(path);
     }
 
     private void ReturnToMainMenu()
