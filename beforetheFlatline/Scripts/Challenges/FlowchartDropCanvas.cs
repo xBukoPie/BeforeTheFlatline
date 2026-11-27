@@ -60,7 +60,7 @@ public partial class FlowchartDropCanvas : PanelContainer
             return;
 
         string[] parts = data.AsString().Split('|', 3);
-        HandleDropData(data, GetInsertionIndex(ToGlobal(atPosition)));
+        HandleDropData(data, GetInsertionIndex(GetGlobalTransformWithCanvas() * atPosition));
     }
 
     public void AddBlock(string type, string text, int insertIndex = -1)
