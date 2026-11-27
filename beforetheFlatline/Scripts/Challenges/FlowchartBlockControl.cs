@@ -33,8 +33,7 @@ public partial class FlowchartBlockControl : VBoxContainer
     public void Configure(
         FlowchartBlockDefinition definition,
         Action<Variant, List<FlowchartBlockDefinition>, int> dropHandler,
-        bool compact = false,
-        bool hasFollowingBlock = false)
+        bool compact = false)
     {
         Definition = definition ?? throw new ArgumentNullException(nameof(definition));
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
@@ -78,12 +77,7 @@ public partial class FlowchartBlockControl : VBoxContainer
         if (!string.Equals(Definition.Type, "Decision", StringComparison.OrdinalIgnoreCase))
             return;
 
-        AddChild(new FlowchartDecisionConnectorControl
-        {
-            Kind = "Split",
-            HasTrueBranch = Definition.TrueBranch.Count > 0,
-            HasFalseBranch = Definition.FalseBranch.Count > 0
-        });
+        AddChild(new FlowchartDecisionConnectorControl { Kind = "Split" });
 
         var branches = new HBoxContainer
         {
@@ -95,11 +89,7 @@ public partial class FlowchartBlockControl : VBoxContainer
         AddBranchColumn(branches, Definition.TrueBranch, dropHandler);
         AddChild(branches);
 
-        AddChild(new FlowchartDecisionConnectorControl
-        {
-            Kind = "Merge",
-            HasFollowingBlock = hasFollowingBlock
-        });
+        AddChild(new FlowchartDecisionConnectorControl { Kind = "Merge" });
     }
 
     private void AddBranchColumn(
@@ -118,8 +108,7 @@ public partial class FlowchartBlockControl : VBoxContainer
         for (int i = 0; i < definitions.Count; i++)
         {
             var child = new FlowchartBlockControl();
-            child.Configure(definitions[i], dropHandler, compact: true,
-                hasFollowingBlock: i < definitions.Count - 1);
+            child.Configure(definitions[i], dropHandler, compact: true);
             child.ContentChanged += () => ContentChanged?.Invoke();
             column.AddChild(child);
             AddSlot(column, definitions, i + 1, dropHandler);

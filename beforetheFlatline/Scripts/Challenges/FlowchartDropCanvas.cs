@@ -274,7 +274,7 @@ public partial class FlowchartDropCanvas : PanelContainer
         for (int i = 0; i < _definitions.Count; i++)
         {
             var block = new FlowchartBlockControl();
-            block.Configure(_definitions[i], ProcessDrop, hasFollowingBlock: i < _definitions.Count - 1);
+            block.Configure(_definitions[i], ProcessDrop);
             block.ContentChanged += () => ContentChanged?.Invoke();
             block.CollectSymbolControls(_panBlockControls);
             _blocks.AddChild(block);

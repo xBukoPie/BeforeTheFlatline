@@ -3,9 +3,6 @@ using Godot;
 public partial class FlowchartDecisionConnectorControl : Control
 {
     [Export] public string Kind { get; set; } = "Split";
-    [Export] public bool HasTrueBranch { get; set; }
-    [Export] public bool HasFalseBranch { get; set; }
-    [Export] public bool HasFollowingBlock { get; set; }
 
     private static readonly Color LineColor = new("7dd3fc");
     private static readonly Color TrueColor = new("86efac");
@@ -38,11 +35,6 @@ public partial class FlowchartDecisionConnectorControl : Control
             DrawLine(new Vector2(left, junctionY), new Vector2(left, endY), LineColor, 2f, true);
             DrawLine(new Vector2(right, junctionY), new Vector2(right, endY), LineColor, 2f, true);
 
-            if (HasFalseBranch)
-                DrawArrowDown(left, endY);
-            if (HasTrueBranch)
-                DrawArrowDown(right, endY);
-
             DrawString(ThemeDB.FallbackFont, new Vector2(left - 50f, 25f), "FALSE",
                 HorizontalAlignment.Right, 44f, 10, FalseColor);
             DrawString(ThemeDB.FallbackFont, new Vector2(right + 6f, 25f), "TRUE",
@@ -55,13 +47,5 @@ public partial class FlowchartDecisionConnectorControl : Control
         DrawLine(new Vector2(left, junctionY), new Vector2(right, junctionY), LineColor, 2f, true);
         DrawLine(new Vector2(center, junctionY), new Vector2(center, height), LineColor, 2f, true);
 
-        if (HasFollowingBlock)
-            DrawArrowDown(center, height - 1f);
-    }
-
-    private void DrawArrowDown(float x, float y)
-    {
-        DrawLine(new Vector2(x, y), new Vector2(x - 5f, y - 7f), LineColor, 2f, true);
-        DrawLine(new Vector2(x, y), new Vector2(x + 5f, y - 7f), LineColor, 2f, true);
     }
 }
