@@ -8,6 +8,28 @@ public partial class FlowchartBlockControl : VBoxContainer
     public Control SymbolControl { get; private set; }
     public event Action ContentChanged;
 
+    public void CollectSymbolControls(List<Control> controls)
+    {
+        if (controls == null)
+            return;
+
+        if (SymbolControl != null)
+            controls.Add(SymbolControl);
+
+        CollectNestedSymbols(this, controls);
+    }
+
+    private static void CollectNestedSymbols(Node parent, List<Control> controls)
+    {
+        foreach (Node child in parent.GetChildren())
+        {
+            if (child is FlowchartBlockControl nested && nested.SymbolControl != null)
+                controls.Add(nested.SymbolControl);
+
+            CollectNestedSymbols(child, controls);
+        }
+    }
+
     public void Configure(
         FlowchartBlockDefinition definition,
         Action<Variant, List<FlowchartBlockDefinition>, int> dropHandler,
