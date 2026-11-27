@@ -26,7 +26,7 @@ public partial class FlowchartDecisionConnectorControl : Control
         float right = width * 0.75f;
         float center = width * 0.5f;
         float junctionY = 7f;
-        float endY = height - 7f;
+        float endY = height;
 
         if (Kind == "Split")
         {
