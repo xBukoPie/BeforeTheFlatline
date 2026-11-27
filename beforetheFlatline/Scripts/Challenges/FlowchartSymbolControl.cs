@@ -33,6 +33,23 @@ public partial class FlowchartSymbolControl : Control
             ClearButtonEnabled = false,
             SizeFlagsHorizontal = SizeFlags.ExpandFill
         };
+        var transparentEditorStyle = new StyleBoxFlat
+        {
+            BgColor = new Color(0f, 0f, 0f, 0f),
+            BorderColor = new Color(0f, 0f, 0f, 0f),
+            BorderWidthLeft = 0,
+            BorderWidthRight = 0,
+            BorderWidthTop = 0,
+            BorderWidthBottom = 0,
+            ContentMarginLeft = 2,
+            ContentMarginRight = 2,
+            ContentMarginTop = 0,
+            ContentMarginBottom = 0
+        };
+        _editor.AddThemeStyleboxOverride("normal", transparentEditorStyle);
+        _editor.AddThemeStyleboxOverride("focus", transparentEditorStyle);
+        _editor.AddThemeStyleboxOverride("read_only", transparentEditorStyle);
+        _editor.AddThemeStyleboxOverride("disabled", transparentEditorStyle);
         _editor.AddThemeColorOverride("font_color", Colors.White);
         _editor.AddThemeColorOverride("font_placeholder_color", new Color("cbd5e1"));
         _editor.TextChanged += value =>

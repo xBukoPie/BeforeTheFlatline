@@ -32,6 +32,10 @@ public partial class FlowchartDecisionConnectorControl : Control
             DrawLine(new Vector2(center, 0f), new Vector2(center, 6f), LineColor, 2f, true);
             DrawBranch(center, left, height - 7f, HasTrueBranch);
             DrawBranch(center, right, height - 7f, HasFalseBranch);
+            DrawString(ThemeDB.FallbackFont, new Vector2(left - 34f, 19f), "TRUE",
+                HorizontalAlignment.Left, 32f, 10, new Color("86efac"));
+            DrawString(ThemeDB.FallbackFont, new Vector2(right + 8f, 19f), "FALSE",
+                HorizontalAlignment.Left, 42f, 10, new Color("fca5a5"));
             return;
         }
 

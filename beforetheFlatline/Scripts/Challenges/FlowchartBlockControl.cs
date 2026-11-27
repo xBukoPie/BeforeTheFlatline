@@ -5,6 +5,7 @@ using System.Collections.Generic;
 public partial class FlowchartBlockControl : VBoxContainer
 {
     public FlowchartBlockDefinition Definition { get; private set; }
+    public Control SymbolControl { get; private set; }
     public event Action ContentChanged;
 
     public void Configure(
@@ -37,6 +38,7 @@ public partial class FlowchartBlockControl : VBoxContainer
         blockRow.AddChild(symbolCenter);
 
         var symbol = new FlowchartSymbolControl();
+        SymbolControl = symbol;
         symbol.Configure(Definition.Type, Definition.Text, compact);
         symbol.TextChanged += value =>
         {
@@ -67,8 +69,8 @@ public partial class FlowchartBlockControl : VBoxContainer
             MouseFilter = MouseFilterEnum.Ignore
         };
         branches.AddThemeConstantOverride("separation", 12);
-        AddBranchColumn(branches, "TRUE", Definition.TrueBranch, dropHandler);
-        AddBranchColumn(branches, "FALSE", Definition.FalseBranch, dropHandler);
+        AddBranchColumn(branches, Definition.TrueBranch, dropHandler);
+        AddBranchColumn(branches, Definition.FalseBranch, dropHandler);
         AddChild(branches);
 
         AddChild(new FlowchartDecisionConnectorControl
@@ -80,7 +82,6 @@ public partial class FlowchartBlockControl : VBoxContainer
 
     private void AddBranchColumn(
         HBoxContainer parent,
-        string branchName,
         List<FlowchartBlockDefinition> definitions,
         Action<Variant, List<FlowchartBlockDefinition>, int> dropHandler)
     {
@@ -90,17 +91,6 @@ public partial class FlowchartBlockControl : VBoxContainer
             MouseFilter = MouseFilterEnum.Pass
         };
         column.AddThemeConstantOverride("separation", 0);
-
-        var heading = new Label
-        {
-            Text = branchName,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            MouseFilter = MouseFilterEnum.Ignore
-        };
-        heading.AddThemeFontSizeOverride("font_size", 11);
-        heading.AddThemeColorOverride("font_color",
-            branchName == "TRUE" ? new Color("86efac") : new Color("fca5a5"));
-        column.AddChild(heading);
 
         AddSlot(column, definitions, 0, dropHandler);
         for (int i = 0; i < definitions.Count; i++)

@@ -10,6 +10,7 @@ public partial class ChallengeScene : Control
 
     private VBoxContainer _main;
     private VBoxContainer _content;
+    private ScrollContainer _contentScroll;
     private Label _feedback;
     private Label _progress;
     private TextEdit _codeEditor;
@@ -110,21 +111,25 @@ public partial class ChallengeScene : Control
         prompt.AddThemeColorOverride("font_color", new Color("cbd5e1"));
         _main.AddChild(prompt);
 
-        var scroll = new ScrollContainer
+        _contentScroll = new ScrollContainer
         {
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             SizeFlagsVertical = SizeFlags.ExpandFill,
             HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled
         };
-        _main.AddChild(scroll);
+        _main.AddChild(_contentScroll);
 
-        _content = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        _content = new VBoxContainer
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ExpandFill
+        };
         _content.AddThemeConstantOverride("separation", 8);
-        scroll.AddChild(_content);
+        _contentScroll.AddChild(_content);
 
         _feedback = new Label
         {
-            Text = "Your score appears after question 4.",
+            Text = "Your score appears after the final question.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             CustomMinimumSize = new Vector2(0, 34)
         };
@@ -189,7 +194,7 @@ public partial class ChallengeScene : Control
             RenderPseudocodeEditor();
 
         int questionNumber = DailyTestSession.AttemptCount + 1;
-        _progress.Text = $"QUESTION {questionNumber}/4   •   DAY {_day}   •   DIFFICULTY {_difficulty}/5";
+        _progress.Text = $"QUESTION {questionNumber}/{DailyTestSession.QuestionCount}   •   DAY {_day}   •   DIFFICULTY {_difficulty}/5";
         UpdateSubmitButton();
         CallDeferred(nameof(BeginFirstDayQuestionGuide));
     }
@@ -220,6 +225,8 @@ public partial class ChallengeScene : Control
 
     private void RenderPseudocodeEditor()
     {
+        if (_contentScroll != null)
+            _contentScroll.VerticalScrollMode = ScrollContainer.ScrollMode.Auto;
         ClearContent();
         _paletteButtons.Clear();
         var guide = new Label
@@ -250,6 +257,8 @@ public partial class ChallengeScene : Control
 
     private void RenderFlowchartEditor()
     {
+        if (_contentScroll != null)
+            _contentScroll.VerticalScrollMode = ScrollContainer.ScrollMode.Disabled;
         ClearContent();
         _paletteButtons.Clear();
 
@@ -292,7 +301,7 @@ public partial class ChallengeScene : Control
 
         var panHint = new Label
         {
-            Text = "Drag empty space to pan • Ctrl + mouse wheel to zoom",
+            Text = "Drag empty space to pan • Scroll wheel to zoom",
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             VerticalAlignment = VerticalAlignment.Center
         };
@@ -313,7 +322,7 @@ public partial class ChallengeScene : Control
 
         _flowCanvas = new FlowchartDropCanvas
         {
-            CustomMinimumSize = new Vector2(0, 500),
+            CustomMinimumSize = new Vector2(0, 0),
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             SizeFlagsVertical = SizeFlags.ExpandFill,
             MouseFilter = MouseFilterEnum.Stop

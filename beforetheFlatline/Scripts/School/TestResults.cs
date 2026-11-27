@@ -19,8 +19,9 @@ public partial class TestResults : Control
         BuildUi();
 
         bool alreadyFinalized = DailyTestSession.IsFinalized;
+        bool tutorialBonus = DailyTestSession.IsTutorialBonus;
         _passed = DailyTestSession.FinalizeTest();
-        if (!alreadyFinalized)
+        if (!alreadyFinalized && !tutorialBonus)
         {
             if (_passed)
                 AudioManager.Instance?.PlayAssessmentPassed();
@@ -45,19 +46,20 @@ public partial class TestResults : Control
         int pointsReceived = DailyTestSession.BestPointsReceived;
         int currentSanity = SanityManager.Instance?.CurrentSanity ?? SanityManager.MaxSanity;
 
-        _title.Text = _passed ? "ASSESSMENT PASSED" : "ASSESSMENT FAILED";
-        _title.AddThemeColorOverride("font_color", _passed
-            ? new Color("86efac")
-            : new Color("fca5a5"));
+        _title.Text = tutorialBonus ? "TUTORIAL COMPLETE" : (_passed ? "ASSESSMENT PASSED" : "ASSESSMENT FAILED");
+        _title.AddThemeColorOverride("font_color", tutorialBonus
+            ? new Color("d7b98b")
+            : (_passed ? new Color("86efac") : new Color("fca5a5")));
 
-        _summary.Text =
-            $"BEST SCORE: {score} / {DailyTestSession.MaximumScore}\n" +
-            $"POINTS RECEIVED: {pointsReceived}\n" +
-            $"PASSING SCORE: {DailyTestSession.MinimumPassingScore}";
+        _summary.Text = tutorialBonus
+            ? $"BEST SCORE: {score} / {DailyTestSession.MaximumScore}\\nPOINTS RECEIVED: {pointsReceived}\\nBONUS TUTORIAL: 2 QUESTIONS\\nNO PASS/FAIL PENALTY"
+            : $"BEST SCORE: {score} / {DailyTestSession.MaximumScore}\\nPOINTS RECEIVED: {pointsReceived}\\nPASSING SCORE: {DailyTestSession.MinimumPassingScore}";
 
-        string returnNote = _passed
-            ? "A passing result is secured. Retrying cannot revoke it. Sanity recovery will be applied after you return home."
-            : "Any failure penalty will be applied once, after you return home. Retrying before then will not repeatedly reduce sanity.";
+        string returnNote = tutorialBonus
+            ? "This was a bonus tutorial. It does not change sanity or apply an assessment failure penalty. Regular gameplay and four-question assessments begin on Day 2."
+            : (_passed
+                ? "A passing result is secured. Retrying cannot revoke it. Sanity recovery will be applied after you return home."
+                : "Any failure penalty will be applied once, after you return home. Retrying before then will not repeatedly reduce sanity.");
 
         if (!string.IsNullOrWhiteSpace(newKeyReward))
             returnNote += "\n" + newKeyReward;

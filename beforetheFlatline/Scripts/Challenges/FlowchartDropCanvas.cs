@@ -28,7 +28,7 @@ public partial class FlowchartDropCanvas : PanelContainer
 
     public FlowchartDropCanvas()
     {
-        CustomMinimumSize = new Vector2(0, 480);
+        CustomMinimumSize = new Vector2(0, 260);
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         SizeFlagsVertical = SizeFlags.ExpandFill;
 
@@ -157,16 +157,14 @@ public partial class FlowchartDropCanvas : PanelContainer
                 return;
             }
 
-            if (mouseButton.CtrlPressed &&
-                mouseButton.ButtonIndex == MouseButton.WheelUp && mouseButton.Pressed)
+            if (mouseButton.ButtonIndex == MouseButton.WheelUp && mouseButton.Pressed)
             {
                 SetZoom(_zoom * 1.12f, GetViewportPointer());
                 AcceptEvent();
                 return;
             }
 
-            if (mouseButton.CtrlPressed &&
-                mouseButton.ButtonIndex == MouseButton.WheelDown && mouseButton.Pressed)
+            if (mouseButton.ButtonIndex == MouseButton.WheelDown && mouseButton.Pressed)
             {
                 SetZoom(_zoom / 1.12f, GetViewportPointer());
                 AcceptEvent();
@@ -222,7 +220,7 @@ public partial class FlowchartDropCanvas : PanelContainer
             var block = new FlowchartBlockControl();
             block.Configure(_definitions[i], ProcessDrop, hasFollowingBlock: i < _definitions.Count - 1);
             block.ContentChanged += () => ContentChanged?.Invoke();
-            _panBlockControls.Add(block);
+            _panBlockControls.Add(block.SymbolControl);
             _blocks.AddChild(block);
             AddSlot(_definitions, i + 1);
         }

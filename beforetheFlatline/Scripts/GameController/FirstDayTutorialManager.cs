@@ -10,7 +10,7 @@ public partial class FirstDayTutorialManager : Node
     private const string WorldPath = "res://Scenes/Home/Areas/World.tscn";
     private const string BedroomPath = "res://Scenes/Home/Areas/PlayerRoom.tscn";
     private const string BedroomSpawn = "startSpawn";
-    private const string PortraitPath = "res://Assets/Characters/Mysterious.png";
+    private const string PortraitPath = "res://Assets/Characters/Mich.png";
 
     private sealed record GuideStep(string Text, Control Target = null);
 
@@ -31,9 +31,6 @@ public partial class FirstDayTutorialManager : Node
 
     public bool IsActive => DayClock.Instance?.IsFirstDayTutorialActive == true;
     public bool IsGuidedClassroom => IsActive && DayClock.Instance.FirstDayTutorialStep == 5;
-    public bool ShouldShowSchoolCompanion =>
-        IsActive && DayClock.Instance.FirstDayTutorialStep >= 3 &&
-        DayClock.Instance.FirstDayTutorialStep <= 5;
     public bool ShouldExplainResults => IsActive && DayClock.Instance.FirstDayTutorialStep == 5;
 
     public override void _Ready()
@@ -192,21 +189,21 @@ public partial class FirstDayTutorialManager : Node
         if (DayClock.Instance?.FirstDayTutorialStep == 0)
             steps.Add(new GuideStep("Move with WASD or the arrow keys. When you see an interaction prompt near a door or object, walk close and press E. The glowing ring marks the door I want you to use next."));
 
-        ShowGuidance("MYSTERIOUS PERSON", steps, RefreshAllDoors);
+        ShowGuidance("MICH", steps, RefreshAllDoors);
     }
 
     private void BeginSchoolIntroduction()
     {
         FreezePlayer();
-        ShowGuidance("MYSTERIOUS PERSON", new[]
+        ShowGuidance("MICH", new[]
         {
-            new GuideStep("You made it to school. First days can be confusing, so stay close. I will accompany you through the classroom and today's assessment."),
+            new GuideStep("You made it to school. I'm Mich. First days can be confusing, so I'll guide you through the classroom and today's short practice assessment."),
             new GuideStep("Move with WASD or the arrow keys. When an object or person shows an interaction prompt, stand nearby and press E. Doors, keys, photographs, and activities all use the same interaction action."),
             new GuideStep("The day follows a schedule. School opens at 6:30 AM, the attendance deadline is noon, school closes at 5:00 PM, and night begins at 6:30 PM. The first-day clock stays frozen until the assessment is finalized."),
             new GuideStep("Press Esc to open the pause menu. The Journal stores memory, friend, assessment, and player-stat information. You have three manual save slots and an autosave; saving is available while exploring the world."),
             new GuideStep("You will see classmates around the school. Speaking to each friend for the first time that day restores a little sanity. Sometimes they may share a very rare clue, but do not expect them to explain everything."),
             new GuideStep("At home, the television, bicycle, and bath may be available on a given day. Activities can advance time. A bath restores sanity, and sleep can take you to the next school morning when the schedule allows it."),
-            new GuideStep("We will skip the usual Professor Vox lesson today. I will explain the assessments as you work, including pseudocode, flowcharts, scoring, and the consequences of mistakes."),
+            new GuideStep("We will skip the usual Professor Vox lesson today. I'll explain the two practice questions as you work: one flowchart and one pseudocode problem."),
             new GuideStep("The highlighted entrance leads to your classroom. Go inside and we will begin.")
         }, () =>
         {
@@ -223,11 +220,11 @@ public partial class FirstDayTutorialManager : Node
             return;
         }
 
-        ShowGuidance("MYSTERIOUS PERSON", new[]
+        ShowGuidance("MICH", new[]
         {
             new GuideStep("Here we are. Professor Vox can take the day off. I will guide you through the assessment instead."),
-            new GuideStep("There are four question types: Sequence, Condition, Flowchart, and Final. They appear in a shuffled order, and their word problems use randomized settings and values."),
-            new GuideStep("A correct answer is worth 10 points. You need 30 out of 40 to pass. Read the full prompt, solve the problem, then submit it.")
+            new GuideStep("This is a short practice assessment: one Flowchart question followed by one Pseudocode question. The regular four-question assessments begin on Day 2."),
+            new GuideStep("Each correct answer is worth 10 points. This first day is a bonus tutorial, so there is no pass/fail penalty. Read the prompt, try each task, then submit it.")
         }, startAssessment);
     }
 
@@ -272,7 +269,7 @@ public partial class FirstDayTutorialManager : Node
         }
 
         steps.Add(new GuideStep("When you are ready, press Submit & Next. An incomplete answer can be submitted, but it will not earn the question's points.", submitButton));
-        ShowGuidance("MYSTERIOUS PERSON • ASSESSMENT GUIDE", steps, null);
+        ShowGuidance("MICH • ASSESSMENT GUIDE", steps, null);
     }
 
     public void ShowResultsTutorial(Control scoreTarget, Control detailsTarget, Action completed)
@@ -284,15 +281,15 @@ public partial class FirstDayTutorialManager : Node
         }
 
         DayClock.Instance?.SetFirstDayTutorialStep(6);
-        ShowGuidance("MYSTERIOUS PERSON • RESULTS", new[]
+        ShowGuidance("MICH • RESULTS", new[]
         {
-            new GuideStep("BEST SCORE is your assessment score, out of 40. Each correct answer is worth 10 points, and 30 points is enough to pass.", scoreTarget),
+            new GuideStep("BEST SCORE is your tutorial score, out of 20. Each correct answer is worth 10 points. This is a bonus tutorial; regular four-question assessments begin on Day 2.", scoreTarget),
             new GuideStep("POINTS RECEIVED are separate from the assessment score. These hidden story points come from eligible first-time correct challenge completions and help unlock future room keys.", scoreTarget),
-            new GuideStep("SANITY shows how much you have left. A passing assessment restores 5 sanity after you return home. A failed assessment applies its penalty once, also after you return home. The penalty grows as the days progress.", detailsTarget),
+            new GuideStep("SANITY shows how much you have left. The Day 1 tutorial does not change sanity and cannot apply an assessment failure penalty. Starting on Day 2, passing assessments restore 5 sanity and failed assessments apply a penalty after you return home.", detailsTarget),
             new GuideStep("The assessment debuffs are Dizziness, Confusion, Anxiety, and Pressure. They can stack and remain until their individual recovery targets are met. Dizziness distorts your view, Confusion adds stray letters, Anxiety creates static, and Pressure brings heartbeat cues.", detailsTarget),
             new GuideStep("Talking to a friend for the first time that day restores 2 sanity. A bath restores 4 during the day or 7 at night, and a late-night bath may clear one debuff. Passing an assessment is another recovery opportunity."),
-            new GuideStep("A listed key reward means a key is available to collect in the world. It is not added automatically. The order is Kitchen, Laundry, Bathroom, then Master Bedroom; examine each room's photograph before the next key can appear."),
-            new GuideStep("When you continue, the assessment result is finalized at home. You will return to your bedroom and the next day will begin. You can use the Journal to review your progress whenever you need to.")
+            new GuideStep("A listed key reward means a key is available to collect in the world. It is not added automatically. The first key requires 50 story points because Day 1 is a bonus tutorial; later keys use the regular 100-point increments. The order is Kitchen, Laundry, Bathroom, then Master Bedroom; examine each room's photograph before the next key can appear."),
+            new GuideStep("When you continue, the tutorial result is recorded at home. You will return to your bedroom and Day 2 will begin. From then on, the regular gameplay and four-question assessments are active. You can use the Journal to review your progress whenever you need to.")
         }, completed);
     }
 
