@@ -34,6 +34,12 @@ public partial class FlowchartDragHandle : Label
         preview.AddThemeColorOverride("font_outline_color", Colors.Black);
         preview.AddThemeConstantOverride("outline_size", 4);
         SetDragPreview(preview);
+
+        Node ancestor = GetParent();
+        while (ancestor != null && ancestor is not FlowchartDropCanvas)
+            ancestor = ancestor.GetParent();
+        (ancestor as FlowchartDropCanvas)?.BeginBlockDrag(DefinitionId);
+
         return $"MOVE|{DefinitionId}";
     }
 }

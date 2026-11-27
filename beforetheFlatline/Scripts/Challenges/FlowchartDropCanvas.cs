@@ -24,6 +24,7 @@ public partial class FlowchartDropCanvas : PanelContainer
     private float _zoom = 1f;
     private Vector2 _panOffset = Vector2.Zero;
     private bool _isPanning;
+    private string _activeDraggedDefinitionId = string.Empty;
     private bool _hasCentered;
 
     public FlowchartDropCanvas()
@@ -112,6 +113,61 @@ public partial class FlowchartDropCanvas : PanelContainer
         _panOffset = Vector2.Zero;
         _workspace.Scale = Vector2.One;
         PositionWorkspace();
+    }
+
+    public void BeginBlockDrag(string definitionId)
+    {
+        if (Guid.TryParse(definitionId, out _))
+            _activeDraggedDefinitionId = definitionId;
+    }
+
+    public override void _Input(InputEvent @event)
+    {
+        if (string.IsNullOrWhiteSpace(_activeDraggedDefinitionId))
+            return;
+
+        if (@event is InputEventMouseButton mouseButton &&
+            mouseButton.ButtonIndex == MouseButton.Left && !mouseButton.Pressed)
+        {
+            string draggedId = _activeDraggedDefinitionId;
+            CallDeferred(nameof(FinishBlockDrag), draggedId);
+        }
+    }
+
+    private void FinishBlockDrag(string definitionId)
+    {
+        if (!string.Equals(_activeDraggedDefinitionId, definitionId, StringComparison.Ordinal))
+            return;
+
+        _activeDraggedDefinitionId = string.Empty;
+        if (GetGlobalRect().HasPoint(GetGlobalMousePosition()))
+            return;
+
+        if (!Guid.TryParse(definitionId, out Guid id) ||
+            !RemoveDefinition(_definitions, id))
+            return;
+
+        BuildWorkspace();
+        ContentChanged?.Invoke();
+    }
+
+    private static bool RemoveDefinition(List<FlowchartBlockDefinition> list, Guid id)
+    {
+        for (int i = 0; i < list.Count; i++)
+        {
+            FlowchartBlockDefinition definition = list[i];
+            if (definition.Id == id)
+            {
+                list.RemoveAt(i);
+                return true;
+            }
+
+            if (RemoveDefinition(definition.TrueBranch, id) ||
+                RemoveDefinition(definition.FalseBranch, id))
+                return true;
+        }
+
+        return false;
     }
 
     public override bool _CanDropData(Vector2 atPosition, Variant data) =>
