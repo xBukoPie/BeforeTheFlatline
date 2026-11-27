@@ -264,7 +264,7 @@ public partial class ChallengeScene : Control
 
         var guide = new Label
         {
-            Text = "Build a connected flowchart. Start and End are built in. Drag blocks onto connectors; drag a placed block outside the workspace to delete it."
+            Text = "Build a connected flowchart. Start and End are built in. Drag blocks onto connectors; drag a placed block outside the workspace to delete it.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
         guide.AddThemeFontSizeOverride("font_size", 18);
@@ -301,7 +301,7 @@ public partial class ChallengeScene : Control
 
         var panHint = new Label
         {
-            Text = "Drag empty space to pan • Scroll wheel to zoom • Drag a block outside to delete"
+            Text = "Drag empty space to pan • Scroll wheel to zoom • Drag a block outside to delete",
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             VerticalAlignment = VerticalAlignment.Center
         };

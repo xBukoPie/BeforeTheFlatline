@@ -90,7 +90,7 @@ public partial class FlowchartBlockControl : VBoxContainer
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             MouseFilter = MouseFilterEnum.Ignore
         };
-        branches.AddThemeConstantOverride("separation", 12);
+        branches.AddThemeConstantOverride("separation", 0);
         AddBranchColumn(branches, Definition.FalseBranch, dropHandler);
         AddBranchColumn(branches, Definition.TrueBranch, dropHandler);
         AddChild(branches);

@@ -351,8 +351,26 @@ public partial class SaveManager : Node
                 : tutorialCompleted ? 7 : 0;
             DayClock.Instance?.RestoreFirstDayTutorialState(tutorialStep, tutorialCompleted);
 
+            DailyTestSession.RestoreHistoryFromSaveData(
+                ReadDictionary(data, "assessment_history"));
+
             int keysToRestore = Mathf.Max(0, ReadInt(keyState, "keys_earned", 0));
             string pendingKeyRoom = ReadString(keyState, "pending_key_room", string.Empty);
+            bool hasAssessmentHistoryForCurrentDay = false;
+            foreach (AssessmentHistoryEntry historyEntry in DailyTestSession.AssessmentHistory)
+            {
+                if (historyEntry.Day == day)
+                {
+                    hasAssessmentHistoryForCurrentDay = true;
+                    break;
+                }
+            }
+
+            // Older builds could queue the Kitchen key at the end of the bonus tutorial.
+            // It is never valid on Day 1 or before a real Day 2 assessment has resolved.
+            if (day <= 1 || (day == 2 && !hasAssessmentHistoryForCurrentDay))
+                pendingKeyRoom = string.Empty;
+
             bool hasExplicitUnlockedRooms = keyState.ContainsKey("unlocked_rooms") &&
                 keyState["unlocked_rooms"].VariantType == Variant.Type.Array;
             string[] unlockedRoomIds = ReadStringArray(keyState, "unlocked_rooms");
@@ -381,14 +399,12 @@ public partial class SaveManager : Node
                 keysToRestore,
                 pendingKeyRoom,
                 hasExplicitUnlockedRooms ? unlockedRoomIds : null,
-                ReadBool(keyState, "pending_key_from_assessment", false));
+                pendingKeyRoom.Length > 0 && ReadBool(keyState, "pending_key_from_assessment", false));
             RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Kitchen", ReadInt(keyState, "kitchen_unlocked_day", -1));
             RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Laundry", ReadInt(keyState, "laundry_unlocked_day", -1));
             RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Bathroom", ReadInt(keyState, "bathroom_unlocked_day", -1));
             RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("MasterBedroom", ReadInt(keyState, "master_bedroom_unlocked_day", -1));
             ChallengeProgress.RestoreFromSaveData(challengeState);
-            DailyTestSession.RestoreHistoryFromSaveData(
-                ReadDictionary(data, "assessment_history"));
 
             RoomManager.RequestStartRoomOnNextLoad(roomPath, "startSpawn");
             if (savedRoomExists)

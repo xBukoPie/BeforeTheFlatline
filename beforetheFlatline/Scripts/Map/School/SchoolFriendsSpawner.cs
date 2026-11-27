@@ -283,6 +283,10 @@ public partial class SchoolFriendsSpawner : Node2D
 
         foreach (SchoolFriendSpawn spawn in spawnPlan)
         {
+            if (DayClock.Instance?.IsFirstDayTutorialActive == true &&
+                string.Equals(spawn.Name, "Mich", StringComparison.OrdinalIgnoreCase))
+                continue;
+
             if (TryGetDefinition(spawn.Name, out FriendDefinition definition))
                 CreateFriend(definition, spawn.Position);
         }
