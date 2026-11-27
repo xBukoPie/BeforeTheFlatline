@@ -52,8 +52,8 @@ public partial class TestResults : Control
             : (_passed ? new Color("86efac") : new Color("fca5a5")));
 
         _summary.Text = tutorialBonus
-            ? $"BEST SCORE: {score} / {DailyTestSession.MaximumScore}\\nPOINTS RECEIVED: {pointsReceived}\\nBONUS TUTORIAL: 2 QUESTIONS\\nNO PASS/FAIL PENALTY"
-            : $"BEST SCORE: {score} / {DailyTestSession.MaximumScore}\\nPOINTS RECEIVED: {pointsReceived}\\nPASSING SCORE: {DailyTestSession.MinimumPassingScore}";
+            ? $"BEST SCORE: {score} / {DailyTestSession.MaximumScore}\nPOINTS RECEIVED: {pointsReceived}\nBONUS TUTORIAL: 2 QUESTIONS\nNO PASS/FAIL PENALTY"
+            : $"BEST SCORE: {score} / {DailyTestSession.MaximumScore}\nPOINTS RECEIVED: {pointsReceived}\nPASSING SCORE: {DailyTestSession.MinimumPassingScore}";
 
         string returnNote = tutorialBonus
             ? "This was a bonus tutorial. It does not change sanity or apply an assessment failure penalty. Regular gameplay and four-question assessments begin on Day 2."
