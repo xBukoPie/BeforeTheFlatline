@@ -304,7 +304,7 @@ public partial class SchoolFriendsSpawner : Node2D
         Shuffle(positions);
 
         // Uniformly choose zero, one, two, or all three friends for this school phase.
-        int count = _rng.RandiRange(0, definitions.Length - 1); // 0, 1, or 2 friends outside; never all three.
+        int count = _rng.RandiRange(0, Math.Min(2, definitions.Length)); // Up to two friends outside; the tutorial guide stays out of the yard.
         var plan = new List<SchoolFriendSpawn>(count);
         for (int i = 0; i < count; i++)
             plan.Add(new SchoolFriendSpawn(definitions[i].Name, positions[i]));
