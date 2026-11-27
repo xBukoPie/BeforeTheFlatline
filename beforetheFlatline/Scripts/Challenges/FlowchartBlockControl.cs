@@ -91,8 +91,8 @@ public partial class FlowchartBlockControl : VBoxContainer
             MouseFilter = MouseFilterEnum.Ignore
         };
         branches.AddThemeConstantOverride("separation", 12);
-        AddBranchColumn(branches, Definition.TrueBranch, dropHandler);
         AddBranchColumn(branches, Definition.FalseBranch, dropHandler);
+        AddBranchColumn(branches, Definition.TrueBranch, dropHandler);
         AddChild(branches);
 
         AddChild(new FlowchartDecisionConnectorControl

@@ -7,6 +7,7 @@ public partial class FlowchartSymbolControl : Control
     [Export] public string InitialText { get; set; } = "";
 
     private LineEdit _editor;
+    private bool _compact;
 
     public event Action<string> TextChanged;
     public string BlockText => _editor?.Text ?? InitialText;
@@ -44,11 +45,11 @@ public partial class FlowchartSymbolControl : Control
     {
         BlockType = type ?? "Process";
         InitialText = text ?? "";
-        CustomMinimumSize = new Vector2(compact ? 290 : 560, 72);
+        _compact = compact;
         SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
         SizeFlagsVertical = SizeFlags.ShrinkBegin;
         MouseFilter = MouseFilterEnum.Pass;
-        QueueRedraw();
+        UpdateShapeSize();
     }
 
     public override void _Ready()
@@ -84,9 +85,11 @@ public partial class FlowchartSymbolControl : Control
         _editor.TextChanged += value =>
         {
             InitialText = value;
+            UpdateShapeSize();
             TextChanged?.Invoke(value);
         };
         AddChild(_editor);
+        UpdateShapeSize();
         LayoutEditor();
     }
 
@@ -141,23 +144,37 @@ public partial class FlowchartSymbolControl : Control
             LayoutEditor();
     }
 
+    private void UpdateShapeSize()
+    {
+        Font font = _editor?.GetThemeFont("font") ?? ThemeDB.FallbackFont;
+        float textWidth = font.GetStringSize(InitialText ?? string.Empty,
+            HorizontalAlignment.Left, -1f, 16).X;
+
+        float minimum = _compact ? 170f : 190f;
+        float maximum = _compact ? 380f : 700f;
+        float required = string.Equals(BlockType, "Decision", StringComparison.OrdinalIgnoreCase)
+            ? (textWidth + 26f) / 0.46f
+            : (textWidth + 34f) / 0.72f;
+
+        float width = Mathf.Clamp(Mathf.Ceil(required), minimum, maximum);
+        if (!Mathf.IsEqualApprox(CustomMinimumSize.X, width) ||
+            !Mathf.IsEqualApprox(CustomMinimumSize.Y, 72f))
+            CustomMinimumSize = new Vector2(width, 72f);
+
+        QueueRedraw();
+        if (_editor != null)
+            LayoutEditor();
+    }
+
     private void LayoutEditor()
     {
         if (_editor == null)
             return;
 
         float width = Mathf.Max(Size.X, CustomMinimumSize.X);
-        if (BlockType == "Decision")
-        {
-            float editorWidth = Mathf.Min(width * 0.46f, 210f);
-            _editor.Position = new Vector2((width - editorWidth) * 0.5f, 29f);
-            _editor.Size = new Vector2(editorWidth, 26f);
-        }
-        else
-        {
-            float editorWidth = width * 0.72f;
-            _editor.Position = new Vector2((width - editorWidth) * 0.5f, 29f);
-            _editor.Size = new Vector2(editorWidth, 26f);
-        }
+        float ratio = BlockType == "Decision" ? 0.46f : 0.72f;
+        float editorWidth = Mathf.Min(width * ratio, BlockType == "Decision" ? 290f : 520f);
+        _editor.Position = new Vector2((width - editorWidth) * 0.5f, 29f);
+        _editor.Size = new Vector2(editorWidth, 26f);
     }
 }

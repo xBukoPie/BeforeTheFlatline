@@ -8,10 +8,12 @@ public partial class FlowchartDecisionConnectorControl : Control
     [Export] public bool HasFollowingBlock { get; set; }
 
     private static readonly Color LineColor = new("7dd3fc");
+    private static readonly Color TrueColor = new("86efac");
+    private static readonly Color FalseColor = new("fca5a5");
 
     public FlowchartDecisionConnectorControl()
     {
-        CustomMinimumSize = new Vector2(0, 28);
+        CustomMinimumSize = new Vector2(0, 36);
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         MouseFilter = MouseFilterEnum.Ignore;
     }
@@ -20,40 +22,41 @@ public partial class FlowchartDecisionConnectorControl : Control
     {
         float width = Size.X;
         float height = Size.Y;
-        if (width < 4f || height < 8f)
+        if (width < 4f || height < 12f)
             return;
 
         float left = width * 0.25f;
         float right = width * 0.75f;
         float center = width * 0.5f;
+        float junctionY = 7f;
+        float endY = height - 7f;
 
         if (Kind == "Split")
         {
-            DrawLine(new Vector2(center, 0f), new Vector2(center, 6f), LineColor, 2f, true);
-            DrawBranch(center, left, height - 7f, HasTrueBranch);
-            DrawBranch(center, right, height - 7f, HasFalseBranch);
-            DrawString(ThemeDB.FallbackFont, new Vector2(left - 34f, 19f), "TRUE",
-                HorizontalAlignment.Left, 32f, 10, new Color("86efac"));
-            DrawString(ThemeDB.FallbackFont, new Vector2(right + 8f, 19f), "FALSE",
-                HorizontalAlignment.Left, 42f, 10, new Color("fca5a5"));
+            DrawLine(new Vector2(center, 0f), new Vector2(center, junctionY), LineColor, 2f, true);
+            DrawLine(new Vector2(left, junctionY), new Vector2(right, junctionY), LineColor, 2f, true);
+            DrawLine(new Vector2(left, junctionY), new Vector2(left, endY), LineColor, 2f, true);
+            DrawLine(new Vector2(right, junctionY), new Vector2(right, endY), LineColor, 2f, true);
+
+            if (HasFalseBranch)
+                DrawArrowDown(left, endY);
+            if (HasTrueBranch)
+                DrawArrowDown(right, endY);
+
+            DrawString(ThemeDB.FallbackFont, new Vector2(left - 50f, 25f), "FALSE",
+                HorizontalAlignment.Right, 44f, 10, FalseColor);
+            DrawString(ThemeDB.FallbackFont, new Vector2(right + 6f, 25f), "TRUE",
+                HorizontalAlignment.Left, 44f, 10, TrueColor);
             return;
         }
 
-        DrawLine(new Vector2(left, 0f), new Vector2(left, 8f), LineColor, 2f, true);
-        DrawLine(new Vector2(right, 0f), new Vector2(right, 8f), LineColor, 2f, true);
-        DrawLine(new Vector2(left, 8f), new Vector2(center, height - 7f), LineColor, 2f, true);
-        DrawLine(new Vector2(right, 8f), new Vector2(center, height - 7f), LineColor, 2f, true);
-        DrawLine(new Vector2(center, height - 7f), new Vector2(center, height), LineColor, 2f, true);
+        DrawLine(new Vector2(left, 0f), new Vector2(left, junctionY), LineColor, 2f, true);
+        DrawLine(new Vector2(right, 0f), new Vector2(right, junctionY), LineColor, 2f, true);
+        DrawLine(new Vector2(left, junctionY), new Vector2(right, junctionY), LineColor, 2f, true);
+        DrawLine(new Vector2(center, junctionY), new Vector2(center, height), LineColor, 2f, true);
 
         if (HasFollowingBlock)
             DrawArrowDown(center, height - 1f);
-    }
-
-    private void DrawBranch(float sourceX, float targetX, float y, bool hasTarget)
-    {
-        DrawLine(new Vector2(sourceX, 0f), new Vector2(targetX, y), LineColor, 2f, true);
-        if (hasTarget)
-            DrawArrowDown(targetX, y);
     }
 
     private void DrawArrowDown(float x, float y)

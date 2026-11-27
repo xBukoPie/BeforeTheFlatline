@@ -6,9 +6,26 @@ public partial class FlowchartTerminalControl : Control
 
     public FlowchartTerminalControl()
     {
-        CustomMinimumSize = new Vector2(520, 72);
+        float textWidth = ThemeDB.FallbackFont.GetStringSize(TerminalText,
+            HorizontalAlignment.Left, -1f, 14).X;
+        CustomMinimumSize = new Vector2(Mathf.Max(104f, textWidth + 48f), 72f);
         SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
         MouseFilter = MouseFilterEnum.Ignore;
+    }
+
+    public override void _Ready()
+    {
+        var label = new Label
+        {
+            Text = TerminalText,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
+        label.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        label.AddThemeFontSizeOverride("font_size", 14);
+        label.AddThemeColorOverride("font_color", Colors.White);
+        AddChild(label);
     }
 
     public override void _Draw()
@@ -28,9 +45,5 @@ public partial class FlowchartTerminalControl : Control
             CornerRadiusBottomRight = 30
         };
         DrawStyleBox(style, shape);
-        DrawString(ThemeDB.FallbackFont,
-            new Vector2(Size.X * 0.5f, Size.Y * 0.5f + 5f),
-            TerminalText,
-            HorizontalAlignment.Center, 100f, 14, Colors.White);
     }
 }
