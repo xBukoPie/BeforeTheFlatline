@@ -356,13 +356,6 @@ public static class DailyTestSession
                 ? $"Sanity {sanityChange}; {debuffType} assessment penalty ({debuffAmount})"
                 : "No additional sanity change";
 
-        if (RoomKeyProgression.Instance?.HasPendingKey == true)
-        {
-            string keyName = RoomKeyProgression.Instance.PendingKeyRoomName;
-            string keyLocation = RoomKeyProgression.Instance.GetPendingKeyLocationName();
-            rewardText += $"; Key available: {keyName} (pickup in {keyLocation})";
-        }
-
         RecordHistory(sanityAfter, debuffType, debuffAmount, rewardText);
         SaveManager.Instance?.RequestAutoSave();
         GD.Print($"[DailyTestSession] Home assessment resolution: passed={_passedForDay}, sanity {before}->{sanityAfter}.");

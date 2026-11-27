@@ -167,7 +167,8 @@ public partial class RoomKeyProgression : Node
 
     public string QueueAssessmentKey()
     {
-        if (DayClock.Instance?.DayNumber <= 1 || DayClock.Instance?.IsFirstDayTutorialActive == true)
+        if ((DayClock.Instance != null && DayClock.Instance.DayNumber <= 1) ||
+            DayClock.Instance?.IsFirstDayTutorialActive == true)
             return string.Empty;
 
         if (HasPendingKey)
