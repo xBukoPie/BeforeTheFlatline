@@ -133,6 +133,18 @@ public partial class FlowchartBlockControl : VBoxContainer
             AddSlot(column, definitions, i + 1, dropHandler);
         }
 
+        // Keep the shorter decision path connected to the merge point.
+        // This expands to the height of the longer branch and draws a plain
+        // continuation line without an arrowhead or an extra drop target.
+        var continuation = new ColorRect
+        {
+            Color = new Color("7dd3fc"),
+            CustomMinimumSize = new Vector2(2f, 0f),
+            SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        column.AddChild(continuation);
         parent.AddChild(column);
     }
 
