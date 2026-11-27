@@ -544,8 +544,8 @@ void fragment() {
         if (_flashTime > 0f)
             washAlpha = Mathf.Max(washAlpha, (_flashTime / 0.9f) * 0.08f * fade);
         _statusLabel.Visible = total > 0 || schedulePenalty >= 12 || _sanity < SanityManager.StableSanityThreshold;
-        _statusLabel.Text = schedulePenalty >= 75 && total == 0
-            ? "EXHAUSTED"
+        _statusLabel.Text = schedulePenalty > 0
+            ? (schedulePenalty >= 75 ? $"EXHAUSTED {schedulePenalty}%" : $"SCHEDULE STRAIN {schedulePenalty}%")
             : total > 0 ? "DISTRESS" : (_sanity < 25 ? "CRITICAL" : "UNSTEADY");
         _statusLabel.Modulate = new Color(1f, 1f, 1f, 0.38f * fade);
         _noticeLabel.Modulate = new Color(1f, 1f, 1f, fade);
