@@ -1,17 +1,18 @@
 using Godot;
+using System;
 
 public partial class FlowchartDragHandle : Label
 {
-    [Export] public int BlockIndex { get; set; }
+    [Export] public string DefinitionId { get; set; } = "";
 
-    public void Configure(int index)
+    public void Configure(Guid definitionId)
     {
-        BlockIndex = index;
+        DefinitionId = definitionId.ToString("D");
         Text = "⠿";
-        TooltipText = "Drag this block and drop it on a connector arrow to reorder it";
+        TooltipText = "Drag this block and drop it on an arrow to move it";
         HorizontalAlignment = HorizontalAlignment.Center;
         VerticalAlignment = VerticalAlignment.Center;
-        CustomMinimumSize = new Vector2(28, 0);
+        CustomMinimumSize = new Vector2(30, 0);
         SizeFlagsVertical = SizeFlags.ExpandFill;
         MouseFilter = MouseFilterEnum.Stop;
         MouseDefaultCursorShape = CursorShape.Move;
@@ -21,6 +22,9 @@ public partial class FlowchartDragHandle : Label
 
     public override Variant _GetDragData(Vector2 atPosition)
     {
+        if (!Guid.TryParse(DefinitionId, out _))
+            return default;
+
         var preview = new Label
         {
             Text = "Moving flowchart block",
@@ -30,6 +34,6 @@ public partial class FlowchartDragHandle : Label
         preview.AddThemeColorOverride("font_outline_color", Colors.Black);
         preview.AddThemeConstantOverride("outline_size", 4);
         SetDragPreview(preview);
-        return $"MOVE|{BlockIndex}";
+        return $"MOVE|{DefinitionId}";
     }
 }

@@ -26,12 +26,10 @@ public partial class ChallengeScene : Control
 
     private static readonly (string Type, string DefaultText)[] BlockPalette =
     {
-        ("Start", "START"),
         ("Input", "INPUT variable"),
         ("Process", "total = a + b"),
         ("Output", "OUTPUT value"),
-        ("Decision", "condition?"),
-        ("End", "END")
+        ("Decision", "condition?")
     };
 
     public override void _Ready()
@@ -237,9 +235,10 @@ public partial class ChallengeScene : Control
     private void RenderFlowchartEditor()
     {
         ClearContent();
+
         var guide = new Label
         {
-            Text = "Drag blocks from the palette. To reorder a placed block, drag its grip and drop it on a connector arrow. Decision diamonds create TRUE and FALSE branches that rejoin below.",
+            Text = "Build a connected flowchart. Start and End are built in. Drag blocks from the palette onto the nearest arrow; decisions contain editable TRUE and FALSE branches.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
         guide.AddThemeFontSizeOverride("font_size", 18);
@@ -264,18 +263,43 @@ public partial class ChallengeScene : Control
             palette.AddChild(button);
         }
 
-        var canvasTitle = new Label { Text = "CONNECTED FLOWCHART" };
+        var canvasTitle = new Label { Text = "FLOWCHART WORKSPACE" };
         canvasTitle.AddThemeFontSizeOverride("font_size", 16);
         canvasTitle.AddThemeColorOverride("font_color", new Color("7dd3fc"));
         _content.AddChild(canvasTitle);
 
+        var viewToolbar = new HBoxContainer();
+        viewToolbar.AddThemeConstantOverride("separation", 8);
+        _content.AddChild(viewToolbar);
+
+        var panHint = new Label
+        {
+            Text = "Drag empty space to pan • Ctrl + mouse wheel to zoom",
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        panHint.AddThemeColorOverride("font_color", new Color("94a3b8"));
+        viewToolbar.AddChild(panHint);
+
+        var zoomOut = new Button { Text = "−", CustomMinimumSize = new Vector2(42, 34) };
+        zoomOut.Pressed += () => _flowCanvas?.ZoomOut();
+        viewToolbar.AddChild(zoomOut);
+
+        var zoomReset = new Button { Text = "Reset View", CustomMinimumSize = new Vector2(92, 34) };
+        zoomReset.Pressed += () => _flowCanvas?.ResetView();
+        viewToolbar.AddChild(zoomReset);
+
+        var zoomIn = new Button { Text = "+", CustomMinimumSize = new Vector2(42, 34) };
+        zoomIn.Pressed += () => _flowCanvas?.ZoomIn();
+        viewToolbar.AddChild(zoomIn);
+
         _flowCanvas = new FlowchartDropCanvas
         {
-            CustomMinimumSize = new Vector2(0, 210),
+            CustomMinimumSize = new Vector2(0, 500),
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
-            MouseFilter = Control.MouseFilterEnum.Stop
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+            MouseFilter = MouseFilterEnum.Stop
         };
-        _flowCanvas.BlockDropped += AddFlowchartBlock;
         _flowCanvas.ContentChanged += UpdateSubmitButton;
         _content.AddChild(_flowCanvas);
 
@@ -283,14 +307,9 @@ public partial class ChallengeScene : Control
         clear.Pressed += () =>
         {
             _flowCanvas.ClearBlocks();
-            _feedback.Text = "Your score will be revealed at the end of the test.";
+            _feedback.Text = "User-added blocks cleared. The built-in Start and End nodes remain.";
         };
         _content.AddChild(clear);
-    }
-
-    private void AddFlowchartBlock(string type, string defaultText)
-    {
-        _flowCanvas?.AddBlock(type, defaultText, _flowCanvas.PendingInsertionIndex);
     }
 
     private void OnSubmitPressed()
@@ -412,31 +431,8 @@ public partial class ChallengeScene : Control
     private bool HasCompleteAnswer()
     {
         if (_challenge?.IsFlowchart == true)
-        {
-            List<FlowchartBlockDefinition> blocks = _flowCanvas?.GetDefinitions();
-            if (blocks == null || blocks.Count < 4 ||
-                !string.Equals(blocks[0].Type, "Start", StringComparison.OrdinalIgnoreCase) ||
-                !string.Equals(blocks[blocks.Count - 1].Type, "End", StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            bool hasInput = false;
-            bool hasOutput = false;
-            foreach (FlowchartBlockDefinition block in blocks.Skip(1).Take(blocks.Count - 2))
-            {
-                if (string.IsNullOrWhiteSpace(block.Text))
-                    return false;
-
-                if (string.Equals(block.Type, "Input", StringComparison.OrdinalIgnoreCase))
-                    hasInput = true;
-                else if (string.Equals(block.Type, "Output", StringComparison.OrdinalIgnoreCase))
-                    hasOutput = true;
-                else if (!string.Equals(block.Type, "Process", StringComparison.OrdinalIgnoreCase) &&
-                         !string.Equals(block.Type, "Decision", StringComparison.OrdinalIgnoreCase))
-                    return false;
-            }
-
-            return hasInput && hasOutput;
-        }
+            return _flowCanvas != null &&
+                   FlowchartDefinitionTools.IsComplete(_flowCanvas.GetDefinitions());
 
         if (_codeEditor == null)
             return false;

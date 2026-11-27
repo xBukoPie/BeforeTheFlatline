@@ -3,13 +3,29 @@ using System.Collections.Generic;
 
 public sealed class FlowchartBlockDefinition
 {
+    public Guid Id { get; } = Guid.NewGuid();
     public string Type { get; }
-    public string Text { get; }
+    public string Text { get; set; }
+    public List<FlowchartBlockDefinition> TrueBranch { get; } = new();
+    public List<FlowchartBlockDefinition> FalseBranch { get; } = new();
 
     public FlowchartBlockDefinition(string type, string text)
     {
-        Type = type;
-        Text = text;
+        Type = type ?? "";
+        Text = text ?? "";
+    }
+
+    public FlowchartBlockDefinition(
+        string type,
+        string text,
+        IEnumerable<FlowchartBlockDefinition> trueBranch,
+        IEnumerable<FlowchartBlockDefinition> falseBranch)
+        : this(type, text)
+    {
+        if (trueBranch != null)
+            TrueBranch.AddRange(trueBranch);
+        if (falseBranch != null)
+            FalseBranch.AddRange(falseBranch);
     }
 }
 
@@ -320,21 +336,23 @@ public static class GeneratedChallengeFactory
         }
 
         int retries = rng.Next(3, 6);
-        return Flow(rng, 
+        return Flow(rng,
             "Build a bounded validation flowchart",
-            $"Create a flowchart that reads mark and retries while it is outside 0–100, stopping after {retries} retries. Include a decision for validity and an output for the final result.",
-            "Validation and retry logic",
+            $"Create a flowchart that reads a mark, retries while it is outside 0–100, and stops after {retries} retries. After the loop, use a decision to output VALID when the mark is in range or STOP otherwise.",
+            "Input, bounded repetition, and decision branches",
             new[]
             {
-                B("Start", "START"),
                 B("Process", "attempts = 0"),
                 B("Input", "INPUT mark"),
-                B("Decision", "mark >= 0 AND mark <= 100?"),
-                B("Output", "TRUE: OUTPUT VALID"),
+                B("Process", $"WHILE (mark < 0 OR mark > 100) AND attempts < {retries}"),
                 B("Process", "attempts = attempts + 1"),
-                B("Decision", $"attempts < {retries}?"),
-                B("Output", "FALSE: OUTPUT STOP"),
-                B("End", "END")
+                B("Input", "INPUT mark"),
+                B("Process", "END WHILE"),
+                new FlowchartBlockDefinition(
+                    "Decision",
+                    "mark >= 0 AND mark <= 100?",
+                    new[] { B("Output", "OUTPUT VALID") },
+                    new[] { B("Output", "OUTPUT STOP") })
             });
     }
 

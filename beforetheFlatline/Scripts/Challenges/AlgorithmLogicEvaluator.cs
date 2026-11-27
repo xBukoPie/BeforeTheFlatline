@@ -239,99 +239,80 @@ public static class AlgorithmLogicEvaluator
 
     private static string FlowchartToPseudocode(IReadOnlyList<FlowchartBlockDefinition> blocks)
     {
-        if (blocks == null || blocks.Count < 2 ||
-            !blocks[0].Type.Equals("Start", StringComparison.OrdinalIgnoreCase) ||
-            !blocks[blocks.Count - 1].Type.Equals("End", StringComparison.OrdinalIgnoreCase))
+        if (blocks == null)
+            return "";
+
+        List<FlowchartBlockDefinition> normalized = FlowchartDefinitionTools.NormalizeLegacy(blocks);
+        if (!FlowchartDefinitionTools.IsComplete(normalized))
             return "";
 
         var lines = new List<string> { "START" };
-        int openDecision = 0;
-        bool inElse = false;
+        if (!AppendFlowchartStatements(normalized, lines, 0))
+            return "";
 
-        for (int i = 1; i < blocks.Count - 1; i++)
+        lines.Add("END");
+        return string.Join("\n", lines);
+    }
+
+    private static bool AppendFlowchartStatements(
+        IReadOnlyList<FlowchartBlockDefinition> blocks,
+        List<string> lines,
+        int depth)
+    {
+        if (blocks == null || depth > 8)
+            return false;
+
+        foreach (FlowchartBlockDefinition block in blocks)
         {
-            string type = blocks[i].Type ?? "";
-            string text = (blocks[i].Text ?? "").Trim();
-            if (type.Equals("Input", StringComparison.OrdinalIgnoreCase))
+            if (block == null || string.IsNullOrWhiteSpace(block.Text))
+                return false;
+
+            string text = block.Text.Trim();
+
+            if (block.Type.Equals("Input", StringComparison.OrdinalIgnoreCase))
             {
                 text = Regex.Replace(text, @"^(INPUT|READ|GET|ACCEPT)\s+", "", RegexOptions.IgnoreCase);
-                foreach (string variable in text.Split(',').Select(v => v.Trim()).Where(v => v.Length > 0))
-                    lines.Add("INPUT " + variable);
+                string[] variables = text.Split(',');
+                foreach (string variable in variables)
+                {
+                    string name = variable.Trim();
+                    if (name.Length == 0)
+                        return false;
+                    lines.Add("INPUT " + name);
+                }
             }
-            else if (type.Equals("Process", StringComparison.OrdinalIgnoreCase))
+            else if (block.Type.Equals("Process", StringComparison.OrdinalIgnoreCase))
             {
                 lines.Add(text);
             }
-            else if (type.Equals("Output", StringComparison.OrdinalIgnoreCase))
+            else if (block.Type.Equals("Output", StringComparison.OrdinalIgnoreCase))
             {
-                if (text.StartsWith("TRUE:", StringComparison.OrdinalIgnoreCase))
-                    text = text.Substring(5).Trim();
-                else if (text.StartsWith("FALSE:", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (openDecision > 0 && !inElse)
-                    {
-                        lines.Add("ELSE");
-                        inElse = true;
-                    }
-                    text = text.Substring(6).Trim();
-                }
-                if (text.Length > 0 && !Regex.IsMatch(text, @"^(OUTPUT|PRINT|DISPLAY|WRITE)\b", RegexOptions.IgnoreCase))
-                    text = "OUTPUT " + text;
-                if (text.Length > 0) lines.Add(text);
-                if (inElse && openDecision > 0)
-                {
-                    lines.Add("END IF");
-                    openDecision--;
-                    inElse = false;
-                }
+                lines.Add(NormalizeFlowOutput(text));
             }
-            else if (type.Equals("Decision", StringComparison.OrdinalIgnoreCase))
+            else if (block.Type.Equals("Decision", StringComparison.OrdinalIgnoreCase))
             {
-                string condition = text.Trim().TrimEnd('?');
+                if (block.TrueBranch.Count == 0 || block.FalseBranch.Count == 0)
+                    return false;
 
-                if (i + 2 < blocks.Count - 1 &&
-                    blocks[i + 1].Type.Equals("Output", StringComparison.OrdinalIgnoreCase) &&
-                    blocks[i + 2].Type.Equals("Output", StringComparison.OrdinalIgnoreCase))
-                {
-                    string first = (blocks[i + 1].Text ?? "").Trim();
-                    string second = (blocks[i + 2].Text ?? "").Trim();
-                    bool firstTrue = first.StartsWith("TRUE:", StringComparison.OrdinalIgnoreCase);
-                    bool firstFalse = first.StartsWith("FALSE:", StringComparison.OrdinalIgnoreCase);
-                    bool secondTrue = second.StartsWith("TRUE:", StringComparison.OrdinalIgnoreCase);
-                    bool secondFalse = second.StartsWith("FALSE:", StringComparison.OrdinalIgnoreCase);
-
-                    if ((firstTrue && secondFalse) || (firstFalse && secondTrue))
-                    {
-                        string trueOutput = NormalizeFlowOutput(firstTrue ? first : second);
-                        string falseOutput = NormalizeFlowOutput(firstFalse ? first : second);
-                        lines.Add("IF " + condition + " THEN");
-                        lines.Add(trueOutput);
-                        lines.Add("ELSE");
-                        lines.Add(falseOutput);
-                        lines.Add("END IF");
-                        i += 2;
-                        continue;
-                    }
-                }
+                string condition = text.TrimEnd('?').Trim();
+                if (condition.Length == 0)
+                    return false;
 
                 lines.Add("IF " + condition + " THEN");
-                openDecision++;
-                inElse = false;
+                if (!AppendFlowchartStatements(block.TrueBranch, lines, depth + 1))
+                    return false;
+                lines.Add("ELSE");
+                if (!AppendFlowchartStatements(block.FalseBranch, lines, depth + 1))
+                    return false;
+                lines.Add("END IF");
             }
             else
             {
-                return "";
+                return false;
             }
         }
 
-        while (openDecision-- > 0)
-        {
-            if (!inElse) lines.Add("ELSE");
-            lines.Add("END IF");
-            inElse = false;
-        }
-        lines.Add("END");
-        return string.Join("\n", lines);
+        return true;
     }
 
     private static string NormalizeFlowOutput(string text)
