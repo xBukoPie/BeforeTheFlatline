@@ -68,23 +68,38 @@ public partial class AssetCredits : Control
         content.AddThemeConstantOverride("separation", 8);
         scroll.AddChild(content);
 
-        AddHeading(content, "MUSIC");
-        AddParagraph(content, "Music tracks used by BeforeTheFlatline were sourced from Pixabay. The current project inventory includes:");
+        AddHeading(content, "MUSIC — PIXABAY");
+        AddParagraph(content, "The game's music tracks are sourced from Pixabay. The repository inventory includes:");
         AddFileList(content, new[]
         {
             "Menu/Menu.mp3", "Menu/Menu2.mp3", "Game/dayTime.mp3", "Game/nightTime.mp3",
-            "Ending/gameOver.mp3", "Ending/gameOverFlatline.mp3", "Ending/goodEnding.mp3",
-            "Ending/goodEnding2.wav", "Ending/goodEndingHeartbeat.mp3", "Ending/sadEnding.mp3"
+            "Ending/gameOver.mp3", "Ending/goodEnding.mp3", "Ending/goodEnding2.wav", "Ending/sadEnding.mp3"
         });
 
-        AddHeading(content, "SOUND EFFECTS");
-        AddParagraph(content, "The project's sound-effect inventory is also credited to Pixabay:");
+        AddHeading(content, "SOUND EFFECTS & ENDING CUES — PIXABAY");
         AddFileList(content, new[]
         {
+            "Ending/gameOverFlatline.mp3", "Ending/goodEndingHeartbeat.mp3",
             "InterfaceInteraction/uiClick.wav", "InterfaceInteraction/uiDrag.mp3",
             "ObjectInteraction/doorKey.wav", "ObjectInteraction/doorUnlock.mp3",
             "ObjectInteraction/objectObtain.wav", "Tasks/passedTask.mp3", "Tasks/failedTask.mp3",
             "SoundFX/fallThud.mp3"
+        });
+
+        AddHeading(content, "ART, ENVIRONMENTS & STORY IMAGES");
+        AddFileList(content, new[]
+        {
+            "Characters: player sprite, Mich, Jepoy, Cess, Mysterious figure, Professor Vox portraits",
+            "Home and school environment scenes and map textures",
+            "Memory images: cutsceneKitcken.jpg, cutsceneLaundry.jpg, cutsceneBathroomSink.jpg, cutsceneToMasterBedroom.jpg, cutsceneMasterBedroom.jpg",
+            "Ending images: cutsceneGoodEnding1.jpg, cutsceneGoodEnding2.jpg, cutsceneBadEnding.jpg",
+            "Opening identity: VoxTekLogo.png; UI textures and interface artwork"
+        });
+
+        AddHeading(content, "FONT & OTHER THIRD-PARTY RESOURCES");
+        AddFileList(content, new[]
+        {
+            "Assets/TextFonts/Ithaca-LVB75.ttf — source creator and license need verification before public distribution"
         });
 
         AddParagraph(content,
