@@ -43,6 +43,8 @@ public partial class FlowchartBlockControl : VBoxContainer
         if (!string.Equals(Definition.Type, "Decision", StringComparison.OrdinalIgnoreCase))
             return;
 
+        AddChild(new FlowchartDecisionConnectorControl { Kind = "Split" });
+
         var branches = new HBoxContainer
         {
             SizeFlagsHorizontal = SizeFlags.ExpandFill
@@ -53,6 +55,8 @@ public partial class FlowchartBlockControl : VBoxContainer
         AddBranchColumn(branches, "TRUE", Definition.TrueBranch, dropHandler);
         AddBranchColumn(branches, "FALSE", Definition.FalseBranch, dropHandler);
         AddChild(branches);
+
+        AddChild(new FlowchartDecisionConnectorControl { Kind = "Merge" });
     }
 
     private void AddBranchColumn(

@@ -16,6 +16,7 @@ public partial class FlowchartDropCanvas : PanelContainer
 
     private readonly List<FlowchartBlockDefinition> _definitions = new();
     private readonly List<FlowchartDropSlotControl> _slots = new();
+    private readonly List<Control> _panBlockControls = new();
 
     private Control _viewport;
     private Control _workspace;
@@ -137,8 +138,22 @@ public partial class FlowchartDropCanvas : PanelContainer
         {
             if (mouseButton.ButtonIndex == MouseButton.Left)
             {
-                _isPanning = mouseButton.Pressed;
-                AcceptEvent();
+                if (mouseButton.Pressed)
+                {
+                    // A drag that begins on a symbol or terminal is not a canvas pan.
+                    if (IsPointerOverPlacedBlock())
+                        return;
+
+                    _isPanning = true;
+                    AcceptEvent();
+                    return;
+                }
+
+                if (_isPanning)
+                {
+                    _isPanning = false;
+                    AcceptEvent();
+                }
                 return;
             }
 
@@ -197,6 +212,7 @@ public partial class FlowchartDropCanvas : PanelContainer
         }
 
         _slots.Clear();
+        _panBlockControls.Clear();
 
         AddTerminal("START");
         AddSlot(_definitions, 0);
@@ -206,6 +222,7 @@ public partial class FlowchartDropCanvas : PanelContainer
             var block = new FlowchartBlockControl();
             block.Configure(_definitions[i], ProcessDrop);
             block.ContentChanged += () => ContentChanged?.Invoke();
+            _panBlockControls.Add(block);
             _blocks.AddChild(block);
             AddSlot(_definitions, i + 1);
         }
@@ -231,7 +248,9 @@ public partial class FlowchartDropCanvas : PanelContainer
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             MouseFilter = MouseFilterEnum.Ignore
         };
-        center.AddChild(new FlowchartTerminalControl { TerminalText = text });
+        var terminal = new FlowchartTerminalControl { TerminalText = text };
+        center.AddChild(terminal);
+        _panBlockControls.Add(terminal);
         _blocks.AddChild(center);
     }
 
@@ -357,6 +376,20 @@ public partial class FlowchartDropCanvas : PanelContainer
         string.Equals(type, "Process", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(type, "Output", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(type, "Decision", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsPointerOverPlacedBlock()
+    {
+        Vector2 pointer = GetGlobalMousePosition();
+        foreach (Control control in _panBlockControls)
+        {
+            if (GodotObject.IsInstanceValid(control) &&
+                control.IsInsideTree() &&
+                control.GetGlobalRect().HasPoint(pointer))
+                return true;
+        }
+
+        return false;
+    }
 
     private Vector2 GetViewportCenter() => _viewport.Size * 0.5f;
 
