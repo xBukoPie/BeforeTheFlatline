@@ -119,6 +119,7 @@ public partial class FlowchartBlockControl : VBoxContainer
         var column = new VBoxContainer
         {
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
             MouseFilter = MouseFilterEnum.Pass
         };
         column.AddThemeConstantOverride("separation", 0);
