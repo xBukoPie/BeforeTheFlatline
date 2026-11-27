@@ -61,18 +61,23 @@ public partial class FlowchartBlockControl : VBoxContainer
         var symbol = new FlowchartSymbolControl();
         SymbolControl = symbol;
         symbol.Configure(Definition.Type, Definition.Text, compact);
-        symbol.TextChanged += value =>
-        {
-            Definition.Text = value;
-            ContentChanged?.Invoke();
-        };
         symbolCenter.AddChild(symbol);
 
         var dragHandle = new FlowchartDragHandle();
         dragHandle.Configure(Definition.Id);
-        dragHandle.Position = Vector2.Zero;
-        dragHandle.Size = new Vector2(34, 72);
+        dragHandle.AnchorLeft = 0.5f;
+        dragHandle.AnchorRight = 0.5f;
+        dragHandle.AnchorTop = 0f;
+        dragHandle.AnchorBottom = 1f;
         blockRow.AddChild(dragHandle);
+        AlignDragHandleWithSymbol(dragHandle, symbol);
+
+        symbol.TextChanged += value =>
+        {
+            Definition.Text = value;
+            AlignDragHandleWithSymbol(dragHandle, symbol);
+            ContentChanged?.Invoke();
+        };
 
         if (!string.Equals(Definition.Type, "Decision", StringComparison.OrdinalIgnoreCase))
             return;
@@ -90,6 +95,20 @@ public partial class FlowchartBlockControl : VBoxContainer
         AddChild(branches);
 
         AddChild(new FlowchartDecisionConnectorControl { Kind = "Merge" });
+    }
+
+    private static void AlignDragHandleWithSymbol(
+        FlowchartDragHandle dragHandle,
+        FlowchartSymbolControl symbol)
+    {
+        if (dragHandle == null || symbol == null)
+            return;
+
+        float halfWidth = Mathf.Max(symbol.CustomMinimumSize.X, symbol.Size.X) * 0.5f;
+        dragHandle.OffsetLeft = -halfWidth - 34f;
+        dragHandle.OffsetRight = -halfWidth;
+        dragHandle.OffsetTop = 0f;
+        dragHandle.OffsetBottom = 0f;
     }
 
     private void AddBranchColumn(
