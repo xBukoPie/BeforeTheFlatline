@@ -118,7 +118,7 @@ jobs:
           retention-days: 30
 
       - name: Publish Windows preview release
-        if: github.event_name == 'push' && github.event.head_commit.message == 'Release: Before The Flatline Windows Preview'
+        if: "${{ github.event_name == 'push' && github.event.head_commit.message == 'Release: Before The Flatline Windows Preview' }}"
         shell: pwsh
         working-directory: beforetheFlatline
         env:
