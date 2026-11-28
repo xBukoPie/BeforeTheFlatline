@@ -252,14 +252,19 @@ public partial class RoomManager : Node2D
         SetNight(IsNight);
         ApplyTimeOfDayLighting();
 
+        string loadedRoomPath = string.IsNullOrWhiteSpace(_room.SceneFilePath)
+            ? path
+            : _room.SceneFilePath;
+
         // Resolve the assessment only after the destination home room is actually loaded.
-        if (path.StartsWith("res://Scenes/Home/Areas/", StringComparison.OrdinalIgnoreCase) &&
+        if (loadedRoomPath.StartsWith("res://Scenes/Home/Areas/", StringComparison.OrdinalIgnoreCase) &&
             global::DailyTestSession.HasPendingHomeResolution)
         {
             SchoolYardGame.DayClock.Instance?.MarkSchoolChallengeCompletedToday();
             global::DailyTestSession.ResolveAtHome();
         }
 
+        FirstDayTutorialManager.Instance?.OnRoomLoaded(loadedRoomPath, _room.RoomName);
         SaveManager.Instance?.RequestAutoSave();
     }
 

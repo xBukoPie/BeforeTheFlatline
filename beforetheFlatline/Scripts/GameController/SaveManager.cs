@@ -248,7 +248,10 @@ public partial class SaveManager : Node
             ["wrong_room_attempts_today"] = DayClock.Instance.WrongRoomAttemptsToday,
             ["daily_house_activities"] = DayClock.Instance.CreateHouseActivitySaveData(),
             ["mystery_encounter_seen"] = DayClock.Instance.FirstDayMysteryEncounterSeen,
+            ["mystery_encounter_completed_day"] = DayClock.Instance.FirstDayMysteryEncounterDay,
             ["first_day_special_greeting_pending"] = DayClock.Instance.FirstDayMysteryGreetingPending,
+            ["first_day_tutorial_step"] = DayClock.Instance.FirstDayTutorialStep,
+            ["first_day_tutorial_completed"] = DayClock.Instance.FirstDayTutorialCompleted,
             ["sanity_state"] = SanityManager.Instance.CreateSaveData(),
             ["room_keys"] = new Godot.Collections.Dictionary
             {
@@ -333,11 +336,54 @@ public partial class SaveManager : Node
             SchoolFriendInteractionHistory.RestoreFromSaveData(friendInteractionState);
             SchoolFriendSpawnHistory.RestoreFromSaveData(friendSpawnState, day, schoolCompleted);
             StoryProgression.Instance?.RestoreFromSaveData(storyState);
+            bool hasTutorialFlag = data.ContainsKey("first_day_tutorial_completed");
+            bool tutorialCompleted = hasTutorialFlag
+                ? ReadBool(data, "first_day_tutorial_completed", false)
+                : day > 1;
+
+            bool mysterySeen = ReadBool(data, "mystery_encounter_seen", false);
+            int mysteryEncounterDay = ReadInt(data, "mystery_encounter_completed_day", 0);
+            bool specialGreetingPending = ReadBool(data, "first_day_special_greeting_pending", false);
+
+            // Builds that introduced the Day 1 tutorial also marked this encounter complete
+            // without ever showing it. Re-open it once on Day 2 for those existing saves.
+            if (hasTutorialFlag && tutorialCompleted &&
+                !data.ContainsKey("mystery_encounter_completed_day"))
+            {
+                mysterySeen = false;
+                mysteryEncounterDay = 0;
+                specialGreetingPending = false;
+            }
+
             DayClock.Instance?.RestoreFirstDayMysteryState(
-                ReadBool(data, "mystery_encounter_seen", false),
-                ReadBool(data, "first_day_special_greeting_pending", false));
+                mysterySeen,
+                specialGreetingPending,
+                mysteryEncounterDay);
+            int tutorialStep = data.ContainsKey("first_day_tutorial_step")
+                ? ReadInt(data, "first_day_tutorial_step", tutorialCompleted ? 7 : 0)
+                : tutorialCompleted ? 7 : 0;
+            DayClock.Instance?.RestoreFirstDayTutorialState(tutorialStep, tutorialCompleted);
+
+            DailyTestSession.RestoreHistoryFromSaveData(
+                ReadDictionary(data, "assessment_history"));
+
             int keysToRestore = Mathf.Max(0, ReadInt(keyState, "keys_earned", 0));
             string pendingKeyRoom = ReadString(keyState, "pending_key_room", string.Empty);
+            bool hasAssessmentHistoryForCurrentDay = false;
+            foreach (AssessmentHistoryEntry historyEntry in DailyTestSession.AssessmentHistory)
+            {
+                if (historyEntry.Day == day)
+                {
+                    hasAssessmentHistoryForCurrentDay = true;
+                    break;
+                }
+            }
+
+            // Older builds could queue the Kitchen key at the end of the bonus tutorial.
+            // It is never valid on Day 1 or before a real Day 2 assessment has resolved.
+            if (day <= 1 || (day == 2 && !hasAssessmentHistoryForCurrentDay))
+                pendingKeyRoom = string.Empty;
+
             bool hasExplicitUnlockedRooms = keyState.ContainsKey("unlocked_rooms") &&
                 keyState["unlocked_rooms"].VariantType == Variant.Type.Array;
             string[] unlockedRoomIds = ReadStringArray(keyState, "unlocked_rooms");
@@ -366,14 +412,12 @@ public partial class SaveManager : Node
                 keysToRestore,
                 pendingKeyRoom,
                 hasExplicitUnlockedRooms ? unlockedRoomIds : null,
-                ReadBool(keyState, "pending_key_from_assessment", false));
+                pendingKeyRoom.Length > 0 && ReadBool(keyState, "pending_key_from_assessment", false));
             RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Kitchen", ReadInt(keyState, "kitchen_unlocked_day", -1));
             RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Laundry", ReadInt(keyState, "laundry_unlocked_day", -1));
             RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("Bathroom", ReadInt(keyState, "bathroom_unlocked_day", -1));
             RoomKeyProgression.Instance?.RestoreRoomUnlockedDay("MasterBedroom", ReadInt(keyState, "master_bedroom_unlocked_day", -1));
             ChallengeProgress.RestoreFromSaveData(challengeState);
-            DailyTestSession.RestoreHistoryFromSaveData(
-                ReadDictionary(data, "assessment_history"));
 
             RoomManager.RequestStartRoomOnNextLoad(roomPath, "startSpawn");
             if (savedRoomExists)

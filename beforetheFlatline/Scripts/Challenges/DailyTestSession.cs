@@ -26,11 +26,12 @@ public static class DailyTestSession
     private static int _bestScore;
     private static int _bestPointsReceived;
 
-    public const int QuestionCount = 4;
-    public const int QuestionsNeededToPass = 3;
     public const int PointsPerCorrectAnswer = 10;
-    public const int MinimumPassingScore = 30;
-    public const int MaximumScore = QuestionCount * PointsPerCorrectAnswer;
+    public static bool IsTutorialBonus => _day == 1;
+    public static int QuestionCount => IsTutorialBonus ? 2 : 4;
+    public static int QuestionsNeededToPass => IsTutorialBonus ? 1 : 3;
+    public static int MinimumPassingScore => IsTutorialBonus ? 0 : 30;
+    public static int MaximumScore => QuestionCount * PointsPerCorrectAnswer;
 
     public static int Day => _day;
     public static bool IsActive => _active;
@@ -53,10 +54,11 @@ public static class DailyTestSession
     public static int AnsweredCount => Attempts.Count(result => !result.GaveUp);
     public static int Score => CorrectCount * PointsPerCorrectAnswer;
     public static bool CurrentAttemptPassed =>
-        Attempts.Count >= QuestionCount && Score >= MinimumPassingScore;
+        Attempts.Count >= QuestionCount && (IsTutorialBonus || Score >= MinimumPassingScore);
 
-    // A passing attempt is secured for the day and cannot be downgraded by a later retry.
-    public static bool Passed => _passedForDay || CurrentAttemptPassed;
+    // Day 1 is a bonus tutorial: it cannot fail or apply an assessment penalty.
+    // From Day 2 onward, a passing attempt is secured for the day and cannot be downgraded by a retry.
+    public static bool Passed => IsTutorialBonus || _passedForDay || CurrentAttemptPassed;
 
     public static void Begin(int day)
     {
@@ -78,9 +80,16 @@ public static class DailyTestSession
     private static void ShuffleQuestionOrder()
     {
         QuestionOrder.Clear();
+        if (IsTutorialBonus)
+        {
+            QuestionOrder.Add("flowchart");
+            QuestionOrder.Add("sequence");
+            return;
+        }
+
         QuestionOrder.AddRange(StandardQuestionIds);
 
-        // Fisher-Yates shuffle: every assessment contains each question type exactly once.
+        // Fisher-Yates shuffle: every regular assessment contains each question type exactly once.
         var rng = new Random();
         for (int i = QuestionOrder.Count - 1; i > 0; i--)
         {
@@ -152,6 +161,27 @@ public static class DailyTestSession
     {
         if (points > 0)
             _pointsReceived += points;
+    }
+
+    // Developer-only shortcut: treat every question in the active assessment as correct,
+    // even when earlier attempts were wrong or skipped.
+    public static string[] ForcePassCurrentAssessment(int difficulty)
+    {
+        if (!_active || _finalized || QuestionOrder.Count == 0)
+            return Array.Empty<string>();
+
+        Attempts.Clear();
+        Notifications.Clear();
+        _pointsReceived = 0;
+
+        int appliedDifficulty = Mathf.Clamp(difficulty, 1, 5);
+        foreach (string questionId in QuestionOrder)
+            Attempts.Add(new TaskAttemptResult(questionId, true, false, appliedDifficulty));
+
+        _passedForDay = true;
+        _bestScore = Math.Max(_bestScore, Score);
+        _bestPointsReceived = Math.Max(_bestPointsReceived, _pointsReceived);
+        return QuestionOrder.ToArray();
     }
 
     public static void RecordHistory(
@@ -309,6 +339,16 @@ public static class DailyTestSession
         string debuffType = string.Empty;
         int debuffAmount = 0;
 
+        if (IsTutorialBonus)
+        {
+            int tutorialSanity = SanityManager.Instance?.CurrentSanity ?? before;
+            RecordHistory(tutorialSanity, string.Empty, 0,
+                "Day 1 bonus tutorial; no sanity change or assessment failure penalty");
+            SaveManager.Instance?.RequestAutoSave();
+            GD.Print("[DailyTestSession] Day 1 tutorial resolved as a bonus; no assessment penalty applied.");
+            return true;
+        }
+
         if (_passedForDay)
         {
             SanityManager.Instance?.Recover(5);
@@ -336,13 +376,6 @@ public static class DailyTestSession
             : sanityChange < 0
                 ? $"Sanity {sanityChange}; {debuffType} assessment penalty ({debuffAmount})"
                 : "No additional sanity change";
-
-        if (RoomKeyProgression.Instance?.HasPendingKey == true)
-        {
-            string keyName = RoomKeyProgression.Instance.PendingKeyRoomName;
-            string keyLocation = RoomKeyProgression.Instance.GetPendingKeyLocationName();
-            rewardText += $"; Key available: {keyName} (pickup in {keyLocation})";
-        }
 
         RecordHistory(sanityAfter, debuffType, debuffAmount, rewardText);
         SaveManager.Instance?.RequestAutoSave();

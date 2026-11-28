@@ -12,6 +12,7 @@ public partial class RoomKeyProgression : Node
     public static RoomKeyProgression Instance { get; private set; }
 
     public const int PointsPerKeyQuota = 100;
+    public const int FirstKeyBonusQuota = 50;
     public int HiddenPoints { get; private set; }
     public int TotalKeysEarned => _unlockedRoomIds.Count;
     public string PendingKeyRoomName { get; private set; } = string.Empty;
@@ -19,7 +20,7 @@ public partial class RoomKeyProgression : Node
     public bool HasPendingKey => !string.IsNullOrWhiteSpace(PendingKeyRoomName);
     public int PointsUntilNextKey => string.IsNullOrEmpty(NextRoomKeyName)
         ? 0
-        : Math.Max(0, (TotalKeysEarned + 1) * PointsPerKeyQuota - HiddenPoints);
+        : Math.Max(0, GetRequiredPointsForKey(FindNextLockedRoomIndex()) - HiddenPoints);
 
     public string NextRoomKeyName
     {
@@ -166,6 +167,10 @@ public partial class RoomKeyProgression : Node
 
     public string QueueAssessmentKey()
     {
+        if ((DayClock.Instance != null && DayClock.Instance.DayNumber <= 1) ||
+            DayClock.Instance?.IsFirstDayTutorialActive == true)
+            return string.Empty;
+
         if (HasPendingKey)
         {
             int pendingIndex = FindRoomIndex(PendingKeyRoomName);
@@ -178,7 +183,7 @@ public partial class RoomKeyProgression : Node
         if (nextIndex < 0)
             return string.Empty;
 
-        int requiredPoints = (nextIndex + 1) * PointsPerKeyQuota;
+        int requiredPoints = GetRequiredPointsForKey(nextIndex);
         if (HiddenPoints < requiredPoints)
             return string.Empty;
 
@@ -225,6 +230,15 @@ public partial class RoomKeyProgression : Node
         "MasterBedroom" => "FromLaundry",
         _ => "startSpawn"
     };
+
+    public void DiscardTutorialPendingKey()
+    {
+        if (DayClock.Instance?.DayNumber != 1 || !PendingKeyFromAssessment)
+            return;
+
+        PendingKeyRoomName = string.Empty;
+        PendingKeyFromAssessment = false;
+    }
 
     public string CollectPendingKey()
     {
@@ -281,6 +295,9 @@ public partial class RoomKeyProgression : Node
         PendingKeyRoomName = string.Empty;
         PendingKeyFromAssessment = false;
     }
+
+    private static int GetRequiredPointsForKey(int roomIndex) =>
+        roomIndex < 0 ? 0 : FirstKeyBonusQuota + roomIndex * PointsPerKeyQuota;
 
     private int FindNextLockedRoomIndex() =>
         Array.FindIndex(LockedRooms, room => !_unlockedRoomIds.Contains(room.Id));

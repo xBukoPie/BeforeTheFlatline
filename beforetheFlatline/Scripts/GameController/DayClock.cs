@@ -12,7 +12,7 @@ public partial class DayClock : Node
 
     public static DayClock Instance { get; private set; }
 
-    [Export] public float DayLengthSeconds { get; set; } = 600f;
+    [Export] public float DayLengthSeconds { get; set; } = 900f;
     [Export(PropertyHint.Range, "0,24,0.25")] public float StartHour { get; set; } = 8f;
     [Export] public bool Running { get; set; } = true;
     [Export(PropertyHint.Range, "0,24,0.25")] public float SchoolOpenHour { get; set; } = 6.5f;
@@ -26,6 +26,9 @@ public partial class DayClock : Node
     public bool SchoolChallengeCompletedToday { get; private set; }
     public bool SchoolDeadlinePenaltyAppliedToday { get; private set; }
     public int WrongRoomAttemptsToday { get; private set; }
+    public int FirstDayTutorialStep { get; private set; }
+    public bool FirstDayTutorialCompleted { get; private set; }
+    public bool IsFirstDayTutorialActive => DayNumber == 1 && !FirstDayTutorialCompleted;
 
     private readonly RandomNumberGenerator _activityRng = new();
     private bool _tvAvailableToday = true;
@@ -38,15 +41,17 @@ public partial class DayClock : Node
     private bool _skipSchoolGreetingOnNextLoad;
     private bool _initialized;
     public bool FirstDayMysteryEncounterSeen { get; private set; }
+    public int FirstDayMysteryEncounterDay { get; private set; }
     private bool _firstDaySpecialGreetingPending;
     public bool FirstDayMysteryGreetingPending => _firstDaySpecialGreetingPending;
 
-    public bool ShouldShowFirstDayMysteryEncounter => !FirstDayMysteryEncounterSeen;
+    public bool ShouldShowFirstDayMysteryEncounter => DayNumber >= 2 && !FirstDayMysteryEncounterSeen;
 
     // Set after the mysterious person exits; the next classroom greeting gets unique choices.
     public void MarkFirstDayMysteryEncounterCompleted()
     {
         FirstDayMysteryEncounterSeen = true;
+        FirstDayMysteryEncounterDay = DayNumber;
         _firstDaySpecialGreetingPending = false;
     }
 
@@ -57,9 +62,15 @@ public partial class DayClock : Node
         return pending;
     }
 
-    public void RestoreFirstDayMysteryState(bool encounterSeen, bool specialGreetingPending)
+    public void RestoreFirstDayMysteryState(
+        bool encounterSeen,
+        bool specialGreetingPending,
+        int encounterDay = 0)
     {
         FirstDayMysteryEncounterSeen = encounterSeen;
+        FirstDayMysteryEncounterDay = encounterSeen
+            ? (encounterDay > 0 ? encounterDay : DayNumber)
+            : 0;
         // Old saves may contain both flags. A completed mystery encounter always wins.
         _firstDaySpecialGreetingPending = specialGreetingPending && !encounterSeen;
     }
@@ -295,17 +306,13 @@ public partial class DayClock : Node
 
     private void CheckSchoolDeadlinePenalty()
     {
-        if (SchoolDeadlinePenaltyAppliedToday || SchoolChallengeStartedToday ||
-            Hour < SchoolEntryDeadlineHour)
+        if (SchoolDeadlinePenaltyAppliedToday || SchoolChallengeCompletedToday ||
+            Hour < SchoolEntryDeadlineHour || DayNumber <= 1)
             return;
 
         SchoolDeadlinePenaltyAppliedToday = true;
-        SanityManager.Instance?.ApplyDebuff(
-            "missed_school", SanityManager.DebuffType.Pressure, 8);
-        SanityManager.Instance?.ApplyDebuff(
-            "missed_school", SanityManager.DebuffType.Anxiety, 8);
-
-        GD.Print($"[DayClock] School attendance deadline missed on day {DayNumber}; Pressure and Anxiety applied.");
+        SanityManager.Instance?.AddSchedulePenalty("missed_school", 15);
+        GD.Print($"[DayClock] School attendance missed on day {DayNumber}; schedule penalty increased.");
         SaveManager.Instance?.RequestAutoSave();
     }
 
@@ -321,7 +328,10 @@ public partial class DayClock : Node
         RollDailyHouseActivities();
         _skipSchoolGreetingOnNextLoad = false;
         FirstDayMysteryEncounterSeen = false;
+        FirstDayMysteryEncounterDay = 0;
         _firstDaySpecialGreetingPending = false;
+        FirstDayTutorialStep = 0;
+        FirstDayTutorialCompleted = false;
         SchoolFriendInteractionHistory.Reset();
         SchoolFriendSpawnHistory.Reset();
         EmitSignal(SignalName.DayChanged, DayNumber);
@@ -336,6 +346,40 @@ public partial class DayClock : Node
     public void MarkSchoolChallengeCompletedToday()
     {
         SchoolChallengeCompletedToday = true;
+    }
+
+    public void SetFirstDayTutorialStep(int step)
+    {
+        FirstDayTutorialStep = Mathf.Clamp(step, 0, 7);
+        SaveManager.Instance?.RequestAutoSave();
+    }
+
+    public void RestoreFirstDayTutorialState(int step, bool completed)
+    {
+        FirstDayTutorialStep = Mathf.Clamp(step, 0, 7);
+        FirstDayTutorialCompleted = completed || DayNumber > 1;
+    }
+
+    public void FinishFirstDayTutorialAndStartDayTwo()
+    {
+        RoomKeyProgression.Instance?.DiscardTutorialPendingKey();
+        FirstDayTutorialCompleted = true;
+        FirstDayTutorialStep = 7;
+        // The mysterious person's first interaction is deliberately deferred until the player
+        // enters the classroom on Day 2. Do not consume the encounter during this tutorial reset.
+        _firstDaySpecialGreetingPending = false;
+
+        DayNumber = 2;
+        Hour = Mathf.PosMod(StartHour, 24f);
+        SchoolChallengeStartedToday = false;
+        SchoolChallengeCompletedToday = false;
+        SchoolDeadlinePenaltyAppliedToday = false;
+        WrongRoomAttemptsToday = 0;
+        RollDailyHouseActivities();
+        Running = true;
+
+        EmitSignal(SignalName.DayChanged, DayNumber);
+        EmitSignal(SignalName.TimeChanged, Hour);
     }
 
     public void SkipSchoolGreetingOnNextLoad()

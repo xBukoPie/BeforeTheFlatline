@@ -9,6 +9,7 @@ public partial class TestResults : Control
     private Label _summary;
     private Label _details;
     private Button _continueButton;
+    private Button _retryButton;
 
     public override void _Ready()
     {
@@ -18,8 +19,9 @@ public partial class TestResults : Control
         BuildUi();
 
         bool alreadyFinalized = DailyTestSession.IsFinalized;
+        bool tutorialBonus = DailyTestSession.IsTutorialBonus;
         _passed = DailyTestSession.FinalizeTest();
-        if (!alreadyFinalized)
+        if (!alreadyFinalized && !tutorialBonus)
         {
             if (_passed)
                 AudioManager.Instance?.PlayAssessmentPassed();
@@ -27,41 +29,31 @@ public partial class TestResults : Control
                 AudioManager.Instance?.PlayAssessmentFailed();
         }
 
-        // Keep the existing room-key progression, but record only newly appeared keys.
-        string newKeyReward = string.Empty;
         if (!alreadyFinalized)
-        {
-            bool keyWasAlreadyWaiting = RoomKeyProgression.Instance?.HasPendingKey == true;
-            string roomName = RoomKeyProgression.Instance?.QueueAssessmentKey() ?? string.Empty;
-            if (!keyWasAlreadyWaiting && !string.IsNullOrWhiteSpace(roomName))
-            {
-                string location = RoomKeyProgression.Instance?.GetPendingKeyLocationName() ?? "the house";
-                newKeyReward = $"Key available: {roomName} (pickup in {location})";
-            }
-        }
+            RoomKeyProgression.Instance?.QueueAssessmentKey();
 
         int score = DailyTestSession.BestScore;
         int pointsReceived = DailyTestSession.BestPointsReceived;
         int currentSanity = SanityManager.Instance?.CurrentSanity ?? SanityManager.MaxSanity;
 
-        _title.Text = _passed ? "ASSESSMENT PASSED" : "ASSESSMENT FAILED";
-        _title.AddThemeColorOverride("font_color", _passed
-            ? new Color("86efac")
-            : new Color("fca5a5"));
+        _title.Text = tutorialBonus ? "TUTORIAL COMPLETE" : (_passed ? "ASSESSMENT PASSED" : "ASSESSMENT FAILED");
+        _title.AddThemeColorOverride("font_color", tutorialBonus
+            ? new Color("d7b98b")
+            : (_passed ? new Color("86efac") : new Color("fca5a5")));
 
-        _summary.Text =
-            $"BEST SCORE: {score} / {DailyTestSession.MaximumScore}\n" +
-            $"POINTS RECEIVED: {pointsReceived}\n" +
-            $"PASSING SCORE: {DailyTestSession.MinimumPassingScore}";
+        _summary.Text = tutorialBonus
+            ? $"BEST SCORE: {score} / {DailyTestSession.MaximumScore}\nPOINTS RECEIVED: {pointsReceived}"
+            : $"BEST SCORE: {score} / {DailyTestSession.MaximumScore}\nPOINTS RECEIVED: {pointsReceived}\nPASSING SCORE: {DailyTestSession.MinimumPassingScore}";
 
-        string returnNote = _passed
-            ? "A passing result is secured. Retrying cannot revoke it. Sanity recovery will be applied after you return home."
-            : "Any failure penalty will be applied once, after you return home. Retrying before then will not repeatedly reduce sanity.";
+        string returnNote = tutorialBonus
+            ? "Continue to return home and begin Day 2."
+            : (_passed
+                ? "A passing result is secured. Retrying cannot revoke it. Sanity recovery will be applied after you return home."
+                : "Any failure penalty will be applied once, after you return home. Retrying before then will not repeatedly reduce sanity.");
 
-        if (!string.IsNullOrWhiteSpace(newKeyReward))
-            returnNote += "\n" + newKeyReward;
-
-        _details.Text = BuildSanitySummary(currentSanity) + "\n\n" + returnNote;
+        _details.Text = tutorialBonus
+            ? BuildSanitySummary(currentSanity)
+            : BuildSanitySummary(currentSanity) + "\n\n" + returnNote;
         _details.AddThemeColorOverride("font_color", new Color("e2e8f0"));
     }
 
@@ -168,13 +160,13 @@ public partial class TestResults : Control
         buttons.AddThemeConstantOverride("separation", 10);
         stack.AddChild(buttons);
 
-        var retry = new Button
+        _retryButton = new Button
         {
             Text = "Retry Assessment",
             CustomMinimumSize = new Vector2(0, 48),
             SizeFlagsHorizontal = SizeFlags.ExpandFill
         };
-        retry.Pressed += () =>
+        _retryButton.Pressed += () =>
         {
             if (!DailyTestSession.RetryCurrentAssessment())
                 return;
@@ -184,7 +176,7 @@ public partial class TestResults : Control
             else
                 GetTree().ChangeSceneToFile("res://Scenes/Challenges/SequenceChallenge.tscn");
         };
-        buttons.AddChild(retry);
+        buttons.AddChild(_retryButton);
 
         _continueButton = new Button
         {
@@ -194,6 +186,9 @@ public partial class TestResults : Control
         };
         _continueButton.Pressed += () =>
         {
+            if (FirstDayTutorialManager.Instance?.CompleteResultsAndReturnHome() == true)
+                return;
+
             if (SceneTransition.Instance != null)
                 SceneTransition.Instance.ChangeSceneToFile("res://Scenes/School/PostChallengeConversation.tscn");
             else

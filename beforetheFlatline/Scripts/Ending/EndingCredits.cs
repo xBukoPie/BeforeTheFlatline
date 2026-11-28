@@ -1,9 +1,13 @@
 using Godot;
 using SchoolYardGame;
+using System;
 
 public partial class EndingCredits : Control
 {
     private const string MainMenuPath = "res://Scenes/Menu/Main.tscn";
+
+    public bool OpenedFromSettings { get; set; }
+    public event Action ReturnToSettingsRequested;
 
     [Export]
     public string[] TeamMemberCredits { get; set; } = new[]
@@ -19,13 +23,10 @@ public partial class EndingCredits : Control
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
+        SettingsManager.Instance?.MarkEndingCreditsSeen();
         BuildUi();
-        AudioManager.Instance?.PlayGoodEnding2();
-    }
-
-    public override void _ExitTree()
-    {
-        AudioManager.Instance?.FadeOutGoodEnding2(0.75);
+        if (!OpenedFromSettings)
+            AudioManager.Instance?.PlayGoodEnding2();
     }
 
     private void BuildUi()
@@ -184,7 +185,7 @@ public partial class EndingCredits : Control
 
         var returnButton = new Button
         {
-            Text = "Return to Main Menu",
+            Text = OpenedFromSettings ? "Back to Settings" : "Return to Main Menu",
             CustomMinimumSize = new Vector2(250, 48)
         };
         returnButton.Pressed += ReturnToMainMenu;
@@ -194,14 +195,47 @@ public partial class EndingCredits : Control
     private void OpenAssetCredits()
     {
         const string path = "res://Scenes/Ending/AssetCredits.tscn";
+        if (OpenedFromSettings)
+        {
+            PackedScene assetScene = GD.Load<PackedScene>(path);
+            if (assetScene == null)
+            {
+                GD.PushError("EndingCredits: asset credits scene could not be loaded.");
+                return;
+            }
+
+            var assets = assetScene.Instantiate<AssetCredits>();
+            assets.OpenedFromSettings = true;
+            assets.ParentTeamCredits = this;
+            assets.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+            // Keep the parent credits control visible. Hiding a Control also hides
+            // its children, which would make this nested asset-credits screen invisible
+            // and leave the Settings menu's overlay reference stuck open.
+            AddChild(assets);
+            return;
+        }
+
         if (SceneTransition.Instance != null)
             SceneTransition.Instance.ChangeSceneToFile(path, 0.8f);
         else
             GetTree().ChangeSceneToFile(path);
     }
 
+    public void ReturnToSettings()
+    {
+        if (OpenedFromSettings)
+            ReturnToSettingsRequested?.Invoke();
+    }
+
     private void ReturnToMainMenu()
     {
+        if (OpenedFromSettings)
+        {
+            ReturnToSettings();
+            return;
+        }
+
+        AudioManager.Instance?.FadeOutGoodEnding2(0.75);
         if (SceneTransition.Instance != null)
             SceneTransition.Instance.ChangeSceneToFile(MainMenuPath, 1.1f);
         else

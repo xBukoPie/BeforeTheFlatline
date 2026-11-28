@@ -10,12 +10,14 @@ public partial class ChallengeScene : Control
 
     private VBoxContainer _main;
     private VBoxContainer _content;
+    private ScrollContainer _contentScroll;
     private Label _feedback;
     private Label _progress;
     private TextEdit _codeEditor;
     private FlowchartDropCanvas _flowCanvas;
     private Button _submitButton;
     private Button _clearButton;
+    private readonly Dictionary<string, Button> _paletteButtons = new(StringComparer.OrdinalIgnoreCase);
 
     private GeneratedChallenge _challenge;
     private string _activeChallengeId = "";
@@ -26,12 +28,10 @@ public partial class ChallengeScene : Control
 
     private static readonly (string Type, string DefaultText)[] BlockPalette =
     {
-        ("Start", "START"),
-        ("Input", "INPUT variable"),
+        ("Input", "variable"),
         ("Process", "total = a + b"),
-        ("Output", "OUTPUT value"),
-        ("Decision", "condition?"),
-        ("End", "END")
+        ("Output", "result"),
+        ("Decision", "condition")
     };
 
     public override void _Ready()
@@ -111,21 +111,25 @@ public partial class ChallengeScene : Control
         prompt.AddThemeColorOverride("font_color", new Color("cbd5e1"));
         _main.AddChild(prompt);
 
-        var scroll = new ScrollContainer
+        _contentScroll = new ScrollContainer
         {
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             SizeFlagsVertical = SizeFlags.ExpandFill,
             HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled
         };
-        _main.AddChild(scroll);
+        _main.AddChild(_contentScroll);
 
-        _content = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        _content = new VBoxContainer
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ExpandFill
+        };
         _content.AddThemeConstantOverride("separation", 8);
-        scroll.AddChild(_content);
+        _contentScroll.AddChild(_content);
 
         _feedback = new Label
         {
-            Text = "Your score appears after question 4.",
+            Text = "Your score appears after the final question.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             CustomMinimumSize = new Vector2(0, 34)
         };
@@ -190,10 +194,24 @@ public partial class ChallengeScene : Control
             RenderPseudocodeEditor();
 
         int questionNumber = DailyTestSession.AttemptCount + 1;
-        _progress.Text = $"QUESTION {questionNumber}/4   •   DAY {_day}   •   DIFFICULTY {_difficulty}/5";
+        _progress.Text = $"QUESTION {questionNumber}/{DailyTestSession.QuestionCount}   •   DAY {_day}   •   DIFFICULTY {_difficulty}/5";
         UpdateSubmitButton();
+        CallDeferred(nameof(BeginFirstDayQuestionGuide));
     }
 
+    private void BeginFirstDayQuestionGuide()
+    {
+        if (_challenge == null)
+            return;
+
+        FirstDayTutorialManager.Instance?.ShowQuestionTutorial(
+            _activeChallengeId,
+            _challenge.IsFlowchart,
+            _codeEditor,
+            _flowCanvas,
+            _paletteButtons,
+            _submitButton);
+    }
 
     private static string GetChallengeScenePath(string challengeId) =>
         challengeId.ToLowerInvariant() switch
@@ -207,7 +225,10 @@ public partial class ChallengeScene : Control
 
     private void RenderPseudocodeEditor()
     {
+        if (_contentScroll != null)
+            _contentScroll.VerticalScrollMode = ScrollContainer.ScrollMode.Auto;
         ClearContent();
+        _paletteButtons.Clear();
         var guide = new Label
         {
             Text = "Write pseudocode that solves the problem. Use any variable names you like.",
@@ -236,10 +257,14 @@ public partial class ChallengeScene : Control
 
     private void RenderFlowchartEditor()
     {
+        if (_contentScroll != null)
+            _contentScroll.VerticalScrollMode = ScrollContainer.ScrollMode.Disabled;
         ClearContent();
+        _paletteButtons.Clear();
+
         var guide = new Label
         {
-            Text = "Drag blocks from the palette. To reorder a placed block, drag its grip and drop it on a connector arrow. Decision diamonds create TRUE and FALSE branches that rejoin below.",
+            Text = "Build a connected flowchart. Start and End are built in. Drag blocks onto connectors; drag a placed block outside the workspace to delete it.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
         guide.AddThemeFontSizeOverride("font_size", 18);
@@ -262,20 +287,46 @@ public partial class ChallengeScene : Control
                 TooltipText = $"Drag to add {item.Type.ToLowerInvariant()} block"
             };
             palette.AddChild(button);
+            _paletteButtons[item.Type] = button;
         }
 
-        var canvasTitle = new Label { Text = "CONNECTED FLOWCHART" };
+        var canvasTitle = new Label { Text = "FLOWCHART WORKSPACE" };
         canvasTitle.AddThemeFontSizeOverride("font_size", 16);
         canvasTitle.AddThemeColorOverride("font_color", new Color("7dd3fc"));
         _content.AddChild(canvasTitle);
 
+        var viewToolbar = new HBoxContainer();
+        viewToolbar.AddThemeConstantOverride("separation", 8);
+        _content.AddChild(viewToolbar);
+
+        var panHint = new Label
+        {
+            Text = "Drag empty space to pan • Scroll wheel to zoom • Drag a block outside to delete",
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        panHint.AddThemeColorOverride("font_color", new Color("94a3b8"));
+        viewToolbar.AddChild(panHint);
+
+        var zoomOut = new Button { Text = "−", CustomMinimumSize = new Vector2(42, 34) };
+        zoomOut.Pressed += () => _flowCanvas?.ZoomOut();
+        viewToolbar.AddChild(zoomOut);
+
+        var zoomReset = new Button { Text = "Reset View", CustomMinimumSize = new Vector2(92, 34) };
+        zoomReset.Pressed += () => _flowCanvas?.ResetView();
+        viewToolbar.AddChild(zoomReset);
+
+        var zoomIn = new Button { Text = "+", CustomMinimumSize = new Vector2(42, 34) };
+        zoomIn.Pressed += () => _flowCanvas?.ZoomIn();
+        viewToolbar.AddChild(zoomIn);
+
         _flowCanvas = new FlowchartDropCanvas
         {
-            CustomMinimumSize = new Vector2(0, 210),
+            CustomMinimumSize = new Vector2(0, 0),
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
-            MouseFilter = Control.MouseFilterEnum.Stop
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+            MouseFilter = MouseFilterEnum.Stop
         };
-        _flowCanvas.BlockDropped += AddFlowchartBlock;
         _flowCanvas.ContentChanged += UpdateSubmitButton;
         _content.AddChild(_flowCanvas);
 
@@ -283,14 +334,9 @@ public partial class ChallengeScene : Control
         clear.Pressed += () =>
         {
             _flowCanvas.ClearBlocks();
-            _feedback.Text = "Your score will be revealed at the end of the test.";
+            _feedback.Text = "User-added blocks cleared. The built-in Start and End nodes remain.";
         };
         _content.AddChild(clear);
-    }
-
-    private void AddFlowchartBlock(string type, string defaultText)
-    {
-        _flowCanvas?.AddBlock(type, defaultText, _flowCanvas.PendingInsertionIndex);
     }
 
     private void OnSubmitPressed()
@@ -313,19 +359,7 @@ public partial class ChallengeScene : Control
         DailyTestSession.Record(_activeChallengeId, correct, gaveUp, _difficulty);
 
         if (correct)
-        {
-            // A retry must not farm story progress for the same challenge on the same day.
-            bool firstCompletionToday = ChallengeProgress.MarkCompleted(_activeChallengeId);
-            if (firstCompletionToday)
-            {
-                var reward = RoomKeyProgression.Instance?.AwardTaskCompletion(_difficulty);
-                if (reward != null)
-                {
-                    DailyTestSession.AddPointsReceived(reward.PointsAdded);
-                    GD.Print($"[ChallengeScene] First correct completion earned {reward.PointsAdded} hidden story points. Total: {reward.TotalPoints}.");
-                }
-            }
-        }
+            AwardCorrectChallengeProgress();
 
         _completed = true;
         _submitButton.Disabled = true;
@@ -349,6 +383,54 @@ public partial class ChallengeScene : Control
             SceneTransition.Instance.ChangeSceneToFile(_nextScene);
         else
             GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, _nextScene);
+    }
+
+    private void AwardCorrectChallengeProgress() =>
+        AwardCorrectChallengeProgress(_activeChallengeId, _difficulty);
+
+    private void AwardCorrectChallengeProgress(string challengeId, int difficulty)
+    {
+        // Only the first correct completion of this challenge family for the day
+        // contributes hidden story points.
+        if (!ChallengeProgress.MarkCompleted(challengeId))
+            return;
+
+        var reward = RoomKeyProgression.Instance?.AwardTaskCompletion(difficulty);
+        if (reward == null)
+            return;
+
+        DailyTestSession.AddPointsReceived(reward.PointsAdded);
+        GD.Print($"[ChallengeScene] First correct completion earned {reward.PointsAdded} hidden story points. Total: {reward.TotalPoints}.");
+    }
+
+    public bool SuperUserCompleteAssessment()
+    {
+        if (_completed || _challenge == null || !DailyTestSession.IsActive)
+            return false;
+
+        string[] completedQuestions = DailyTestSession.ForcePassCurrentAssessment(_difficulty);
+        if (completedQuestions.Length == 0)
+            return false;
+
+        foreach (string questionId in completedQuestions)
+            AwardCorrectChallengeProgress(questionId, _difficulty);
+
+        _completed = true;
+        if (_submitButton != null) _submitButton.Disabled = true;
+        if (_clearButton != null) _clearButton.Disabled = true;
+        if (DayClock.Instance != null)
+            DayClock.Instance.Running = false;
+
+        const string resultsPath = "res://Scenes/School/TestResults.tscn";
+        if (!ResourceLoader.Exists(resultsPath))
+            return false;
+
+        if (SceneTransition.Instance != null)
+            SceneTransition.Instance.ChangeSceneToFile(resultsPath);
+        else
+            GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, resultsPath);
+
+        return true;
     }
 
     public bool SuperUserSolveCurrentQuestion()
@@ -412,31 +494,8 @@ public partial class ChallengeScene : Control
     private bool HasCompleteAnswer()
     {
         if (_challenge?.IsFlowchart == true)
-        {
-            List<FlowchartBlockDefinition> blocks = _flowCanvas?.GetDefinitions();
-            if (blocks == null || blocks.Count < 4 ||
-                !string.Equals(blocks[0].Type, "Start", StringComparison.OrdinalIgnoreCase) ||
-                !string.Equals(blocks[blocks.Count - 1].Type, "End", StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            bool hasInput = false;
-            bool hasOutput = false;
-            foreach (FlowchartBlockDefinition block in blocks.Skip(1).Take(blocks.Count - 2))
-            {
-                if (string.IsNullOrWhiteSpace(block.Text))
-                    return false;
-
-                if (string.Equals(block.Type, "Input", StringComparison.OrdinalIgnoreCase))
-                    hasInput = true;
-                else if (string.Equals(block.Type, "Output", StringComparison.OrdinalIgnoreCase))
-                    hasOutput = true;
-                else if (!string.Equals(block.Type, "Process", StringComparison.OrdinalIgnoreCase) &&
-                         !string.Equals(block.Type, "Decision", StringComparison.OrdinalIgnoreCase))
-                    return false;
-            }
-
-            return hasInput && hasOutput;
-        }
+            return _flowCanvas != null &&
+                   FlowchartDefinitionTools.IsComplete(_flowCanvas.GetDefinitions());
 
         if (_codeEditor == null)
             return false;
@@ -528,5 +587,6 @@ public partial class ChallengeScene : Control
         }
         _codeEditor = null;
         _flowCanvas = null;
+        _paletteButtons.Clear();
     }
 }

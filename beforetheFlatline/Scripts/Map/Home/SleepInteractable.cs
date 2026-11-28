@@ -10,6 +10,7 @@ public partial class SleepInteractable : Area2D
     private bool _previousClockRunning;
     private bool _playerInside;
     private bool _sleeping;
+    private float _sleepStartHour;
 
     public override void _Ready()
     {
@@ -93,6 +94,7 @@ public partial class SleepInteractable : Area2D
         _sleeping = true;
         InteractionPromptManager.Instance?.HidePrompt(this);
         _previousClockRunning = DayClock.Instance?.Running ?? false;
+        _sleepStartHour = DayClock.Instance?.Hour ?? 22f;
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
 
@@ -152,6 +154,7 @@ public partial class SleepInteractable : Area2D
 
             if (slept)
             {
+                SanityManager.Instance?.ApplySleepRest(_sleepStartHour);
                 if (DayClock.Instance != null)
                     DayClock.Instance.Running = false;
                 message.Text = "A new morning begins. It's time to get ready for school.";

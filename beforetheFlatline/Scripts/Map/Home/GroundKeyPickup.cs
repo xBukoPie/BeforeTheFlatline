@@ -42,7 +42,7 @@ public partial class GroundKeyPickup : Area2D
         else
             GD.PushWarning($"GroundKeyPickup: key sprite could not be loaded: {texturePath}");
 
-        _glow = WorldInteractableGlow.AddGlow(this, new Color("ffd36e"), 4.0f);
+        _glow = WorldInteractableGlow.AddGlow(this, new Color("ffd36e"), 4.8f);
 
         BodyEntered += OnBodyEntered;
         BodyExited += OnBodyExited;
@@ -167,6 +167,10 @@ public partial class GroundKeyPickup : Area2D
 
     private bool IsKeyAvailable()
     {
+        if ((DayClock.Instance != null && DayClock.Instance.DayNumber <= 1) ||
+            DayClock.Instance?.IsFirstDayTutorialActive == true)
+            return false;
+
         string pending = RoomKeyProgression.Instance?.PendingKeyRoomName ?? string.Empty;
         if (!string.Equals(pending, KeyRoomId, StringComparison.OrdinalIgnoreCase))
             return false;

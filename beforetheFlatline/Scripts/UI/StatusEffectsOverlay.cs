@@ -481,17 +481,23 @@ void fragment() {
         int anxiety = manager?.GetDebuffLevel(SanityManager.DebuffType.Anxiety) ?? 0;
         int pressure = manager?.GetDebuffLevel(SanityManager.DebuffType.Pressure) ?? 0;
         int total = dizziness + confusion + anxiety + pressure;
+        int schedulePenalty = manager?.SchedulePenaltyPercent ?? 0;
+        float penaltyRatio = Mathf.Clamp(schedulePenalty / 100f, 0f, 1f);
+        float penaltyVisibility = penaltyRatio * penaltyRatio * (3f - 2f * penaltyRatio);
 
         bool onEndingPresentation = IsEndingPresentationScene(
             GetTree()?.CurrentScene?.SceneFilePath ?? string.Empty);
         float fade = Mathf.Clamp(_endingFade * _mainMenuFade * _pauseFade *
             (onEndingPresentation ? 0f : 1f), 0f, 1f);
         _root.Visible = fade > 0.005f;
-        float wobble = Mathf.Clamp(dizziness / 55f, 0f, 1f) * 0.62f * fade;
-        float staticStrength = Mathf.Clamp(anxiety / 38f, 0f, 1f) * fade;
-        float pressureStrength = pressure > 0
-            ? Mathf.Clamp(0.42f + pressure / 38f, 0.42f, 1f) * fade
+        float normalWobble = Mathf.Clamp(dizziness / 55f, 0f, 1f) * 0.62f;
+        float normalStatic = Mathf.Clamp(anxiety / 38f, 0f, 1f);
+        float normalPressure = pressure > 0
+            ? Mathf.Clamp(0.42f + pressure / 38f, 0.42f, 1f)
             : 0f;
+        float wobble = Mathf.Max(normalWobble, penaltyVisibility * 0.38f) * fade;
+        float staticStrength = Mathf.Max(normalStatic, penaltyVisibility * 0.58f) * fade;
+        float pressureStrength = Mathf.Max(normalPressure, penaltyVisibility * 0.78f) * fade;
         _fxMaterial.SetShaderParameter("dizziness_strength", wobble);
         _fxMaterial.SetShaderParameter("anxiety_strength", staticStrength);
         _fxMaterial.SetShaderParameter("pressure_strength", pressureStrength);
@@ -506,19 +512,21 @@ void fragment() {
         for (int i = 0; i < _confusionWords.Count; i++)
         {
             float wave = (Mathf.Sin(_elapsed * 0.8f + i * 1.9f) + 1f) * 0.5f;
-            bool active = confusion > 0 && wave > 0.25f && _endingFade > 0.02f;
+            bool active = ((confusion > 0 && wave > 0.25f) || (schedulePenalty >= 80 && wave > 0.65f)) && _endingFade > 0.02f;
+            float normalAlpha = Mathf.Clamp((0.08f + wave * 0.25f) * confusion / 36f, 0f, 0.38f);
+            float scheduleAlpha = penaltyVisibility * 0.12f;
             _confusionWords[i].Visible = active;
             _confusionWords[i].Modulate = new Color(1f, 1f, 1f,
-                active ? Mathf.Clamp((0.08f + wave * 0.25f) * confusion / 36f, 0f, 0.38f) * fade : 0f);
+                active ? Mathf.Max(normalAlpha, scheduleAlpha) * fade : 0f);
         }
 
         float pulse = (Mathf.Sin(_elapsed * (5.5f + pressure / 30f)) + 1f) * 0.5f;
-        _heart.Visible = !onEndingPresentation && pressure > 0 && fade > 0.02f;
+        _heart.Visible = !onEndingPresentation && (pressure > 0 || schedulePenalty >= 78) && fade > 0.02f;
         _heart.Scale = Vector2.One * (0.92f + pulse * (0.16f + pressureStrength * 0.12f));
         _heart.Modulate = new Color(1f, 1f, 1f,
             _heart.Visible ? (0.56f + pulse * 0.34f) * fade : 0f);
 
-        float squeeze = pressure > 0 ? 6f + pressureStrength * 28f + pulse * 7f : 0f;
+        float squeeze = pressure > 0 ? 6f + pressureStrength * 28f + pulse * 7f : penaltyVisibility * 18f;
         float pressureAlpha = Mathf.Clamp(pressureStrength * (0.18f + pulse * 0.10f), 0f, 0.34f);
         _pressureTop.OffsetBottom = squeeze;
         _pressureBottom.OffsetTop = -squeeze;
@@ -528,28 +536,33 @@ void fragment() {
         float lowSanity = Mathf.Clamp((SanityManager.StableSanityThreshold - _sanity) /
             (float)SanityManager.StableSanityThreshold, 0f, 1f);
         Color tint = GetStackTint(dizziness, confusion, anxiety, pressure);
+        if (penaltyVisibility > 0f)
+            tint = tint.Lerp(DebuffColor(SanityManager.DebuffType.Pressure), penaltyVisibility * 0.45f);
         if (_flashTime > 0f)
             tint = tint.Lerp(_flashColor, 0.35f);
-        float washAlpha = Mathf.Clamp(lowSanity * 0.07f + total / 1300f, 0f, 0.12f) * fade;
+        float washAlpha = Mathf.Clamp(lowSanity * 0.07f + total / 1300f + penaltyVisibility * 0.045f, 0f, 0.12f) * fade;
         if (_flashTime > 0f)
             washAlpha = Mathf.Max(washAlpha, (_flashTime / 0.9f) * 0.08f * fade);
-        _statusLabel.Visible = total > 0 || _sanity < SanityManager.StableSanityThreshold;
-        _statusLabel.Text = total > 0 ? "DISTRESS" : (_sanity < 25 ? "CRITICAL" : "UNSTEADY");
+        _statusLabel.Visible = total > 0 || schedulePenalty >= 12 || _sanity < SanityManager.StableSanityThreshold;
+        _statusLabel.Text = schedulePenalty > 0
+            ? (schedulePenalty >= 75 ? $"EXHAUSTED {schedulePenalty}%" : $"SCHEDULE STRAIN {schedulePenalty}%")
+            : total > 0 ? "DISTRESS" : (_sanity < 25 ? "CRITICAL" : "UNSTEADY");
         _statusLabel.Modulate = new Color(1f, 1f, 1f, 0.38f * fade);
         _noticeLabel.Modulate = new Color(1f, 1f, 1f, fade);
 
         _effectWash.Color = new Color(tint.R, tint.G, tint.B, washAlpha);
         _screenFx.Modulate = new Color(1f, 1f, 1f, fade);
 
-        _pressureTop.Visible = pressure > 0;
-        _pressureBottom.Visible = pressure > 0;
-        _pressureVignette.Visible = pressure > 0 && fade > 0.005f;
+        _pressureTop.Visible = pressure > 0 || schedulePenalty >= 12;
+        _pressureBottom.Visible = pressure > 0 || schedulePenalty >= 12;
+        _pressureVignette.Visible = (pressure > 0 || schedulePenalty >= 12) && fade > 0.005f;
         _dominantDebuff = FindDominant(dizziness, confusion, anxiety, pressure);
     }
 
     private static bool IsEndingPresentationScene(string scenePath) =>
         string.Equals(scenePath, "res://Scenes/Ending/GoodEndingBriefing.tscn", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(scenePath, "res://Scenes/Ending/EndingCredits.tscn", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenePath, "res://Scenes/Ending/AssetCredits.tscn", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(scenePath, "res://Scenes/Ending/BadEnding.tscn", StringComparison.OrdinalIgnoreCase);
 
     private static SanityManager.DebuffType FindDominant(int d, int c, int a, int p)

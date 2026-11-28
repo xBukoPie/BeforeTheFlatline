@@ -18,6 +18,7 @@ public partial class SettingsManager : Node
     public float Brightness { get; private set; } = 0.88f;
     public bool Fullscreen { get; private set; } = false;
     public string PlayerName { get; private set; } = "Player";
+    public bool HasSeenEndingCredits { get; private set; }
     public bool SuperUserAccessEnabledThisSession { get; private set; }
 
     public override void _Ready()
@@ -78,6 +79,17 @@ public partial class SettingsManager : Node
         SettingsChanged?.Invoke();
     }
 
+    public void MarkEndingCreditsSeen()
+    {
+        if (HasSeenEndingCredits)
+            return;
+
+        HasSeenEndingCredits = true;
+        SaveSettings();
+        SettingsChanged?.Invoke();
+        GD.Print("[SettingsManager] Ending credits unlocked in Settings.");
+    }
+
     public void SetPlayerName(string value)
     {
         string enteredName = (value ?? string.Empty).Trim();
@@ -124,6 +136,7 @@ public partial class SettingsManager : Node
         EffectsVolume = Mathf.Clamp((float)config.GetValue("audio", "effects_volume", EffectsVolume), 0f, 1f);
         Brightness = Mathf.Clamp((float)config.GetValue("display", "brightness", Brightness), 0.65f, 1.05f);
         Fullscreen = (bool)config.GetValue("display", "fullscreen", Fullscreen);
+        HasSeenEndingCredits = (bool)config.GetValue("progress", "ending_credits_seen", HasSeenEndingCredits);
         PlayerName = ((string)config.GetValue("player", "name", PlayerName) ?? PlayerName).Trim();
         if (string.IsNullOrWhiteSpace(PlayerName)) PlayerName = "Player";
         if (IsSuperUserCommand(PlayerName))
@@ -169,6 +182,7 @@ public partial class SettingsManager : Node
         config.SetValue("display", "brightness", Brightness);
         config.SetValue("display", "fullscreen", Fullscreen);
         config.SetValue("player", "name", PlayerName);
+        config.SetValue("progress", "ending_credits_seen", HasSeenEndingCredits);
         config.Save(SettingsPath);
     }
 }

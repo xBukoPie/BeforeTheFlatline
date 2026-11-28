@@ -10,12 +10,29 @@ public partial class FlowchartDropCanvas : PanelContainer
 
     public int PendingInsertionIndex { get; private set; }
 
-    private readonly VBoxContainer _blocks = new();
-    private readonly List<FlowchartBlockControl> _placedBlocks = new();
+    private const float WorkspaceWidth = 860f;
+    private const float MinimumZoom = 0.55f;
+    private const float MaximumZoom = 1.65f;
+
+    private readonly List<FlowchartBlockDefinition> _definitions = new();
+    private readonly List<FlowchartDropSlotControl> _slots = new();
+    private readonly List<Control> _panBlockControls = new();
+
+    private Control _viewport;
+    private Control _workspace;
+    private VBoxContainer _blocks;
+    private float _zoom = 1f;
+    private Vector2 _panOffset = Vector2.Zero;
+    private bool _isPanning;
+    private string _activeDraggedDefinitionId = string.Empty;
+    private bool _hasCentered;
 
     public FlowchartDropCanvas()
     {
+        CustomMinimumSize = new Vector2(0, 260);
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        SizeFlagsVertical = SizeFlags.ExpandFill;
+
         AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color("0f172a"),
@@ -30,259 +47,448 @@ public partial class FlowchartDropCanvas : PanelContainer
             ContentMarginBottom = 10
         });
 
-        _blocks.MouseFilter = MouseFilterEnum.Ignore;
-        _blocks.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        AddChild(_blocks);
-        ShowEmptyMessage();
-    }
-
-    public override bool _CanDropData(Vector2 atPosition, Variant data)
-    {
-        if (data.VariantType != Variant.Type.String)
-            return false;
-
-        string[] parts = data.AsString().Split('|', 3);
-        if (parts.Length == 3 && parts[0] == "ADD" && IsBlockType(parts[1]))
-            return true;
-
-        if (parts.Length == 2 && parts[0] == "MOVE" &&
-            int.TryParse(parts[1], out int index) &&
-            index >= 0 && index < _placedBlocks.Count)
-            return true;
-
-        // Compatibility with an older palette payload.
-        return parts.Length == 2 && IsBlockType(parts[0]);
-    }
-
-    public override void _DropData(Vector2 atPosition, Variant data)
-    {
-        if (data.VariantType != Variant.Type.String)
-            return;
-
-        string[] parts = data.AsString().Split('|', 3);
-        HandleDropData(data, GetInsertionIndex(GetGlobalTransformWithCanvas() * atPosition));
-    }
-
-    public void AddBlock(string type, string text, int insertIndex = -1)
-    {
-        var definitions = GetDefinitions();
-        int index = insertIndex < 0 ? definitions.Count : Mathf.Clamp(insertIndex, 0, definitions.Count);
-        definitions.Insert(index, new FlowchartBlockDefinition(type, text));
-
-        // A Decision immediately receives two editable outgoing branches.
-        if (string.Equals(type, "Decision", StringComparison.OrdinalIgnoreCase))
+        _viewport = new Control
         {
-            definitions.Insert(index + 1, new FlowchartBlockDefinition("Output", "TRUE: OUTPUT value"));
-            definitions.Insert(index + 2, new FlowchartBlockDefinition("Output", "FALSE: OUTPUT value"));
-        }
+            ClipContents = true,
+            MouseFilter = MouseFilterEnum.Pass,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ExpandFill
+        };
+        AddChild(_viewport);
 
-        BuildFromDefinitions(definitions);
+        _workspace = new Control
+        {
+            MouseFilter = MouseFilterEnum.Ignore,
+            Position = new Vector2(0, 18)
+        };
+        _viewport.AddChild(_workspace);
+
+        _blocks = new VBoxContainer
+        {
+            MouseFilter = MouseFilterEnum.Ignore,
+            Position = Vector2.Zero,
+            CustomMinimumSize = new Vector2(WorkspaceWidth, 0)
+        };
+        _blocks.AddThemeConstantOverride("separation", 0);
+        _workspace.AddChild(_blocks);
+
+        BuildWorkspace();
+    }
+
+    public void ClearBlocks()
+    {
+        _definitions.Clear();
+        BuildWorkspace();
+        ContentChanged?.Invoke();
+    }
+
+    public void SetDefinitions(IReadOnlyList<FlowchartBlockDefinition> definitions)
+    {
+        _definitions.Clear();
+        _definitions.AddRange(FlowchartDefinitionTools.NormalizeLegacy(definitions));
+        BuildWorkspace();
+        ContentChanged?.Invoke();
     }
 
     public List<FlowchartBlockDefinition> GetDefinitions() =>
-        _placedBlocks.Select(block =>
-            new FlowchartBlockDefinition(block.BlockType, block.BlockText.Trim())).ToList();
+        FlowchartDefinitionTools.DeepClone(_definitions);
 
-    public void ClearBlocks() => BuildFromDefinitions(new List<FlowchartBlockDefinition>());
-
-    public void SetDefinitions(IReadOnlyList<FlowchartBlockDefinition> definitions) =>
-        BuildFromDefinitions(definitions ?? Array.Empty<FlowchartBlockDefinition>());
-
-    private void MoveBlock(int fromIndex, int targetIndex)
+    public void AddBlock(string type, string text, int insertIndex = -1)
     {
-        var definitions = GetDefinitions();
-        if (fromIndex < 0 || fromIndex >= definitions.Count || definitions.Count < 2)
+        if (!IsUserBlockType(type))
             return;
 
-        int insertion = Mathf.Clamp(targetIndex, 0, definitions.Count);
-        FlowchartBlockDefinition moving = definitions[fromIndex];
-        definitions.RemoveAt(fromIndex);
-
-        if (fromIndex < insertion)
-            insertion--;
-
-        insertion = Mathf.Clamp(insertion, 0, definitions.Count);
-        if (insertion == fromIndex)
-            return;
-
-        definitions.Insert(insertion, moving);
-        BuildFromDefinitions(definitions);
+        int index = insertIndex < 0 ? _definitions.Count : Mathf.Clamp(insertIndex, 0, _definitions.Count);
+        _definitions.Insert(index, new FlowchartBlockDefinition(type, text));
+        BuildWorkspace();
+        ContentChanged?.Invoke();
     }
 
-    private int GetInsertionIndex(Vector2 globalDropPosition)
+    public void ZoomIn() => SetZoom(_zoom * 1.15f, GetViewportCenter());
+    public void ZoomOut() => SetZoom(_zoom / 1.15f, GetViewportCenter());
+
+    public void ResetView()
     {
-        if (_placedBlocks.Count == 0)
-            return 0;
+        _zoom = 1f;
+        _panOffset = Vector2.Zero;
+        _workspace.Scale = Vector2.One;
+        PositionWorkspace();
+    }
 
-        var ordered = _placedBlocks
-            .OrderBy(block => block.GlobalPosition.Y + block.Size.Y * 0.5f)
-            .ThenBy(block => block.GlobalPosition.X + block.Size.X * 0.5f)
-            .ToList();
+    public void BeginBlockDrag(string definitionId)
+    {
+        if (Guid.TryParse(definitionId, out _))
+            _activeDraggedDefinitionId = definitionId;
+    }
 
-        int target = 0;
-        foreach (FlowchartBlockControl block in ordered)
+    public override void _Input(InputEvent @event)
+    {
+        if (string.IsNullOrWhiteSpace(_activeDraggedDefinitionId))
+            return;
+
+        if (@event is InputEventMouseButton mouseButton &&
+            mouseButton.ButtonIndex == MouseButton.Left && !mouseButton.Pressed)
         {
-            Vector2 center = block.GlobalPosition + block.Size * 0.5f;
-            bool before = center.Y < globalDropPosition.Y - 3f ||
-                          (Mathf.Abs(center.Y - globalDropPosition.Y) <= 3f &&
-                           center.X < globalDropPosition.X);
-            if (before)
-                target++;
+            string draggedId = _activeDraggedDefinitionId;
+            CallDeferred(nameof(FinishBlockDrag), draggedId);
+        }
+    }
+
+    private void FinishBlockDrag(string definitionId)
+    {
+        if (!string.Equals(_activeDraggedDefinitionId, definitionId, StringComparison.Ordinal))
+            return;
+
+        _activeDraggedDefinitionId = string.Empty;
+        if (GetGlobalRect().HasPoint(GetGlobalMousePosition()))
+            return;
+
+        if (!Guid.TryParse(definitionId, out Guid id) ||
+            !RemoveDefinition(_definitions, id))
+            return;
+
+        BuildWorkspace();
+        ContentChanged?.Invoke();
+    }
+
+    private static bool RemoveDefinition(List<FlowchartBlockDefinition> list, Guid id)
+    {
+        for (int i = 0; i < list.Count; i++)
+        {
+            FlowchartBlockDefinition definition = list[i];
+            if (definition.Id == id)
+            {
+                list.RemoveAt(i);
+                return true;
+            }
+
+            if (RemoveDefinition(definition.TrueBranch, id) ||
+                RemoveDefinition(definition.FalseBranch, id))
+                return true;
         }
 
-        return Mathf.Clamp(target, 0, _placedBlocks.Count);
+        return false;
     }
 
-    private void BuildFromDefinitions(IReadOnlyList<FlowchartBlockDefinition> definitions)
+    public override bool _CanDropData(Vector2 atPosition, Variant data) =>
+        IsAcceptedPayload(data);
+
+    public override void _DropData(Vector2 atPosition, Variant data)
     {
+        if (_slots.Count == 0)
+            return;
+
+        Vector2 globalPointer = GetGlobalMousePosition();
+        FlowchartDropSlotControl nearest = _slots
+            .Where(slot => GodotObject.IsInstanceValid(slot) && slot.IsInsideTree())
+            .OrderBy(slot => (slot.GlobalPosition + slot.Size * 0.5f - globalPointer).LengthSquared())
+            .FirstOrDefault();
+
+        if (nearest != null)
+            ProcessDrop(data, nearest.TargetList, nearest.TargetIndex);
+    }
+
+    public override void _GuiInput(InputEvent @event)
+    {
+        if (@event is InputEventMouseButton mouseButton)
+        {
+            if (mouseButton.ButtonIndex == MouseButton.Left)
+            {
+                if (mouseButton.Pressed)
+                {
+                    // A drag that begins on a symbol or terminal is not a canvas pan.
+                    if (IsPointerOverPlacedBlock())
+                        return;
+
+                    _isPanning = true;
+                    AcceptEvent();
+                    return;
+                }
+
+                if (_isPanning)
+                {
+                    _isPanning = false;
+                    AcceptEvent();
+                }
+                return;
+            }
+
+            if (mouseButton.ButtonIndex == MouseButton.WheelUp && mouseButton.Pressed)
+            {
+                SetZoom(_zoom * 1.12f, GetViewportPointer());
+                AcceptEvent();
+                return;
+            }
+
+            if (mouseButton.ButtonIndex == MouseButton.WheelDown && mouseButton.Pressed)
+            {
+                SetZoom(_zoom / 1.12f, GetViewportPointer());
+                AcceptEvent();
+                return;
+            }
+        }
+
+        if (@event is InputEventMouseMotion motion && _isPanning)
+        {
+            _panOffset += motion.Relative;
+            PositionWorkspace();
+            AcceptEvent();
+        }
+    }
+
+    public override void _Notification(int what)
+    {
+        if (what == NotificationResized)
+            CallDeferred(nameof(HandleViewportResize));
+    }
+
+    private void HandleViewportResize()
+    {
+        if (!IsInsideTree() || _viewport == null || _workspace == null)
+            return;
+
+        if (!_hasCentered)
+        {
+            _hasCentered = true;
+            PositionWorkspace();
+        }
+    }
+
+    private void BuildWorkspace()
+    {
+        if (_blocks == null)
+            return;
+
         foreach (Node child in _blocks.GetChildren())
         {
             _blocks.RemoveChild(child);
             child.QueueFree();
         }
-        _placedBlocks.Clear();
 
-        int i = 0;
-        while (i < definitions.Count)
+        _slots.Clear();
+        _panBlockControls.Clear();
+
+        AddTerminal("START");
+        AddSlot(_definitions, 0);
+
+        for (int i = 0; i < _definitions.Count; i++)
         {
-            FlowchartBlockDefinition data = definitions[i];
-
-            if (IsDecisionWithOutputBranches(definitions, i))
-            {
-                AddPlacedBlock(data, i, compact: false);
-                AddConnector("Split", i + 1, 52);
-
-                var branches = new HBoxContainer
-                {
-                    SizeFlagsHorizontal = SizeFlags.ExpandFill,
-                    MouseFilter = MouseFilterEnum.Ignore
-                };
-                branches.AddThemeConstantOverride("separation", 22);
-                AddPlacedBlockToBranch(branches, definitions[i + 1], i + 1, "TRUE");
-                AddPlacedBlockToBranch(branches, definitions[i + 2], i + 2, "FALSE");
-                _blocks.AddChild(branches);
-
-                // The merge connector also points down to the next shared step.
-                AddConnector("Merge", i + 3, 52);
-                i += 3;
-                continue;
-            }
-
-            AddPlacedBlock(data, i, compact: false);
-            i++;
-
-            if (i < definitions.Count)
-                AddConnector("Down", i, 38);
+            var block = new FlowchartBlockControl();
+            block.Configure(_definitions[i], ProcessDrop);
+            block.ContentChanged += () => ContentChanged?.Invoke();
+            block.CollectSymbolControls(_panBlockControls);
+            _blocks.AddChild(block);
+            AddSlot(_definitions, i + 1);
         }
 
-        if (_placedBlocks.Count == 0)
-            ShowEmptyMessage();
+        AddTerminal("END");
 
-        ContentChanged?.Invoke();
+        Vector2 minimum = _blocks.GetCombinedMinimumSize();
+        minimum.X = Mathf.Max(WorkspaceWidth, minimum.X);
+        minimum.Y = Mathf.Max(160f, minimum.Y);
+        _blocks.CustomMinimumSize = minimum;
+        _blocks.Size = minimum;
+        _workspace.CustomMinimumSize = minimum;
+        _workspace.Size = minimum;
+        _workspace.Scale = Vector2.One * _zoom;
+        CallDeferred(nameof(PositionWorkspace));
     }
 
-    private void AddConnector(string kind, int insertIndex, float height)
+    private void AddTerminal(string text)
     {
-        var connector = new FlowchartConnectorControl
+        var center = new CenterContainer
         {
-            Kind = kind,
-            CustomMinimumSize = new Vector2(0, height)
+            CustomMinimumSize = new Vector2(WorkspaceWidth, 72),
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            MouseFilter = MouseFilterEnum.Ignore
         };
-        connector.Dropped += data => HandleDropData(data, insertIndex);
-        _blocks.AddChild(connector);
+        var terminal = new FlowchartTerminalControl { TerminalText = text };
+        center.AddChild(terminal);
+        _panBlockControls.Add(terminal);
+        _blocks.AddChild(center);
     }
 
-    private void HandleDropData(Variant data, int insertIndex)
+    private void AddSlot(
+        List<FlowchartBlockDefinition> target,
+        int index)
     {
-        if (data.VariantType != Variant.Type.String)
+        var slot = new FlowchartDropSlotControl();
+        slot.Configure(target, index);
+        slot.DropReceived += ProcessDrop;
+        _slots.Add(slot);
+        _blocks.AddChild(slot);
+    }
+
+    private void ProcessDrop(
+        Variant data,
+        List<FlowchartBlockDefinition> targetList,
+        int targetIndex)
+    {
+        if (!IsAcceptedPayload(data) || targetList == null)
             return;
 
         string[] parts = data.AsString().Split('|', 3);
-        PendingInsertionIndex = Mathf.Clamp(insertIndex, 0, _placedBlocks.Count);
+        int insertIndex = Mathf.Clamp(targetIndex, 0, targetList.Count);
 
-        if (parts.Length == 2 && parts[0] == "MOVE" &&
-            int.TryParse(parts[1], out int fromIndex))
+        if (parts.Length == 3 && parts[0] == "ADD")
         {
-            MoveBlock(fromIndex, PendingInsertionIndex);
-            return;
-        }
+            if (!IsUserBlockType(parts[1]))
+                return;
 
-        if (parts.Length == 3 && parts[0] == "ADD" && IsBlockType(parts[1]))
-        {
+            targetList.Insert(insertIndex, new FlowchartBlockDefinition(parts[1], parts[2]));
+            PendingInsertionIndex = insertIndex;
+            BuildWorkspace();
+            ContentChanged?.Invoke();
             BlockDropped?.Invoke(parts[1], parts[2]);
             return;
         }
 
-        if (parts.Length == 2 && IsBlockType(parts[0]))
-            BlockDropped?.Invoke(parts[0], parts[1]);
+        if (parts.Length != 2 || parts[0] != "MOVE" || !Guid.TryParse(parts[1], out Guid id))
+            return;
+
+        if (!TryFindDefinition(_definitions, id, out List<FlowchartBlockDefinition> sourceList,
+                out int sourceIndex, out FlowchartBlockDefinition moving))
+            return;
+
+        // A decision cannot be dropped into one of its own descendants.
+        if (IsDescendantList(moving, targetList))
+            return;
+
+        sourceList.RemoveAt(sourceIndex);
+        if (ReferenceEquals(sourceList, targetList) && sourceIndex < insertIndex)
+            insertIndex--;
+
+        insertIndex = Mathf.Clamp(insertIndex, 0, targetList.Count);
+        targetList.Insert(insertIndex, moving);
+        PendingInsertionIndex = insertIndex;
+        BuildWorkspace();
+        ContentChanged?.Invoke();
+        BlockDropped?.Invoke(moving.Type, moving.Text);
     }
 
-    private void AddPlacedBlock(FlowchartBlockDefinition data, int index, bool compact)
+    private static bool TryFindDefinition(
+        List<FlowchartBlockDefinition> list,
+        Guid id,
+        out List<FlowchartBlockDefinition> foundList,
+        out int foundIndex,
+        out FlowchartBlockDefinition found)
     {
-        string branch = ExtractBranchLabel(data.Text);
-        var block = new FlowchartBlockControl();
-        block.Configure(data.Type, data.Text, index, branch, compact);
-        block.TextChanged += () => ContentChanged?.Invoke();
-        _placedBlocks.Add(block);
-        _blocks.AddChild(block);
-    }
-
-    private void AddPlacedBlockToBranch(HBoxContainer row, FlowchartBlockDefinition data, int index, string defaultBranch)
-    {
-        string branch = ExtractBranchLabel(data.Text);
-        if (string.IsNullOrEmpty(branch))
-            branch = defaultBranch;
-
-        var block = new FlowchartBlockControl
+        for (int i = 0; i < list.Count; i++)
         {
-            SizeFlagsHorizontal = SizeFlags.ExpandFill
-        };
-        block.Configure(data.Type, data.Text, index, branch, compact: true);
-        block.TextChanged += () => ContentChanged?.Invoke();
-        _placedBlocks.Add(block);
-        row.AddChild(block);
+            FlowchartBlockDefinition current = list[i];
+            if (current.Id == id)
+            {
+                foundList = list;
+                foundIndex = i;
+                found = current;
+                return true;
+            }
+
+            if (TryFindDefinition(current.TrueBranch, id, out foundList, out foundIndex, out found) ||
+                TryFindDefinition(current.FalseBranch, id, out foundList, out foundIndex, out found))
+                return true;
+        }
+
+        foundList = null;
+        foundIndex = -1;
+        found = null;
+        return false;
     }
 
-    private static bool IsDecisionWithOutputBranches(IReadOnlyList<FlowchartBlockDefinition> definitions, int index)
+    private static bool IsDescendantList(
+        FlowchartBlockDefinition decision,
+        List<FlowchartBlockDefinition> candidate)
     {
-        if (index + 2 >= definitions.Count ||
-            !string.Equals(definitions[index].Type, "Decision", StringComparison.OrdinalIgnoreCase))
+        if (ReferenceEquals(decision.TrueBranch, candidate) ||
+            ReferenceEquals(decision.FalseBranch, candidate))
+            return true;
+
+        foreach (FlowchartBlockDefinition child in decision.TrueBranch)
+            if (IsDescendantList(child, candidate))
+                return true;
+
+        foreach (FlowchartBlockDefinition child in decision.FalseBranch)
+            if (IsDescendantList(child, candidate))
+                return true;
+
+        return false;
+    }
+
+    private static bool IsAcceptedPayload(Variant data)
+    {
+        if (data.VariantType != Variant.Type.String)
             return false;
 
-        return string.Equals(definitions[index + 1].Type, "Output", StringComparison.OrdinalIgnoreCase) &&
-               string.Equals(definitions[index + 2].Type, "Output", StringComparison.OrdinalIgnoreCase);
+        string[] parts = data.AsString().Split('|', 3);
+        if (parts.Length == 3 && parts[0] == "ADD")
+            return IsUserBlockType(parts[1]);
+
+        return parts.Length == 2 && parts[0] == "MOVE" &&
+               Guid.TryParse(parts[1], out _);
     }
 
-    private static string ExtractBranchLabel(string text)
-    {
-        string value = (text ?? "").Trim();
-        if (value.StartsWith("TRUE:", StringComparison.OrdinalIgnoreCase))
-            return "TRUE";
-        if (value.StartsWith("FALSE:", StringComparison.OrdinalIgnoreCase))
-            return "FALSE";
-        return "";
-    }
-
-    private void ShowEmptyMessage()
-    {
-        if (_blocks.GetChildCount() == 0)
-        {
-            _blocks.AddChild(new Label
-            {
-                Name = "EmptyMessage",
-                Text = "Drag shaped blocks here. Use the grip beside a placed block to move it.",
-                HorizontalAlignment = HorizontalAlignment.Center,
-                AutowrapMode = TextServer.AutowrapMode.WordSmart,
-                MouseFilter = MouseFilterEnum.Ignore
-            });
-        }
-    }
-
-    private static bool IsBlockType(string type) =>
-        string.Equals(type, "Start", StringComparison.OrdinalIgnoreCase) ||
+    private static bool IsUserBlockType(string type) =>
         string.Equals(type, "Input", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(type, "Process", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(type, "Output", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(type, "Decision", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(type, "End", StringComparison.OrdinalIgnoreCase);
+        string.Equals(type, "Decision", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsPointerOverPlacedBlock()
+    {
+        Vector2 pointer = GetGlobalMousePosition();
+        foreach (Control control in _panBlockControls)
+        {
+            if (!GodotObject.IsInstanceValid(control) || !control.IsInsideTree())
+                continue;
+
+            if (control is FlowchartSymbolControl symbol)
+            {
+                if (symbol.IsPointOnShape(pointer))
+                    return true;
+            }
+            else if (control.GetGlobalRect().HasPoint(pointer))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private Vector2 GetViewportCenter() => _viewport.Size * 0.5f;
+
+    private Vector2 GetViewportPointer()
+    {
+        Transform2D inverse = _viewport.GetGlobalTransformWithCanvas().AffineInverse();
+        return inverse * GetGlobalMousePosition();
+    }
+
+    private void SetZoom(float value, Vector2 anchor)
+    {
+        float next = Mathf.Clamp(value, MinimumZoom, MaximumZoom);
+        if (Mathf.IsEqualApprox(next, _zoom))
+            return;
+
+        Vector2 localAnchor = (anchor - _workspace.Position) / _zoom;
+        _zoom = next;
+        _workspace.Scale = Vector2.One * _zoom;
+        _workspace.Position = anchor - localAnchor * _zoom;
+
+        Vector2 center = new Vector2(
+            Mathf.Max(0f, (_viewport.Size.X - _workspace.Size.X * _zoom) * 0.5f),
+            18f);
+        _panOffset = _workspace.Position - center;
+    }
+
+    private void PositionWorkspace()
+    {
+        if (_workspace == null || _viewport == null)
+            return;
+
+        _workspace.Scale = Vector2.One * _zoom;
+        Vector2 center = new Vector2(
+            Mathf.Max(0f, (_viewport.Size.X - _workspace.Size.X * _zoom) * 0.5f),
+            18f);
+        _workspace.Position = center + _panOffset;
+    }
 }

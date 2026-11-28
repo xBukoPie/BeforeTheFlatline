@@ -9,7 +9,7 @@ on:
       - ".github/workflows/windows-desktop.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: windows-desktop-${{ github.ref }}
@@ -117,24 +117,3 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish downloadable preview release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: windows-preview-${{ github.run_number }}
-          target_commitish: ${{ github.sha }}
-          name: Before The Flatline - Windows Preview #${{ github.run_number }}
-          body: |
-            Automated Windows x64 standalone build from the `updates` branch.
-
-            - Executable: `BeforeTheFlatline.exe`
-            - Platform: Windows 10/11 x64
-            - Engine: Godot 4.7.2 .NET
-            - Commit: `${{ github.sha }}`
-
-            This is a preview build for testing. Extract/download the executable and run it on Windows.
-          draft: false
-          prerelease: true
-          make_latest: false
-          overwrite_files: true
-          fail_on_unmatched_files: true
-          files: beforetheFlatline/builds/windows/BeforeTheFlatline.exe

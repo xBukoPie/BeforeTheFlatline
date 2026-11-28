@@ -283,6 +283,10 @@ public partial class SchoolFriendsSpawner : Node2D
 
         foreach (SchoolFriendSpawn spawn in spawnPlan)
         {
+            if (DayClock.Instance?.IsFirstDayTutorialActive == true &&
+                string.Equals(spawn.Name, "Mich", StringComparison.OrdinalIgnoreCase))
+                continue;
+
             if (TryGetDefinition(spawn.Name, out FriendDefinition definition))
                 CreateFriend(definition, spawn.Position);
         }
@@ -292,13 +296,15 @@ public partial class SchoolFriendsSpawner : Node2D
 
     private List<SchoolFriendSpawn> CreateRandomSpawnPlan()
     {
-        var definitions = (FriendDefinition[])FriendDefinitions.Clone();
+        var definitions = DayClock.Instance?.IsFirstDayTutorialActive == true
+            ? new[] { FriendDefinitions[1], FriendDefinitions[2] }
+            : (FriendDefinition[])FriendDefinitions.Clone();
         var positions = (Vector2[])SafeSpawnPositions.Clone();
         Shuffle(definitions);
         Shuffle(positions);
 
         // Uniformly choose zero, one, two, or all three friends for this school phase.
-        int count = _rng.RandiRange(0, definitions.Length - 1); // 0, 1, or 2 friends outside; never all three.
+        int count = _rng.RandiRange(0, Math.Min(2, definitions.Length)); // Up to two friends outside; the tutorial guide stays out of the yard.
         var plan = new List<SchoolFriendSpawn>(count);
         for (int i = 0; i < count; i++)
             plan.Add(new SchoolFriendSpawn(definitions[i].Name, positions[i]));

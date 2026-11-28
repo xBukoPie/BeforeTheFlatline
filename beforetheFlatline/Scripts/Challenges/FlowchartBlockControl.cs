@@ -1,70 +1,163 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
-public partial class FlowchartBlockControl : HBoxContainer
+public partial class FlowchartBlockControl : VBoxContainer
 {
-    [Export] public string BlockType { get; set; } = "Process";
-    [Export] public string InitialText { get; set; } = "value = 0";
+    public FlowchartBlockDefinition Definition { get; private set; }
+    public Control SymbolControl { get; private set; }
+    public event Action ContentChanged;
 
-    private FlowchartSymbolControl _symbol;
-    private FlowchartDragHandle _dragHandle;
-    private string _branchLabel = "";
-
-    public event Action TextChanged;
-
-    public string BlockText
+    public void CollectSymbolControls(List<Control> controls)
     {
-        get
+        if (controls == null)
+            return;
+
+        if (SymbolControl != null)
+            controls.Add(SymbolControl);
+
+        CollectNestedSymbols(this, controls);
+    }
+
+    private static void CollectNestedSymbols(Node parent, List<Control> controls)
+    {
+        foreach (Node child in parent.GetChildren())
         {
-            string text = _symbol?.BlockText ?? InitialText;
-            return string.IsNullOrWhiteSpace(_branchLabel) ? text : $"{_branchLabel}: {text}";
+            if (child is FlowchartBlockControl nested && nested.SymbolControl != null)
+                controls.Add(nested.SymbolControl);
+
+            CollectNestedSymbols(child, controls);
         }
     }
 
-    public void Configure(string type, string text, int index, string branchLabel = "", bool compact = false)
+    public void Configure(
+        FlowchartBlockDefinition definition,
+        Action<Variant, List<FlowchartBlockDefinition>, int> dropHandler,
+        bool compact = false)
     {
-        BlockType = type ?? "Process";
-        string normalizedText = text ?? "";
-        _branchLabel = NormalizeBranchLabel(branchLabel, ref normalizedText);
-        InitialText = normalizedText;
-
+        Definition = definition ?? throw new ArgumentNullException(nameof(definition));
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         SizeFlagsVertical = SizeFlags.ShrinkBegin;
         MouseFilter = MouseFilterEnum.Pass;
-        CustomMinimumSize = new Vector2(0, compact ? 94 : 90);
-        AddThemeConstantOverride("separation", 8);
+        AddThemeConstantOverride("separation", 0);
 
-        _dragHandle = new FlowchartDragHandle();
-        _dragHandle.Configure(index);
-        AddChild(_dragHandle);
+        // Center the editable symbol on the connector axis. The drag grip is
+        // overlaid on the left and must not change the symbol's horizontal center.
+        var blockRow = new Control
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(0, 72),
+            MouseFilter = MouseFilterEnum.Pass
+        };
+        AddChild(blockRow);
 
-        _symbol = new FlowchartSymbolControl();
-        _symbol.Configure(BlockType, InitialText, compact);
-        _symbol.TextChanged += () => TextChanged?.Invoke();
-        AddChild(_symbol);
+        var symbolCenter = new CenterContainer
+        {
+            MouseFilter = MouseFilterEnum.Pass
+        };
+        symbolCenter.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        blockRow.AddChild(symbolCenter);
+
+        var symbol = new FlowchartSymbolControl();
+        SymbolControl = symbol;
+        symbol.Configure(Definition.Type, Definition.Text, compact);
+        symbolCenter.AddChild(symbol);
+
+        var dragHandle = new FlowchartDragHandle();
+        dragHandle.Configure(Definition.Id);
+        dragHandle.AnchorLeft = 0.5f;
+        dragHandle.AnchorRight = 0.5f;
+        dragHandle.AnchorTop = 0f;
+        dragHandle.AnchorBottom = 1f;
+        blockRow.AddChild(dragHandle);
+        AlignDragHandleWithSymbol(dragHandle, symbol);
+
+        symbol.TextChanged += value =>
+        {
+            Definition.Text = value;
+            AlignDragHandleWithSymbol(dragHandle, symbol);
+            ContentChanged?.Invoke();
+        };
+
+        if (!string.Equals(Definition.Type, "Decision", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        AddChild(new FlowchartDecisionConnectorControl { Kind = "Split" });
+
+        var branches = new HBoxContainer
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        branches.AddThemeConstantOverride("separation", 0);
+        AddBranchColumn(branches, Definition.FalseBranch, dropHandler);
+        AddBranchColumn(branches, Definition.TrueBranch, dropHandler);
+        AddChild(branches);
+
+        AddChild(new FlowchartDecisionConnectorControl { Kind = "Merge" });
     }
 
-    public void SetDragIndex(int index) => _dragHandle?.Configure(index);
-
-    private static string NormalizeBranchLabel(string requestedLabel, ref string text)
+    private static void AlignDragHandleWithSymbol(
+        FlowchartDragHandle dragHandle,
+        FlowchartSymbolControl symbol)
     {
-        string label = (requestedLabel ?? "").Trim().ToUpperInvariant();
-        if (label != "TRUE" && label != "FALSE")
-            label = "";
+        if (dragHandle == null || symbol == null)
+            return;
 
-        string trimmed = (text ?? "").Trim();
-        if (trimmed.StartsWith("TRUE:", StringComparison.OrdinalIgnoreCase))
+        float halfWidth = Mathf.Max(symbol.CustomMinimumSize.X, symbol.Size.X) * 0.5f;
+        dragHandle.OffsetLeft = -halfWidth - 34f;
+        dragHandle.OffsetRight = -halfWidth;
+        dragHandle.OffsetTop = 0f;
+        dragHandle.OffsetBottom = 0f;
+    }
+
+    private void AddBranchColumn(
+        HBoxContainer parent,
+        List<FlowchartBlockDefinition> definitions,
+        Action<Variant, List<FlowchartBlockDefinition>, int> dropHandler)
+    {
+        var column = new VBoxContainer
         {
-            label = "TRUE";
-            trimmed = trimmed.Substring(5).Trim();
-        }
-        else if (trimmed.StartsWith("FALSE:", StringComparison.OrdinalIgnoreCase))
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+            MouseFilter = MouseFilterEnum.Pass
+        };
+        column.AddThemeConstantOverride("separation", 0);
+
+        AddSlot(column, definitions, 0, dropHandler);
+        for (int i = 0; i < definitions.Count; i++)
         {
-            label = "FALSE";
-            trimmed = trimmed.Substring(6).Trim();
+            var child = new FlowchartBlockControl();
+            child.Configure(definitions[i], dropHandler, compact: true);
+            child.ContentChanged += () => ContentChanged?.Invoke();
+            column.AddChild(child);
+            AddSlot(column, definitions, i + 1, dropHandler);
         }
 
-        text = trimmed;
-        return label;
+        // Keep the shorter decision path connected to the merge point.
+        // This expands to the height of the longer branch and draws a plain
+        // continuation line without an arrowhead or an extra drop target.
+        var continuation = new ColorRect
+        {
+            Color = new Color("7dd3fc"),
+            CustomMinimumSize = new Vector2(2f, 0f),
+            SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        column.AddChild(continuation);
+        parent.AddChild(column);
+    }
+
+    private static void AddSlot(
+        VBoxContainer parent,
+        List<FlowchartBlockDefinition> target,
+        int index,
+        Action<Variant, List<FlowchartBlockDefinition>, int> dropHandler)
+    {
+        var slot = new FlowchartDropSlotControl();
+        slot.Configure(target, index, branchSlot: true);
+        slot.DropReceived += dropHandler;
+        parent.AddChild(slot);
     }
 }

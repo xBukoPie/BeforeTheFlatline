@@ -5,12 +5,18 @@ public partial class AssetCredits : Control
 {
     private const string MainMenuPath = "res://Scenes/Menu/Main.tscn";
     private const string TeamCreditsPath = "res://Scenes/Ending/EndingCredits.tscn";
+    private const string PixabayUrl = "https://pixabay.com/";
+    private const string IthacaFontUrl = "https://www.fontspace.com/ithaca-font-f144503";
+
+    public bool OpenedFromSettings { get; set; }
+    public EndingCredits ParentTeamCredits { get; set; }
 
     public override void _Ready()
     {
         ProcessMode = ProcessModeEnum.Always;
         if (DayClock.Instance != null)
             DayClock.Instance.Running = false;
+
         BuildUi();
     }
 
@@ -28,9 +34,9 @@ public partial class AssetCredits : Control
 
         var margin = new MarginContainer();
         margin.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        margin.AddThemeConstantOverride("margin_left", 44);
-        margin.AddThemeConstantOverride("margin_right", 44);
-        margin.AddThemeConstantOverride("margin_top", 28);
+        margin.AddThemeConstantOverride("margin_left", 56);
+        margin.AddThemeConstantOverride("margin_right", 56);
+        margin.AddThemeConstantOverride("margin_top", 30);
         margin.AddThemeConstantOverride("margin_bottom", 26);
         AddChild(margin);
 
@@ -43,8 +49,8 @@ public partial class AssetCredits : Control
             Text = "BEFORE THE FLATLINE  •  VOXTEK INC.",
             HorizontalAlignment = HorizontalAlignment.Center
         };
-        eyebrow.AddThemeFontSizeOverride("font_size", 13);
-        eyebrow.AddThemeColorOverride("font_color", new Color("b8a4dd"));
+        eyebrow.AddThemeFontSizeOverride("font_size", 16);
+        eyebrow.AddThemeColorOverride("font_color", new Color("c4b5fd"));
         layout.AddChild(eyebrow);
 
         var title = new Label
@@ -52,101 +58,122 @@ public partial class AssetCredits : Control
             Text = "ASSET CREDITS",
             HorizontalAlignment = HorizontalAlignment.Center
         };
-        title.AddThemeFontSizeOverride("font_size", 34);
-        title.AddThemeColorOverride("font_color", new Color("eee8f7"));
+        title.AddThemeFontSizeOverride("font_size", 38);
+        title.AddThemeColorOverride("font_color", new Color("ffffff"));
         layout.AddChild(title);
+
+        var intro = new Label
+        {
+            Text = "Credits for the music, sound effects, artwork, and font used in the game.",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        intro.AddThemeFontSizeOverride("font_size", 18);
+        intro.AddThemeColorOverride("font_color", new Color("e2e8f0"));
+        layout.AddChild(intro);
 
         var scroll = new ScrollContainer
         {
-            SizeFlagsHorizontal = SizeFlags.ExpandFill,
-            SizeFlagsVertical = SizeFlags.ExpandFill,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
             HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled
         };
         layout.AddChild(scroll);
 
-        var content = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        content.AddThemeConstantOverride("separation", 8);
+        var content = new VBoxContainer
+        {
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
+        };
+        content.AddThemeConstantOverride("separation", 11);
         scroll.AddChild(content);
 
-        AddHeading(content, "MUSIC — PIXABAY");
-        AddParagraph(content, "The game's music tracks are sourced from Pixabay. The repository inventory includes:");
+        AddHeading(content, "MUSIC & SOUND EFFECTS — PIXABAY");
+        AddSubheading(content, "Music");
         AddFileList(content, new[]
         {
-            "Menu/Menu.mp3", "Menu/Menu2.mp3", "Game/dayTime.mp3", "Game/nightTime.mp3",
-            "Ending/gameOver.mp3", "Ending/goodEnding.mp3", "Ending/goodEnding2.wav", "Ending/sadEnding.mp3"
+            "Menu/Menu.mp3",
+            "Menu/Menu2.mp3",
+            "Game/dayTime.mp3",
+            "Game/nightTime.mp3",
+            "Ending/gameOver.mp3",
+            "Ending/goodEnding.mp3",
+            "Ending/goodEnding2.wav",
+            "Ending/sadEnding.mp3"
         });
 
-        AddHeading(content, "SOUND EFFECTS & ENDING CUES — PIXABAY");
+        AddSubheading(content, "Sound effects");
         AddFileList(content, new[]
         {
-            "Ending/gameOverFlatline.mp3", "Ending/goodEndingHeartbeat.mp3",
-            "InterfaceInteraction/uiClick.wav", "InterfaceInteraction/uiDrag.mp3",
-            "ObjectInteraction/doorKey.wav", "ObjectInteraction/doorUnlock.mp3",
-            "ObjectInteraction/objectObtain.wav", "Tasks/passedTask.mp3", "Tasks/failedTask.mp3",
+            "Ending/gameOverFlatline.mp3",
+            "Ending/goodEndingHeartbeat.mp3",
+            "InterfaceInteraction/uiClick.wav",
+            "InterfaceInteraction/uiDrag.mp3",
+            "ObjectInteraction/doorKey.wav",
+            "ObjectInteraction/doorUnlock.mp3",
+            "ObjectInteraction/objectObtain.wav",
+            "Tasks/passedTask.mp3",
+            "Tasks/failedTask.mp3",
             "SoundFX/fallThud.mp3"
         });
+        AddLink(content, "Pixabay source library", PixabayUrl);
 
-        AddHeading(content, "ART, ENVIRONMENTS & STORY IMAGES");
-        AddFileList(content, new[]
-        {
-            "Characters: player sprite, Mich, Jepoy, Cess, Mysterious figure, Professor Vox portraits",
-            "Home and school environment scenes and map textures",
-            "Memory images: cutsceneKitcken.jpg, cutsceneLaundry.jpg, cutsceneBathroomSink.jpg, cutsceneToMasterBedroom.jpg, cutsceneMasterBedroom.jpg",
-            "Ending images: cutsceneGoodEnding1.jpg, cutsceneGoodEnding2.jpg, cutsceneBadEnding.jpg",
-            "Opening identity: VoxTekLogo.png; UI textures and interface artwork"
-        });
+        AddHeading(content, "ART & VISUAL ASSETS");
+        AddSubheading(content, "Chelzie Nicole Palaña — Game Design Handler");
+        AddParagraph(content,
+            "Created the character artwork and portraits (player, Mich, Jepoy, Cess, Mysterious Person, and Professor Vox), the character designs, and the main menu background.");
 
-        AddHeading(content, "FONT & OTHER THIRD-PARTY RESOURCES");
-        AddFileList(content, new[]
-        {
-            "Assets/TextFonts/Ithaca-LVB75.ttf — source creator and license need verification before public distribution"
-        });
+        AddSubheading(content, "Dominique Paul Guevarra — Game Assets Handler");
+        AddParagraph(content,
+            "Created the Home and school environments, memory photographs, ending illustrations, and story images.");
+
+        AddSubheading(content, "Edward Aniciete");
+        AddParagraph(content,
+            "Created the user interface and other interface assets.");
+
+        AddHeading(content, "FONT");
+        AddParagraph(content, "Ithaca — used in the game's visual design.");
+        AddLink(content, "Ithaca font source — FontSpace", IthacaFontUrl);
 
         AddParagraph(content,
-            "Source library: Pixabay — https://pixabay.com/ • Individual uploader names and original item-page URLs are being matched against the original download records and will be added when verified.");
+            "Third-party assets remain subject to the usage terms and licenses provided by their respective sources.");
 
-        AddHeading(content, "PROJECT ASSET PREPARATION & INTEGRATION");
-        AddParagraph(content,
-            "VoxTek INC. — project asset preparation, scene integration, implementation, and presentation. Individual third-party artwork, font, and media licenses must be checked against their original sources before public distribution.");
-
-        AddHeading(content, "PROJECT TEAM");
-        AddFileList(content, new[]
+        var actions = new HBoxContainer
         {
-            "Edward Aniciete — Project Manager / Team Lead; Script Handler",
-            "Chelzie Nicole Palaña — Game Design Handler",
-            "Dominique Paul Guevarra — Assets / Texture Handler",
-            "VoxTek INC. — Production"
-        });
-
-        AddParagraph(content,
-            "Attribution note: this screen identifies Pixabay as the source library for the project's music and sound effects. It does not replace the original Pixabay item-page records or license checks. Track-specific titles and contributor names will only be displayed after the source pages have been verified.");
-
-        var actions = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+            Alignment = BoxContainer.AlignmentMode.Center
+        };
         actions.AddThemeConstantOverride("separation", 12);
         layout.AddChild(actions);
 
         var teamButton = new Button
         {
             Text = "Back to Team Credits",
-            CustomMinimumSize = new Vector2(230, 46)
+            CustomMinimumSize = new Vector2(230, 48)
         };
-        teamButton.Pressed += () => ChangeScene(TeamCreditsPath);
+        teamButton.Pressed += ReturnToTeamCredits;
         actions.AddChild(teamButton);
 
         var menuButton = new Button
         {
-            Text = "Return to Main Menu",
-            CustomMinimumSize = new Vector2(230, 46)
+            Text = OpenedFromSettings ? "Back to Settings" : "Return to Main Menu",
+            CustomMinimumSize = new Vector2(230, 48)
         };
-        menuButton.Pressed += () => ChangeScene(MainMenuPath);
+        menuButton.Pressed += ReturnToSettingsOrMainMenu;
         actions.AddChild(menuButton);
     }
 
     private static void AddHeading(VBoxContainer parent, string text)
     {
         var heading = new Label { Text = text };
-        heading.AddThemeFontSizeOverride("font_size", 17);
-        heading.AddThemeColorOverride("font_color", new Color("e1c99f"));
+        heading.AddThemeFontSizeOverride("font_size", 22);
+        heading.AddThemeColorOverride("font_color", new Color("f3d9a6"));
+        parent.AddChild(heading);
+    }
+
+    private static void AddSubheading(VBoxContainer parent, string text)
+    {
+        var heading = new Label { Text = text };
+        heading.AddThemeFontSizeOverride("font_size", 19);
+        heading.AddThemeColorOverride("font_color", new Color("c4b5fd"));
         parent.AddChild(heading);
     }
 
@@ -158,15 +185,15 @@ public partial class AssetCredits : Control
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
         };
-        label.AddThemeFontSizeOverride("font_size", 14);
-        label.AddThemeColorOverride("font_color", new Color("cbd5e1"));
+        label.AddThemeFontSizeOverride("font_size", 18);
+        label.AddThemeColorOverride("font_color", new Color("e2e8f0"));
         parent.AddChild(label);
     }
 
     private static void AddFileList(VBoxContainer parent, string[] lines)
     {
         var list = new VBoxContainer();
-        list.AddThemeConstantOverride("separation", 3);
+        list.AddThemeConstantOverride("separation", 6);
         list.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         parent.AddChild(list);
 
@@ -175,16 +202,62 @@ public partial class AssetCredits : Control
             var label = new Label
             {
                 Text = "• " + line,
-                AutowrapMode = TextServer.AutowrapMode.WordSmart
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
             };
-            label.AddThemeFontSizeOverride("font_size", 13);
-            label.AddThemeColorOverride("font_color", new Color("e2e8f0"));
+            label.AddThemeFontSizeOverride("font_size", 17);
+            label.AddThemeColorOverride("font_color", new Color("f1f5f9"));
             list.AddChild(label);
         }
     }
 
+    private static void AddLink(VBoxContainer parent, string text, string url)
+    {
+        var link = new LinkButton
+        {
+            Text = text,
+            TooltipText = url,
+            FocusMode = Control.FocusModeEnum.All
+        };
+        link.AddThemeFontSizeOverride("font_size", 17);
+        link.AddThemeColorOverride("font_color", new Color("93c5fd"));
+        link.AddThemeColorOverride("font_hover_color", new Color("bfdbfe"));
+        link.Pressed += () => OS.ShellOpen(url);
+        parent.AddChild(link);
+    }
+
+    private void ReturnToTeamCredits()
+    {
+        if (OpenedFromSettings &&
+            ParentTeamCredits != null &&
+            GodotObject.IsInstanceValid(ParentTeamCredits))
+        {
+            ParentTeamCredits.Visible = true;
+            Visible = false;
+            QueueFree();
+            return;
+        }
+
+        ChangeScene(TeamCreditsPath);
+    }
+
+    private void ReturnToSettingsOrMainMenu()
+    {
+        if (OpenedFromSettings)
+        {
+            ParentTeamCredits?.ReturnToSettings();
+            return;
+        }
+
+        ChangeScene(MainMenuPath);
+    }
+
     private void ChangeScene(string path)
     {
+        // The music is shared by both credits scenes. Only fade it when leaving credits.
+        if (string.Equals(path, MainMenuPath, System.StringComparison.OrdinalIgnoreCase))
+            AudioManager.Instance?.FadeOutGoodEnding2(0.85);
+
         if (SceneTransition.Instance != null)
             SceneTransition.Instance.ChangeSceneToFile(path, 0.8f);
         else

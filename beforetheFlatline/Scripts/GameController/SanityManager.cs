@@ -15,6 +15,7 @@ public partial class SanityManager : Node
     public int FailedTestCount { get; private set; }
     public int DifficultyPenalty { get; private set; }
     public int CurrentSanity { get; private set; } = MaxSanity;
+    public int SchedulePenaltyPercent { get; private set; }
     public bool BadEndingQueued => _badEndingQueued;
 
     public enum DebuffType { Dizziness, Confusion, Anxiety, Pressure }
@@ -62,6 +63,42 @@ public partial class SanityManager : Node
         FailedTestCount++;
         DifficultyPenalty = Mathf.Clamp(DifficultyPenalty + 1, 0, 2);
     }
+
+    public void AddSchedulePenalty(string source, int percentagePoints)
+    {
+        if (_badEndingQueued || percentagePoints <= 0 ||
+            (DayClock.Instance != null && DayClock.Instance.DayNumber <= 1))
+            return;
+
+        int previous = SchedulePenaltyPercent;
+        SchedulePenaltyPercent = Mathf.Clamp(SchedulePenaltyPercent + percentagePoints, 0, 100);
+        if (SchedulePenaltyPercent != previous)
+            GD.Print($"[SanityManager] {source} added {SchedulePenaltyPercent - previous}% schedule penalty (total {SchedulePenaltyPercent}%).");
+    }
+
+    // Rest reduces accumulated schedule strain, but going to bed late adds a new stack.
+    public void ApplySleepRest(float bedtimeHour)
+    {
+        if (_badEndingQueued ||
+            (DayClock.Instance != null && DayClock.Instance.DayNumber <= 1))
+            return;
+
+        int recovery = Mathf.CeilToInt(SchedulePenaltyPercent * 0.20f);
+        SchedulePenaltyPercent = Mathf.Max(0, SchedulePenaltyPercent - recovery);
+
+        float hour = Mathf.PosMod(bedtimeHour, 24f);
+        float hoursPastBedtime = hour >= 22f
+            ? hour - 22f
+            : hour < 6.5f
+                ? 2f + hour
+                : 0f;
+        int lateSleepPenalty = Mathf.Clamp(Mathf.CeilToInt(hoursPastBedtime * 4f), 0, 20);
+        if (lateSleepPenalty > 0)
+            AddSchedulePenalty("late_sleep", lateSleepPenalty);
+
+        SaveManager.Instance?.RequestAutoSave();
+    }
+
 
     // Restores sanity and its debuff recovery thresholds.
     public void Recover(int amount)
@@ -180,6 +217,7 @@ public partial class SanityManager : Node
             ["current_sanity"] = CurrentSanity,
             ["failed_test_count"] = FailedTestCount,
             ["difficulty_penalty"] = DifficultyPenalty,
+            ["schedule_penalty_percent"] = SchedulePenaltyPercent,
             ["debuffs"] = debuffs,
             ["assessment_penalties"] = assessmentPenalties,
             ["recovery_targets"] = targets
@@ -193,6 +231,7 @@ public partial class SanityManager : Node
         CurrentSanity = Mathf.Clamp(ReadInt(data, "current_sanity", MaxSanity), 0, MaxSanity);
         FailedTestCount = Mathf.Max(0, ReadInt(data, "failed_test_count", 0));
         DifficultyPenalty = Mathf.Clamp(ReadInt(data, "difficulty_penalty", 0), 0, 2);
+        SchedulePenaltyPercent = Mathf.Clamp(ReadInt(data, "schedule_penalty_percent", 0), 0, 100);
         _badEndingQueued = false;
 
         var debuffs = ReadDictionary(data, "debuffs");
@@ -292,6 +331,7 @@ public partial class SanityManager : Node
         CurrentSanity = MaxSanity;
         FailedTestCount = 0;
         DifficultyPenalty = 0;
+        SchedulePenaltyPercent = 0;
         _badEndingQueued = false;
 
         foreach (DebuffType type in Enum.GetValues(typeof(DebuffType)))
