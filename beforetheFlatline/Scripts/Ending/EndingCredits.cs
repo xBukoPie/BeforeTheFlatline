@@ -208,7 +208,9 @@ public partial class EndingCredits : Control
             assets.OpenedFromSettings = true;
             assets.ParentTeamCredits = this;
             assets.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-            Visible = false;
+            // Keep the parent credits control visible. Hiding a Control also hides
+            // its children, which would make this nested asset-credits screen invisible
+            // and leave the Settings menu's overlay reference stuck open.
             AddChild(assets);
             return;
         }
