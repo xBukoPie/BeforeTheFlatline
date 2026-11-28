@@ -163,6 +163,27 @@ public static class DailyTestSession
             _pointsReceived += points;
     }
 
+    // Developer-only shortcut: treat every question in the active assessment as correct,
+    // even when earlier attempts were wrong or skipped.
+    public static string[] ForcePassCurrentAssessment(int difficulty)
+    {
+        if (!_active || _finalized || QuestionOrder.Count == 0)
+            return Array.Empty<string>();
+
+        Attempts.Clear();
+        Notifications.Clear();
+        _pointsReceived = 0;
+
+        int appliedDifficulty = Mathf.Clamp(difficulty, 1, 5);
+        foreach (string questionId in QuestionOrder)
+            Attempts.Add(new TaskAttemptResult(questionId, true, false, appliedDifficulty));
+
+        _passedForDay = true;
+        _bestScore = Math.Max(_bestScore, Score);
+        _bestPointsReceived = Math.Max(_bestPointsReceived, _pointsReceived);
+        return QuestionOrder.ToArray();
+    }
+
     public static void RecordHistory(
         int sanityAfter,
         string debuffType,

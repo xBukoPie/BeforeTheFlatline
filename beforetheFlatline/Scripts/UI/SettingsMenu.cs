@@ -19,6 +19,8 @@ public partial class SettingsMenu : Control
     private HSlider _brightness;
     private CheckButton _fullscreen;
     private LineEdit _playerName;
+    private Button _creditsButton;
+    private EndingCredits _creditsOverlay;
 
     public override void _Ready()
     {
@@ -32,6 +34,9 @@ public partial class SettingsMenu : Control
     {
         if (SettingsManager.Instance != null)
             SettingsManager.Instance.SettingsChanged -= SyncFromSettings;
+
+        if (_creditsOverlay != null && GodotObject.IsInstanceValid(_creditsOverlay))
+            _creditsOverlay.ReturnToSettingsRequested -= CloseCreditsOverlay;
     }
 
     private void BuildUi()
@@ -148,6 +153,15 @@ public partial class SettingsMenu : Control
         _fullscreen.Toggled += enabled => SettingsManager.Instance?.SetFullscreen(enabled);
         stack.AddChild(_fullscreen);
 
+        _creditsButton = new Button
+        {
+            Text = "VIEW CREDITS",
+            CustomMinimumSize = new Vector2(0, 44),
+            Visible = SettingsManager.Instance?.HasSeenEndingCredits == true
+        };
+        _creditsButton.Pressed += OpenCredits;
+        stack.AddChild(_creditsButton);
+
         var supportHeading = new Label { Text = "SUPPORT THE DEVELOPER", HorizontalAlignment = HorizontalAlignment.Center };
         supportHeading.AddThemeFontSizeOverride("font_size", 15);
         supportHeading.AddThemeColorOverride("font_color", new Color("7dd3fc"));
@@ -203,6 +217,39 @@ public partial class SettingsMenu : Control
             SyncFromSettings();
         };
         footer.AddChild(defaults);
+    }
+
+    private void OpenCredits()
+    {
+        if (_creditsOverlay != null && GodotObject.IsInstanceValid(_creditsOverlay))
+            return;
+
+        PackedScene creditsScene = GD.Load<PackedScene>("res://Scenes/Ending/EndingCredits.tscn");
+        if (creditsScene == null)
+        {
+            GD.PushError("SettingsMenu: could not load the credits screen.");
+            return;
+        }
+
+        _creditsOverlay = creditsScene.Instantiate<EndingCredits>();
+        _creditsOverlay.OpenedFromSettings = true;
+        _creditsOverlay.ReturnToSettingsRequested += CloseCreditsOverlay;
+        _creditsOverlay.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        AddChild(_creditsOverlay);
+    }
+
+    private void CloseCreditsOverlay()
+    {
+        EndingCredits credits = _creditsOverlay;
+        _creditsOverlay = null;
+
+        if (credits == null || !GodotObject.IsInstanceValid(credits))
+            return;
+
+        credits.ReturnToSettingsRequested -= CloseCreditsOverlay;
+        if (credits.GetParent() == this)
+            RemoveChild(credits);
+        credits.QueueFree();
     }
 
     private static void AddAudioSliderRow(
@@ -274,6 +321,9 @@ public partial class SettingsMenu : Control
     {
         if (SettingsManager.Instance == null || _volume == null)
             return;
+
+        if (_creditsButton != null)
+            _creditsButton.Visible = SettingsManager.Instance.HasSeenEndingCredits;
 
         _volume.SetValueNoSignal(SettingsManager.Instance.MasterVolume);
         _musicVolume?.SetValueNoSignal(SettingsManager.Instance.MusicVolume);

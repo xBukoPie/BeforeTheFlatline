@@ -385,14 +385,17 @@ public partial class ChallengeScene : Control
             GetTree().CallDeferred(SceneTree.MethodName.ChangeSceneToFile, _nextScene);
     }
 
-    private void AwardCorrectChallengeProgress()
+    private void AwardCorrectChallengeProgress() =>
+        AwardCorrectChallengeProgress(_activeChallengeId, _difficulty);
+
+    private void AwardCorrectChallengeProgress(string challengeId, int difficulty)
     {
         // Only the first correct completion of this challenge family for the day
         // contributes hidden story points.
-        if (!ChallengeProgress.MarkCompleted(_activeChallengeId))
+        if (!ChallengeProgress.MarkCompleted(challengeId))
             return;
 
-        var reward = RoomKeyProgression.Instance?.AwardTaskCompletion(_difficulty);
+        var reward = RoomKeyProgression.Instance?.AwardTaskCompletion(difficulty);
         if (reward == null)
             return;
 
@@ -405,25 +408,12 @@ public partial class ChallengeScene : Control
         if (_completed || _challenge == null || !DailyTestSession.IsActive)
             return false;
 
-        bool hasInput = HasAnyInput();
-        bool complete = hasInput && HasCompleteAnswer();
-        bool correct = complete &&
-            (_challenge.IsFlowchart ? CheckFlowchartAnswer() : CheckPseudocodeAnswer());
+        string[] completedQuestions = DailyTestSession.ForcePassCurrentAssessment(_difficulty);
+        if (completedQuestions.Length == 0)
+            return false;
 
-        DailyTestSession.Record(_activeChallengeId, correct, !hasInput, _difficulty);
-        if (correct)
-            AwardCorrectChallengeProgress();
-
-        // Record all outstanding questions as skipped. The shortcut therefore
-        // produces a valid 4-question results summary without inventing scores.
-        while (DailyTestSession.AttemptCount < DailyTestSession.QuestionCount)
-        {
-            string nextId = DailyTestSession.CurrentQuestionId;
-            if (string.IsNullOrWhiteSpace(nextId))
-                break;
-
-            DailyTestSession.Record(nextId, false, true, _difficulty);
-        }
+        foreach (string questionId in completedQuestions)
+            AwardCorrectChallengeProgress(questionId, _difficulty);
 
         _completed = true;
         if (_submitButton != null) _submitButton.Disabled = true;

@@ -8,6 +8,9 @@ public partial class AssetCredits : Control
     private const string PixabayUrl = "https://pixabay.com/";
     private const string IthacaFontUrl = "https://www.fontspace.com/ithaca-font-f144503";
 
+    public bool OpenedFromSettings { get; set; }
+    public EndingCredits ParentTeamCredits { get; set; }
+
     public override void _Ready()
     {
         ProcessMode = ProcessModeEnum.Always;
@@ -115,14 +118,17 @@ public partial class AssetCredits : Control
         AddLink(content, "Pixabay source library", PixabayUrl);
 
         AddHeading(content, "ART & VISUAL ASSETS");
-        AddFileList(content, new[]
-        {
-            "Character design and main menu — Chelzie Nicole Palaña (Game Design Handler)",
-            "Environment and story images — Dominique Paul Guevarra (Game Assets Handler)",
-            "Character artwork and portraits: player, Mich, Jepoy, Cess, Mysterious Person, and Professor Vox",
-            "Home and school environments, memory photographs, and ending illustrations",
-            "VoxTek logo, user-interface textures, and other interface artwork"
-        });
+        AddSubheading(content, "Chelzie Nicole Palaña — Game Design Handler");
+        AddParagraph(content,
+            "Created the character artwork and portraits (player, Mich, Jepoy, Cess, Mysterious Person, and Professor Vox), the character designs, and the main menu background.");
+
+        AddSubheading(content, "Dominique Paul Guevarra — Game Assets Handler");
+        AddParagraph(content,
+            "Created the Home and school environments, memory photographs, ending illustrations, and story images.");
+
+        AddSubheading(content, "Edward Aniciete");
+        AddParagraph(content,
+            "Created the user interface and other interface assets.");
 
         AddHeading(content, "FONT");
         AddParagraph(content, "Ithaca — used in the game's visual design.");
@@ -143,15 +149,15 @@ public partial class AssetCredits : Control
             Text = "Back to Team Credits",
             CustomMinimumSize = new Vector2(230, 48)
         };
-        teamButton.Pressed += () => ChangeScene(TeamCreditsPath);
+        teamButton.Pressed += ReturnToTeamCredits;
         actions.AddChild(teamButton);
 
         var menuButton = new Button
         {
-            Text = "Return to Main Menu",
+            Text = OpenedFromSettings ? "Back to Settings" : "Return to Main Menu",
             CustomMinimumSize = new Vector2(230, 48)
         };
-        menuButton.Pressed += () => ChangeScene(MainMenuPath);
+        menuButton.Pressed += ReturnToSettingsOrMainMenu;
         actions.AddChild(menuButton);
     }
 
@@ -218,6 +224,32 @@ public partial class AssetCredits : Control
         link.AddThemeColorOverride("font_hover_color", new Color("bfdbfe"));
         link.Pressed += () => OS.ShellOpen(url);
         parent.AddChild(link);
+    }
+
+    private void ReturnToTeamCredits()
+    {
+        if (OpenedFromSettings &&
+            ParentTeamCredits != null &&
+            GodotObject.IsInstanceValid(ParentTeamCredits))
+        {
+            ParentTeamCredits.Visible = true;
+            Visible = false;
+            QueueFree();
+            return;
+        }
+
+        ChangeScene(TeamCreditsPath);
+    }
+
+    private void ReturnToSettingsOrMainMenu()
+    {
+        if (OpenedFromSettings)
+        {
+            ParentTeamCredits?.ReturnToSettings();
+            return;
+        }
+
+        ChangeScene(MainMenuPath);
     }
 
     private void ChangeScene(string path)
