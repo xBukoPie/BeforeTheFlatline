@@ -9,7 +9,7 @@ on:
       - ".github/workflows/windows-desktop.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: windows-desktop-${{ github.ref }}
@@ -116,4 +116,63 @@ jobs:
           path: beforetheFlatline/builds/windows/BeforeTheFlatline.exe
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish Windows preview release
+        if: github.event_name == 'push' && github.event.head_commit.message == 'Release: Before The Flatline Windows Preview'
+        shell: pwsh
+        working-directory: beforetheFlatline
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $ProgressPreference = "SilentlyContinue"
+
+          $exePath = (Resolve-Path -LiteralPath "builds/windows/BeforeTheFlatline.exe").Path
+          $sha256 = (Get-FileHash -LiteralPath $exePath -Algorithm SHA256).Hash
+          $tagName = "windows-preview-$env:GITHUB_RUN_NUMBER"
+
+          $releaseNotes = @(
+            "## Included"
+            "- Fixed the Settings credits navigation so Asset Credits opens as a nested overlay."
+            "- Returning from Asset Credits restores Team Credits; returning to Settings releases the overlay cleanly."
+            "- Includes the current credits-unlock and SuperUser assessment updates."
+            ""
+            "## Build"
+            "- Windows x64 standalone executable."
+            "- SHA-256: $sha256"
+          ) -join "`n"
+
+          $headers = @{
+            Authorization = "Bearer $env:GH_TOKEN"
+            Accept = "application/vnd.github+json"
+            "X-GitHub-Api-Version" = "2022-11-28"
+          }
+
+          $payload = @{
+            tag_name = $tagName
+            target_commitish = $env:GITHUB_SHA
+            name = "Before The Flatline - Windows Preview"
+            body = $releaseNotes
+            draft = $false
+            prerelease = $true
+            generate_release_notes = $false
+          } | ConvertTo-Json -Depth 5
+
+          $releaseUri = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases"
+          $release = Invoke-RestMethod -Method Post -Uri $releaseUri -Headers $headers -ContentType "application/vnd.github+json" -Body $payload
+
+          if (-not $release.id) {
+            throw "GitHub did not return a release ID."
+          }
+
+          $assetUri = "https://uploads.github.com/repos/$env:GITHUB_REPOSITORY/releases/$($release.id)/assets?name=BeforeTheFlatline.exe"
+          $asset = Invoke-RestMethod -Method Post -Uri $assetUri -Headers $headers -InFile $exePath -ContentType "application/octet-stream"
+
+          if (-not $asset.browser_download_url) {
+            throw "The executable upload did not return a browser download URL."
+          }
+
+          Write-Host "Published release: $($release.html_url)"
+          Write-Host "Uploaded executable: $($asset.browser_download_url)"
+          Write-Host "SHA-256: $sha256"
 
