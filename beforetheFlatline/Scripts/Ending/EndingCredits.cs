@@ -23,11 +23,6 @@ public partial class EndingCredits : Control
         AudioManager.Instance?.PlayGoodEnding2();
     }
 
-    public override void _ExitTree()
-    {
-        AudioManager.Instance?.FadeOutGoodEnding2(0.75);
-    }
-
     private void BuildUi()
     {
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
@@ -202,6 +197,7 @@ public partial class EndingCredits : Control
 
     private void ReturnToMainMenu()
     {
+        AudioManager.Instance?.FadeOutGoodEnding2(0.75);
         if (SceneTransition.Instance != null)
             SceneTransition.Instance.ChangeSceneToFile(MainMenuPath, 1.1f);
         else

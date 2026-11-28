@@ -222,6 +222,13 @@ public partial class AudioManager : Node
         if (!IsCurrentScene("res://Scenes/Ending/EndingCredits.tscn"))
             return;
 
+        // Returning from Asset Credits should resume the existing credits track,
+        // not restart it or briefly fade it out.
+        if (_goodEnding2Player != null &&
+            GodotObject.IsInstanceValid(_goodEnding2Player) &&
+            _goodEnding2Player.Playing)
+            return;
+
         FadeOutMusic(0.55);
         FadeOutGoodEnding1(0.55);
 

@@ -562,6 +562,7 @@ void fragment() {
     private static bool IsEndingPresentationScene(string scenePath) =>
         string.Equals(scenePath, "res://Scenes/Ending/GoodEndingBriefing.tscn", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(scenePath, "res://Scenes/Ending/EndingCredits.tscn", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenePath, "res://Scenes/Ending/AssetCredits.tscn", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(scenePath, "res://Scenes/Ending/BadEnding.tscn", StringComparison.OrdinalIgnoreCase);
 
     private static SanityManager.DebuffType FindDominant(int d, int c, int a, int p)
